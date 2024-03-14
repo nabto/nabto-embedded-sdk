@@ -371,6 +371,9 @@ void print_item(const char* item)
 }
 
 bool handle_main(struct args* args, struct tcp_tunnel* tunnel);
+bool initializeIam(struct nm_iam* iam, struct tcp_tunnel* tunnel, struct nn_log* logger);
+
+bool printStartupInfo(struct nm_iam* iam, struct tcp_tunnel* tunnel, struct device_config* dc, struct args* args);
 
 int main(int argc, char** argv)
 {
@@ -596,9 +599,6 @@ bool handle_main(struct args* args, struct tcp_tunnel* tunnel)
         }
     }
 
-    char* deviceFingerprint;
-    nabto_device_get_device_fingerprint(tunnel->device, &deviceFingerprint);
-
     if (args->randomPorts) {
         ec = nabto_device_set_local_port(tunnel->device, 0);
         if (ec != NABTO_DEVICE_EC_OK) {
@@ -649,127 +649,15 @@ bool handle_main(struct args* args, struct tcp_tunnel* tunnel)
         }
     }
 
-    printf("######## Nabto TCP Tunnel Device ########" NEWLINE);
-    printf("# Product ID:        %s" NEWLINE, dc.productId);
-    printf("# Device ID:         %s" NEWLINE, dc.deviceId);
-    printf("# Fingerprint:       %s" NEWLINE, deviceFingerprint);
-    printf("# Version:           %s" NEWLINE, nabto_device_version());
-    if (!args->randomPorts) {
-        if (args->localPort) {
-            printf("# Local UDP Port:    %d" NEWLINE, args->localPort);
-        } else {
-            printf("# Local UDP Port:    %d" NEWLINE, 5592);
-        }
-    }
-
     struct nm_iam iam;
-    if (!nm_iam_init(&iam, tunnel->device, &logger)) {
-        printf("Could not initialize IAM module" NEWLINE);
+    if (!initializeIam(&iam, tunnel, &logger) ||
+        !printStartupInfo(&iam, tunnel, &dc, args)) {
         nabto_device_stop(tunnel->device);
         nm_iam_deinit(&iam);
         return false;
-    }
-
-    if(!nm_iam_load_configuration(&iam, tunnel->iamConfig)) {
-        printf("Could not load iam configuration" NEWLINE);
-        nabto_device_stop(tunnel->device);
-        nm_iam_deinit(&iam);
-        return false;
-    }
-    tunnel->iamConfig = NULL; //transfer ownership to iam
-    if (!nm_iam_load_state(&iam, tunnel->tcpTunnelState)) {
-        printf("Could not load iam state" NEWLINE);
-        nabto_device_stop(tunnel->device);
-        nm_iam_deinit(&iam);
-        return false;
-    }
-    tunnel->tcpTunnelState = NULL; // transfer ownership to iam
-
-    // Create a copy of the state and print information from it.
-    struct nm_iam_state* state = nm_iam_dump_state(&iam);
-    if (state == NULL) {
-        printf("Failed to dump IAM state" NEWLINE);
-        nabto_device_stop(tunnel->device);
-        nm_iam_deinit(&iam);
-        return false;
-    }
-
-    printf("# Friendly Name:     \"%s\"" NEWLINE, state->friendlyName);
-
-    struct nm_iam_user* initialUser = nm_iam_state_find_user_by_username(state, state->initialPairingUsername);
-
-    bool initialUserNeedPairing =
-        initialUser && nn_llist_empty(&initialUser->fingerprints);
-
-    if ((state->localInitialPairing || state->passwordInvitePairing) &&
-        initialUserNeedPairing) {
-        printf("# " NEWLINE);
-        printf("# The initial user '%s' with role '%s' has not been paired yet." NEWLINE "# The initial user is a predefined user used to let the first user of the tunnel device be allowed special previleges. " NEWLINE,
-            state->initialPairingUsername, initialUser->role);
-
-        bool otherUsersExist = nn_llist_size(&state->users) > 1 && initialUser;
-        if (otherUsersExist) {
-            printf("# " NEWLINE);
-            printf("# Other users are already paired. These may not have the same privileges as the initial user. You can pair with the initial user from the client if needed." NEWLINE);
-        }
-
-        printf("# " NEWLINE);
-        printf("# The following pairing modes are available for pairing with the initial user:" NEWLINE);
-        if (state->localInitialPairing) {
-            printf("# - Local Initial Pairing mode" NEWLINE);
-        }
-        if (state->passwordInvitePairing) {
-            printf("# - Password Invite Pairing mode." NEWLINE);
-            printf("# -- Initial Pairing Username:  %s" NEWLINE,
-                   initialUser->username);
-            if (initialUser->password != NULL) {
-                printf("# -- Initial Pairing Password:  %s" NEWLINE,
-                       initialUser->password);
-            }
-            if (initialUser->sct != NULL) {
-                printf("# -- Initial Pairing SCT:       %s" NEWLINE,
-                       initialUser->sct);
-            }
-            // format the pairing string over the next couple of lines
-            printf("# -- Initial Pairing String:    p=%s,d=%s,u=%s",
-                   dc.productId, dc.deviceId, initialUser->username);
-            if (initialUser->password != NULL) {
-                printf(",pwd=%s", initialUser->password);
-            }
-            if (initialUser->sct != NULL) {
-                printf(",sct=%s", initialUser->sct);
-            }
-            printf(NEWLINE);
-        }
-    }
-
-    if (!initialUserNeedPairing) {
-        //  we are past the initial user being paired.
-        if (state->passwordInvitePairing)
-        {
-            printf("# " NEWLINE);
-            printf("# The device provides Password Invite Pairing, contact the administrator to access." NEWLINE);
-        }
-
-        if (state->localOpenPairing) {
-            printf("# " NEWLINE);
-            printf("# The device offers Local Open Pairing" NEWLINE);
-        }
-    }
-
-    if (state->passwordOpenPairing && state->passwordOpenPassword != NULL && state->passwordOpenSct != NULL) {
-        printf("# " NEWLINE);
-        printf("# The device has Password Open Pairing enabled" NEWLINE);
-        printf("# Open Pairing Password:  %s" NEWLINE, state->passwordOpenPassword);
-        printf("# Open Pairing SCT:       %s" NEWLINE, state->passwordOpenSct);
-        printf("# Open Pairing String:    p=%s,d=%s,pwd=%s,sct=%s" NEWLINE, dc.productId, dc.deviceId, state->passwordOpenPassword, state->passwordOpenSct);
     }
 
     print_service_info_and_check_reachability(tunnel, args->selfTest);
-
-    nabto_device_string_free(deviceFingerprint);
-
-    nm_iam_state_free(state);
 
     if (args->showState) {
         struct nm_iam_state* state = nm_iam_dump_state(&iam);
@@ -913,5 +801,127 @@ bool make_directory(const char* directory)
 #else
     mkdir(directory, 0777);
 #endif
+    return true;
+}
+
+bool initializeIam(struct nm_iam* iam, struct tcp_tunnel* tunnel, struct nn_log* logger)
+{
+    if (!nm_iam_init(iam, tunnel->device, logger)) {
+        printf("Could not initialize IAM module" NEWLINE);
+        return false;
+    }
+
+    if(!nm_iam_load_configuration(iam, tunnel->iamConfig)) {
+        printf("Could not load iam configuration" NEWLINE);
+        return false;
+    }
+    tunnel->iamConfig = NULL; //transfer ownership to iam
+    if (!nm_iam_load_state(iam, tunnel->tcpTunnelState)) {
+        printf("Could not load iam state" NEWLINE);
+        return false;
+    }
+    tunnel->tcpTunnelState = NULL; // transfer ownership to iam
+    return true;
+}
+
+bool printStartupInfo(struct nm_iam* iam, struct tcp_tunnel* tunnel, struct device_config* dc, struct args* args)
+{
+    char* deviceFingerprint;
+    nabto_device_get_device_fingerprint(tunnel->device, &deviceFingerprint);
+
+
+    printf("######## Nabto TCP Tunnel Device ########" NEWLINE);
+    printf("# Product ID:        %s" NEWLINE, dc->productId);
+    printf("# Device ID:         %s" NEWLINE, dc->deviceId);
+    printf("# Fingerprint:       %s" NEWLINE, deviceFingerprint);
+    printf("# Version:           %s" NEWLINE, nabto_device_version());
+    if (!args->randomPorts) {
+        if (args->localPort) {
+            printf("# Local UDP Port:    %d" NEWLINE, args->localPort);
+        } else {
+            printf("# Local UDP Port:    %d" NEWLINE, 5592);
+        }
+    }
+    nabto_device_string_free(deviceFingerprint);
+
+    // Create a copy of the state and print information from it.
+    struct nm_iam_state* state = nm_iam_dump_state(iam);
+    if (state == NULL) {
+        printf("Failed to dump IAM state" NEWLINE);
+        return false;
+    }
+
+    printf("# Friendly Name:     \"%s\"" NEWLINE, state->friendlyName);
+
+    struct nm_iam_user* initialUser = nm_iam_state_find_user_by_username(state, state->initialPairingUsername);
+
+    bool initialUserNeedPairing =
+        initialUser && nn_llist_empty(&initialUser->fingerprints);
+
+    if ((state->localInitialPairing || state->passwordInvitePairing) &&
+        initialUserNeedPairing) {
+        printf("# " NEWLINE);
+        printf("# The initial user '%s' with role '%s' has not been paired yet." NEWLINE "# The initial user is a predefined user used to let the first user of the tunnel device be allowed special previleges. " NEWLINE,
+            state->initialPairingUsername, initialUser->role);
+
+        bool otherUsersExist = nn_llist_size(&state->users) > 1 && initialUser;
+        if (otherUsersExist) {
+            printf("# " NEWLINE);
+            printf("# Other users are already paired. These may not have the same privileges as the initial user. You can pair with the initial user from the client if needed." NEWLINE);
+        }
+
+        printf("# " NEWLINE);
+        printf("# The following pairing modes are available for pairing with the initial user:" NEWLINE);
+        if (state->localInitialPairing) {
+            printf("# - Local Initial Pairing mode" NEWLINE);
+        }
+        if (state->passwordInvitePairing) {
+            printf("# - Password Invite Pairing mode." NEWLINE);
+            printf("# -- Initial Pairing Username:  %s" NEWLINE,
+                   initialUser->username);
+            if (initialUser->password != NULL) {
+                printf("# -- Initial Pairing Password:  %s" NEWLINE,
+                       initialUser->password);
+            }
+            if (initialUser->sct != NULL) {
+                printf("# -- Initial Pairing SCT:       %s" NEWLINE,
+                       initialUser->sct);
+            }
+            // format the pairing string over the next couple of lines
+            printf("# -- Initial Pairing String:    p=%s,d=%s,u=%s",
+                   dc->productId, dc->deviceId, initialUser->username);
+            if (initialUser->password != NULL) {
+                printf(",pwd=%s", initialUser->password);
+            }
+            if (initialUser->sct != NULL) {
+                printf(",sct=%s", initialUser->sct);
+            }
+            printf(NEWLINE);
+        }
+    }
+
+    if (!initialUserNeedPairing) {
+        //  we are past the initial user being paired.
+        if (state->passwordInvitePairing)
+        {
+            printf("# " NEWLINE);
+            printf("# The device provides Password Invite Pairing, contact the administrator to access." NEWLINE);
+        }
+
+        if (state->localOpenPairing) {
+            printf("# " NEWLINE);
+            printf("# The device offers Local Open Pairing" NEWLINE);
+        }
+    }
+
+    if (state->passwordOpenPairing && state->passwordOpenPassword != NULL && state->passwordOpenSct != NULL) {
+        printf("# " NEWLINE);
+        printf("# The device has Password Open Pairing enabled" NEWLINE);
+        printf("# Open Pairing Password:  %s" NEWLINE, state->passwordOpenPassword);
+        printf("# Open Pairing SCT:       %s" NEWLINE, state->passwordOpenSct);
+        printf("# Open Pairing String:    p=%s,d=%s,pwd=%s,sct=%s" NEWLINE, dc->productId, dc->deviceId, state->passwordOpenPassword, state->passwordOpenSct);
+    }
+
+    nm_iam_state_free(state);
     return true;
 }
