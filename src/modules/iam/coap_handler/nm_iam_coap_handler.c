@@ -22,7 +22,6 @@ NabtoDeviceError nm_iam_coap_handler_init(
     nm_iam_coap_request_handler requestHandler)
 {
     memset(handler, 0, sizeof(struct nm_iam_coap_handler));
-    handler->device = device;
     handler->iam = iam;
     handler->requestHandler = requestHandler;
 
@@ -31,10 +30,12 @@ NabtoDeviceError nm_iam_coap_handler_init(
     if (handler->future == NULL ||
         handler->listener == NULL)
     {
+        nabto_device_future_free(handler->future);
         return NABTO_DEVICE_EC_OUT_OF_MEMORY;
     }
 
     NabtoDeviceError ec = nabto_device_coap_init_listener(device, handler->listener, method, paths);
+        handler->device = device;
     if (ec == NABTO_DEVICE_EC_OK) {
         start_listen(handler);
     }

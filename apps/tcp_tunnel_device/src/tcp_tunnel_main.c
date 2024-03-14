@@ -576,16 +576,23 @@ bool handle_main(struct args* args, struct tcp_tunnel* tunnel)
 
     struct nm_iam iam;
     if (!nm_iam_init(&iam, tunnel->device, &logger)) {
+        printf("Could not initialize IAM module" NEWLINE);
+        nabto_device_stop(tunnel->device);
+        nm_iam_deinit(&iam);
         return false;
     }
 
     if(!nm_iam_load_configuration(&iam, tunnel->iamConfig)) {
         printf("Could not load iam configuration" NEWLINE);
+        nabto_device_stop(tunnel->device);
+        nm_iam_deinit(&iam);
         return false;
     }
     tunnel->iamConfig = NULL; //transfer ownership to iam
     if (!nm_iam_load_state(&iam, tunnel->tcpTunnelState)) {
         printf("Could not load iam state" NEWLINE);
+        nabto_device_stop(tunnel->device);
+        nm_iam_deinit(&iam);
         return false;
     }
     tunnel->tcpTunnelState = NULL; // transfer ownership to iam
@@ -597,6 +604,8 @@ bool handle_main(struct args* args, struct tcp_tunnel* tunnel)
         ec = nabto_device_add_tcp_tunnel_service(tunnel->device, service->id, service->type, service->host, service->port);
         if (ec != NABTO_DEVICE_EC_OK) {
             printf("Cannot add tcp tunnel service id: %s, type: %s, host: %s, port: %d. One reason could be if '%s' is not an ipv4 address." NEWLINE, service->id, service->type, service->host, service->port, service->host);
+            nabto_device_stop(tunnel->device);
+            nm_iam_deinit(&iam);
             return false;
         }
 
@@ -608,6 +617,8 @@ bool handle_main(struct args* args, struct tcp_tunnel* tunnel)
             ec = nabto_device_add_tcp_tunnel_service_metadata(tunnel->device, service->id, key, val);
             if (ec != NABTO_DEVICE_EC_OK) {
                 printf("Cannot add tcp tunnel service meta data" NEWLINE);
+                nabto_device_stop(tunnel->device);
+                nm_iam_deinit(&iam);
                 return false;
             }
         }
@@ -619,27 +630,35 @@ bool handle_main(struct args* args, struct tcp_tunnel* tunnel)
     if (args->randomPorts) {
         ec = nabto_device_set_local_port(tunnel->device, 0);
         if (ec != NABTO_DEVICE_EC_OK) {
-           printf("Cannot set local port" NEWLINE);
-           return false;
+            printf("Cannot set local port" NEWLINE);
+            nabto_device_stop(tunnel->device);
+            nm_iam_deinit(&iam);
+            return false;
         }
         ec = nabto_device_set_p2p_port(tunnel->device, 0);
         if (ec != NABTO_DEVICE_EC_OK) {
-           printf("Cannot set p2pport" NEWLINE);
-           return false;
+            printf("Cannot set p2pport" NEWLINE);
+            nabto_device_stop(tunnel->device);
+            nm_iam_deinit(&iam);
+            return false;
         }
     } else {
         if (args->localPort) {
             ec = nabto_device_set_local_port(tunnel->device, args->localPort);
             if (ec != NABTO_DEVICE_EC_OK) {
-               printf("Cannot set local port" NEWLINE);
-               return false;
+                printf("Cannot set local port" NEWLINE);
+                nabto_device_stop(tunnel->device);
+                nm_iam_deinit(&iam);
+                return false;
             }
         }
         if (args->p2pPort) {
             ec = nabto_device_set_p2p_port(tunnel->device, args->p2pPort);
             if (ec != NABTO_DEVICE_EC_OK) {
-               printf("Cannot set p2pport" NEWLINE);
-               return false;
+                printf("Cannot set p2pport" NEWLINE);
+                nabto_device_stop(tunnel->device);
+                nm_iam_deinit(&iam);
+                return false;
             }
         }
     }
@@ -648,6 +667,8 @@ bool handle_main(struct args* args, struct tcp_tunnel* tunnel)
         ec = nabto_device_limit_connections(tunnel->device, (size_t)args->maxConnections);
         if (ec != NABTO_DEVICE_EC_OK) {
             printf("Cannot limit connections" NEWLINE);
+            nabto_device_stop(tunnel->device);
+            nm_iam_deinit(&iam);
             return false;
         }
     }
@@ -655,6 +676,8 @@ bool handle_main(struct args* args, struct tcp_tunnel* tunnel)
         ec = nabto_device_limit_streams(tunnel->device, (size_t)args->maxStreams);
         if (ec != NABTO_DEVICE_EC_OK) {
             printf("Cannot limit streams" NEWLINE);
+            nabto_device_stop(tunnel->device);
+            nm_iam_deinit(&iam);
             return false;
         }
     }
@@ -662,6 +685,8 @@ bool handle_main(struct args* args, struct tcp_tunnel* tunnel)
         ec = nabto_device_limit_stream_segments(tunnel->device, (size_t)args->maxStreamSegments);
         if (ec != NABTO_DEVICE_EC_OK) {
             printf("Cannot limit stream segments" NEWLINE);
+            nabto_device_stop(tunnel->device);
+            nm_iam_deinit(&iam);
             return false;
         }
     }
@@ -682,6 +707,9 @@ bool handle_main(struct args* args, struct tcp_tunnel* tunnel)
     // Create a copy of the state and print information from it.
     struct nm_iam_state* state = nm_iam_dump_state(&iam);
     if (state == NULL) {
+        printf("Failed to dump IAM state" NEWLINE);
+        nabto_device_stop(tunnel->device);
+        nm_iam_deinit(&iam);
         return false;
     }
 
@@ -785,6 +813,8 @@ bool handle_main(struct args* args, struct tcp_tunnel* tunnel)
             } else {
                 printf("Could not start the device %s" NEWLINE, nabto_device_error_get_message(ec));
             }
+            nabto_device_stop(tunnel->device);
+            nm_iam_deinit(&iam);
             return false;
         }
 

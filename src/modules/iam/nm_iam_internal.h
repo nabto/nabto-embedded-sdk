@@ -15,7 +15,7 @@ struct nm_iam_user* nm_iam_internal_find_user(struct nm_iam* iam, const char* us
 
 bool nm_iam_internal_load_state(struct nm_iam* iam, struct nm_iam_state* state);
 bool nm_iam_internal_load_configuration(struct nm_iam* iam, struct nm_iam_configuration* conf);
-void nm_iam_internal_init_coap_handlers(struct nm_iam* iam);
+NabtoDeviceError nm_iam_internal_init_coap_handlers(struct nm_iam* iam);
 void nm_iam_internal_deinit_coap_handlers(struct nm_iam* iam);
 void nm_iam_internal_stop(struct nm_iam* iam);
 

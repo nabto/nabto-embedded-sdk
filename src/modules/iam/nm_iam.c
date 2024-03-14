@@ -13,6 +13,7 @@
 
 
 #include <time.h>
+static const char* LOGM = "iam";
 
 void nm_iam_lock(struct nm_iam* iam) {
     nabto_device_threads_mutex_lock(iam->mutex);
@@ -64,18 +65,25 @@ bool nm_iam_init(struct nm_iam* iam, NabtoDevice* device, struct nn_log* logger)
         return false;
     }
 
-    nm_iam_internal_init_coap_handlers(iam);
+    if (nm_iam_internal_init_coap_handlers(iam) != NABTO_DEVICE_EC_OK) {
+        NN_LOG_ERROR(iam->logger, LOGM, "Failed to initialize IAM CoAP handlers");
+        return false;
+    }
     return true;
 }
 
 void nm_iam_deinit(struct nm_iam* iam)
 {
+    if (iam->mutex == NULL) {
+        return;
+    }
     nm_iam_lock(iam);
-    nm_iam_internal_deinit_coap_handlers(iam);
 
     nm_iam_auth_handler_deinit(&iam->authHandler);
     nm_iam_pake_handler_deinit(&iam->pakeHandler);
     nm_iam_connection_events_deinit(&iam->connEvents);
+
+    nm_iam_internal_deinit_coap_handlers(iam);
 
     nm_iam_state_free(iam->state);
     nm_iam_configuration_free(iam->conf);

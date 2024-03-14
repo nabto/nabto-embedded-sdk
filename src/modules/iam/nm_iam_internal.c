@@ -412,39 +412,46 @@ bool nm_iam_internal_load_state(struct nm_iam* iam, struct nm_iam_state* state)
     return true;
 }
 
+#define CHECK_EC(op) do { \
+    NabtoDeviceError ec = op; \
+    if (ec != NABTO_DEVICE_EC_OK) { \
+        return ec; \
+    } \
+}while(false); \
 
-void nm_iam_internal_init_coap_handlers(struct nm_iam* iam)
+NabtoDeviceError nm_iam_internal_init_coap_handlers(struct nm_iam* iam)
 {
-    nm_iam_pairing_get_init(&iam->coapPairingGetHandler, iam->device, iam);
-    nm_iam_pairing_password_open_init(&iam->coapPairingPasswordOpenPostHandler, iam->device, iam);
-    nm_iam_pairing_password_invite_init(&iam->coapPairingPasswordInvitePostHandler, iam->device, iam);
-    nm_iam_pairing_local_open_init(&iam->coapPairingLocalOpenPostHandler, iam->device, iam);
-    nm_iam_pairing_local_initial_init(&iam->coapPairingLocalInitialPostHandler, iam->device, iam);
+    CHECK_EC(nm_iam_pairing_get_init(&iam->coapPairingGetHandler, iam->device, iam))
+    CHECK_EC(nm_iam_pairing_password_open_init(&iam->coapPairingPasswordOpenPostHandler, iam->device, iam))
+    CHECK_EC(nm_iam_pairing_password_invite_init(&iam->coapPairingPasswordInvitePostHandler, iam->device, iam))
+    CHECK_EC(nm_iam_pairing_local_open_init(&iam->coapPairingLocalOpenPostHandler, iam->device, iam))
+    CHECK_EC(nm_iam_pairing_local_initial_init(&iam->coapPairingLocalInitialPostHandler, iam->device, iam))
 
-    nm_iam_get_notification_categories_init(&iam->coapIamNotificationCategoriesGetHandler, iam->device, iam);
-    nm_iam_send_fcm_test_init(&iam->coapIamSendFcmTestPostHandler, iam->device, iam);
+    CHECK_EC(nm_iam_get_notification_categories_init(&iam->coapIamNotificationCategoriesGetHandler, iam->device, iam))
+    CHECK_EC(nm_iam_send_fcm_test_init(&iam->coapIamSendFcmTestPostHandler, iam->device, iam))
 
-    nm_iam_get_me_init(&iam->coapIamMeGetHandler, iam->device, iam);
-    nm_iam_list_users_init(&iam->coapIamUsersGetHandler, iam->device, iam);
-    nm_iam_get_user_init(&iam->coapIamUsersUserGetHandler, iam->device, iam);
-    nm_iam_create_user_init(&iam->coapIamUsersUserCreateHandler, iam->device, iam);
-    nm_iam_delete_user_init(&iam->coapIamUsersUserDeleteHandler, iam->device, iam);
-    nm_iam_list_roles_init(&iam->coapIamRolesGetHandler, iam->device, iam);
-    nm_iam_set_user_role_init(&iam->coapIamUsersUserSetRoleHandler, iam->device, iam);
-    nm_iam_set_user_username_init(&iam->coapIamUsersUserSetUsernameHandler, iam->device, iam);
-    nm_iam_set_user_display_name_init(&iam->coapIamUsersUserSetDisplayNameHandler, iam->device, iam);
-    nm_iam_set_user_fingerprint_init(&iam->coapIamUsersUserSetFingerprintHandler, iam->device, iam);
-    nm_iam_add_user_fingerprint_init(&iam->coapIamUsersUserAddFingerprintHandler, iam->device, iam);
-    nm_iam_delete_user_fingerprint_init(&iam->coapIamUsersUserDeleteFingerprintHandler, iam->device, iam);
-    nm_iam_set_user_sct_init(&iam->coapIamUsersUserSetSctHandler, iam->device, iam);
-    nm_iam_set_user_password_init(&iam->coapIamUsersUserSetPasswordHandler, iam->device, iam);
-    nm_iam_set_user_fcm_token_init(&iam->coapIamUsersUserSetFcmTokenHandler, iam->device, iam);
-    nm_iam_set_user_notification_categories_init(&iam->coapIamUsersUserSetNotificationCategoriesHandler,
-                                                 iam->device, iam);
-    nm_iam_set_user_oauth_subject_init(&iam->coapIamUsersUserSetOauthSubjectHandler, iam->device, iam);
-    nm_iam_settings_get_init(&iam->coapIamSettingsGetHandler, iam->device, iam);
-    nm_iam_settings_set_init(&iam->coapIamSettingsSetHandler, iam->device, iam);
-    nm_iam_device_info_set_init(&iam->coapIamDeviceInfoSetHandler, iam->device, iam);
+    CHECK_EC(nm_iam_get_me_init(&iam->coapIamMeGetHandler, iam->device, iam))
+    CHECK_EC(nm_iam_list_users_init(&iam->coapIamUsersGetHandler, iam->device, iam))
+    CHECK_EC(nm_iam_get_user_init(&iam->coapIamUsersUserGetHandler, iam->device, iam))
+    CHECK_EC(nm_iam_create_user_init(&iam->coapIamUsersUserCreateHandler, iam->device, iam))
+    CHECK_EC(nm_iam_delete_user_init(&iam->coapIamUsersUserDeleteHandler, iam->device, iam))
+    CHECK_EC(nm_iam_list_roles_init(&iam->coapIamRolesGetHandler, iam->device, iam))
+    CHECK_EC(nm_iam_set_user_role_init(&iam->coapIamUsersUserSetRoleHandler, iam->device, iam))
+    CHECK_EC(nm_iam_set_user_username_init(&iam->coapIamUsersUserSetUsernameHandler, iam->device, iam))
+    CHECK_EC(nm_iam_set_user_display_name_init(&iam->coapIamUsersUserSetDisplayNameHandler, iam->device, iam))
+    CHECK_EC(nm_iam_set_user_fingerprint_init(&iam->coapIamUsersUserSetFingerprintHandler, iam->device, iam))
+    CHECK_EC(nm_iam_add_user_fingerprint_init(&iam->coapIamUsersUserAddFingerprintHandler, iam->device, iam))
+    CHECK_EC(nm_iam_delete_user_fingerprint_init(&iam->coapIamUsersUserDeleteFingerprintHandler, iam->device, iam))
+    CHECK_EC(nm_iam_set_user_sct_init(&iam->coapIamUsersUserSetSctHandler, iam->device, iam))
+    CHECK_EC(nm_iam_set_user_password_init(&iam->coapIamUsersUserSetPasswordHandler, iam->device, iam))
+    CHECK_EC(nm_iam_set_user_fcm_token_init(&iam->coapIamUsersUserSetFcmTokenHandler, iam->device, iam))
+    CHECK_EC(nm_iam_set_user_notification_categories_init(&iam->coapIamUsersUserSetNotificationCategoriesHandler,
+                                                 iam->device, iam))
+    CHECK_EC(nm_iam_set_user_oauth_subject_init(&iam->coapIamUsersUserSetOauthSubjectHandler, iam->device, iam))
+    CHECK_EC(nm_iam_settings_get_init(&iam->coapIamSettingsGetHandler, iam->device, iam))
+    CHECK_EC(nm_iam_settings_set_init(&iam->coapIamSettingsSetHandler, iam->device, iam))
+    CHECK_EC(nm_iam_device_info_set_init(&iam->coapIamDeviceInfoSetHandler, iam->device, iam))
+    return NABTO_DEVICE_EC_OK;
 }
 
 void nm_iam_internal_deinit_coap_handlers(struct nm_iam* iam)
