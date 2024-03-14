@@ -56,7 +56,7 @@ void save_iam_state(struct nm_fs* file, const char* filename, struct nm_iam_stat
     char* str = NULL;
     if (!nm_iam_serializer_state_dump_json(state, &str)) {
     } else {
-        enum nm_fs_error ec = file->write_file(file->impl, filename, str, strlen(str));
+        enum nm_fs_error ec = file->write_file(file->impl, filename, (uint8_t*)str, strlen(str));
         if (ec != NM_FS_OK) {
             // print error
         }
