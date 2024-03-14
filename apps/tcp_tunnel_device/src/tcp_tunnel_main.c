@@ -574,6 +574,94 @@ bool handle_main(struct args* args, struct tcp_tunnel* tunnel)
         return false;
     }
 
+    struct tcp_tunnel_service* service;
+    NN_VECTOR_FOREACH(&service, &tunnel->services)
+    {
+        ec = nabto_device_add_tcp_tunnel_service(tunnel->device, service->id, service->type, service->host, service->port);
+        if (ec != NABTO_DEVICE_EC_OK) {
+            printf("Cannot add tcp tunnel service id: %s, type: %s, host: %s, port: %d. One reason could be if '%s' is not an ipv4 address." NEWLINE, service->id, service->type, service->host, service->port, service->host);
+            return false;
+        }
+
+        struct nn_string_map_iterator it;
+        NN_STRING_MAP_FOREACH(it, &service->metadata)
+        {
+            const char* key = nn_string_map_key(&it);
+            const char* val = nn_string_map_value(&it);
+            ec = nabto_device_add_tcp_tunnel_service_metadata(tunnel->device, service->id, key, val);
+            if (ec != NABTO_DEVICE_EC_OK) {
+                printf("Cannot add tcp tunnel service meta data" NEWLINE);
+                return false;
+            }
+        }
+    }
+
+    char* deviceFingerprint;
+    nabto_device_get_device_fingerprint(tunnel->device, &deviceFingerprint);
+
+    if (args->randomPorts) {
+        ec = nabto_device_set_local_port(tunnel->device, 0);
+        if (ec != NABTO_DEVICE_EC_OK) {
+            printf("Cannot set local port" NEWLINE);
+            return false;
+        }
+        ec = nabto_device_set_p2p_port(tunnel->device, 0);
+        if (ec != NABTO_DEVICE_EC_OK) {
+            printf("Cannot set p2pport" NEWLINE);
+            return false;
+        }
+    } else {
+        if (args->localPort) {
+            ec = nabto_device_set_local_port(tunnel->device, args->localPort);
+            if (ec != NABTO_DEVICE_EC_OK) {
+                printf("Cannot set local port" NEWLINE);
+                return false;
+            }
+        }
+        if (args->p2pPort) {
+            ec = nabto_device_set_p2p_port(tunnel->device, args->p2pPort);
+            if (ec != NABTO_DEVICE_EC_OK) {
+                printf("Cannot set p2pport" NEWLINE);
+                return false;
+            }
+        }
+    }
+
+    if (args->maxConnections >= 0) {
+        ec = nabto_device_limit_connections(tunnel->device, (size_t)args->maxConnections);
+        if (ec != NABTO_DEVICE_EC_OK) {
+            printf("Cannot limit connections" NEWLINE);
+            return false;
+        }
+    }
+    if (args->maxStreams >= 0) {
+        ec = nabto_device_limit_streams(tunnel->device, (size_t)args->maxStreams);
+        if (ec != NABTO_DEVICE_EC_OK) {
+            printf("Cannot limit streams" NEWLINE);
+            return false;
+        }
+    }
+    if (args->maxStreamSegments >= 0) {
+        ec = nabto_device_limit_stream_segments(tunnel->device, (size_t)args->maxStreamSegments);
+        if (ec != NABTO_DEVICE_EC_OK) {
+            printf("Cannot limit stream segments" NEWLINE);
+            return false;
+        }
+    }
+
+    printf("######## Nabto TCP Tunnel Device ########" NEWLINE);
+    printf("# Product ID:        %s" NEWLINE, dc.productId);
+    printf("# Device ID:         %s" NEWLINE, dc.deviceId);
+    printf("# Fingerprint:       %s" NEWLINE, deviceFingerprint);
+    printf("# Version:           %s" NEWLINE, nabto_device_version());
+    if (!args->randomPorts) {
+        if (args->localPort) {
+            printf("# Local UDP Port:    %d" NEWLINE, args->localPort);
+        } else {
+            printf("# Local UDP Port:    %d" NEWLINE, 5592);
+        }
+    }
+
     struct nm_iam iam;
     if (!nm_iam_init(&iam, tunnel->device, &logger)) {
         printf("Could not initialize IAM module" NEWLINE);
@@ -596,113 +684,6 @@ bool handle_main(struct args* args, struct tcp_tunnel* tunnel)
         return false;
     }
     tunnel->tcpTunnelState = NULL; // transfer ownership to iam
-
-
-    struct tcp_tunnel_service* service;
-    NN_VECTOR_FOREACH(&service, &tunnel->services)
-    {
-        ec = nabto_device_add_tcp_tunnel_service(tunnel->device, service->id, service->type, service->host, service->port);
-        if (ec != NABTO_DEVICE_EC_OK) {
-            printf("Cannot add tcp tunnel service id: %s, type: %s, host: %s, port: %d. One reason could be if '%s' is not an ipv4 address." NEWLINE, service->id, service->type, service->host, service->port, service->host);
-            nabto_device_stop(tunnel->device);
-            nm_iam_deinit(&iam);
-            return false;
-        }
-
-        struct nn_string_map_iterator it;
-        NN_STRING_MAP_FOREACH(it, &service->metadata)
-        {
-            const char* key = nn_string_map_key(&it);
-            const char* val = nn_string_map_value(&it);
-            ec = nabto_device_add_tcp_tunnel_service_metadata(tunnel->device, service->id, key, val);
-            if (ec != NABTO_DEVICE_EC_OK) {
-                printf("Cannot add tcp tunnel service meta data" NEWLINE);
-                nabto_device_stop(tunnel->device);
-                nm_iam_deinit(&iam);
-                return false;
-            }
-        }
-    }
-
-    char* deviceFingerprint;
-    nabto_device_get_device_fingerprint(tunnel->device, &deviceFingerprint);
-
-    if (args->randomPorts) {
-        ec = nabto_device_set_local_port(tunnel->device, 0);
-        if (ec != NABTO_DEVICE_EC_OK) {
-            printf("Cannot set local port" NEWLINE);
-            nabto_device_stop(tunnel->device);
-            nm_iam_deinit(&iam);
-            return false;
-        }
-        ec = nabto_device_set_p2p_port(tunnel->device, 0);
-        if (ec != NABTO_DEVICE_EC_OK) {
-            printf("Cannot set p2pport" NEWLINE);
-            nabto_device_stop(tunnel->device);
-            nm_iam_deinit(&iam);
-            return false;
-        }
-    } else {
-        if (args->localPort) {
-            ec = nabto_device_set_local_port(tunnel->device, args->localPort);
-            if (ec != NABTO_DEVICE_EC_OK) {
-                printf("Cannot set local port" NEWLINE);
-                nabto_device_stop(tunnel->device);
-                nm_iam_deinit(&iam);
-                return false;
-            }
-        }
-        if (args->p2pPort) {
-            ec = nabto_device_set_p2p_port(tunnel->device, args->p2pPort);
-            if (ec != NABTO_DEVICE_EC_OK) {
-                printf("Cannot set p2pport" NEWLINE);
-                nabto_device_stop(tunnel->device);
-                nm_iam_deinit(&iam);
-                return false;
-            }
-        }
-    }
-
-    if (args->maxConnections >= 0) {
-        ec = nabto_device_limit_connections(tunnel->device, (size_t)args->maxConnections);
-        if (ec != NABTO_DEVICE_EC_OK) {
-            printf("Cannot limit connections" NEWLINE);
-            nabto_device_stop(tunnel->device);
-            nm_iam_deinit(&iam);
-            return false;
-        }
-    }
-    if (args->maxStreams >= 0) {
-        ec = nabto_device_limit_streams(tunnel->device, (size_t)args->maxStreams);
-        if (ec != NABTO_DEVICE_EC_OK) {
-            printf("Cannot limit streams" NEWLINE);
-            nabto_device_stop(tunnel->device);
-            nm_iam_deinit(&iam);
-            return false;
-        }
-    }
-    if (args->maxStreamSegments >= 0) {
-        ec = nabto_device_limit_stream_segments(tunnel->device, (size_t)args->maxStreamSegments);
-        if (ec != NABTO_DEVICE_EC_OK) {
-            printf("Cannot limit stream segments" NEWLINE);
-            nabto_device_stop(tunnel->device);
-            nm_iam_deinit(&iam);
-            return false;
-        }
-    }
-
-    printf("######## Nabto TCP Tunnel Device ########" NEWLINE);
-    printf("# Product ID:        %s" NEWLINE, dc.productId);
-    printf("# Device ID:         %s" NEWLINE, dc.deviceId);
-    printf("# Fingerprint:       %s" NEWLINE, deviceFingerprint);
-    printf("# Version:           %s" NEWLINE, nabto_device_version());
-    if (!args->randomPorts) {
-        if (args->localPort) {
-            printf("# Local UDP Port:    %d" NEWLINE, args->localPort);
-        } else {
-            printf("# Local UDP Port:    %d" NEWLINE, 5592);
-        }
-    }
 
     // Create a copy of the state and print information from it.
     struct nm_iam_state* state = nm_iam_dump_state(&iam);
