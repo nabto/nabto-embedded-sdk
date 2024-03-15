@@ -2,6 +2,31 @@
 
 ## [Unreleased]
 
+## [5.13.0] 2024-03-??
+
+### Added
+ * Experimental `nabto_device_get_attach_certificate_expiration()` function
+ * New file system abstraction used by examples to ease persistence on embedded targets. [Details](src/modules/file/README.md).
+ * Experimental functions for querying the basestation for ICE server credentials to use in WebRTC applications (`nabto_device_ice_servers_request_...()`).
+ * New virtual connections feature (in new [header file](include/nabto/nabto_device_virtual.h)) making it possible to create a client connection programmatically through the API. This is used to invoke normal CoAP endpoints and create Nabto Streams through a WebRTC data channel.
+ * Added option to build with mbedtls version 3. We expect version 3 to become default in the next release.
+ * IAM users now have an `oauthSubject` field. (and accompanying get/set/limiting functions and CoAP endpoints)
+ * New IAM function `nm_iam_authorize_connection()` which can be used to manually mark a connection as authorized as a specified IAM user. This is used for authorizing using oauth.
+
+### Bug Fixes
+ * IAM passwords now have a minimum length since clients could easily make the mistake of setting the password to the empty string with the intent of removing the password.
+ * Using mallocfail revealed some places where we did not handle allocation errors properly, fixed these.
+
+### Changed
+ * An IAM user can now have multiple fingerprints. This results in the following changes:
+ * * New CoAP endpoint `PUT /iam/users/:username/fingerprints/:fingerprint` to add a fingerprint to a user
+ * * New CoAP endpoint `DELETE /iam/users/:username/fingerprints/:fingerprint` to remove a fingerprint from a user
+ * * The `PUT /iam/users/:username/fingerprint` endpoint is now deprecated. If used, it will now set/remove the first fingerprint on a user.
+ * * Fingerprints now has a `FingerprintName` to identify which device it belongs to. This is added as an optional field in existing pairing CoAP endpoints.
+ * * The IAM state serializer now has a new JSON format for an IAM user. This means the resulting JSON objects will have their `Version` field bumped to `2`. The serializer still understands `Version: 1` and will translate to the new format. This means running a new version of eg. the TCP Tunnel Device application will overwrite the state with the new format breaking the state for old applications.
+ * If a connection is password authenticated as an IAM user, any action made on the connection will now be authenticated as that user. (previously, only password based pairing accepted password based authentication.)
+
+
 ## [5.12.0] 2022-12-16
 
 ### Added
