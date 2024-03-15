@@ -265,7 +265,7 @@ nabto_coap_code coap_method_to_code(nabto_coap_method method) {
         case NABTO_COAP_METHOD_DELETE: return NABTO_COAP_CODE_DELETE;
     }
     // Should hopefully not happen, since all possibilities should be covered in switch
-    return NABTO_COAP_METHOD_GET;
+    return NABTO_COAP_CODE_GET;
 }
 
 nabto_coap_error nc_coap_server_add_resource(struct nc_coap_server_context* server, nabto_coap_method method, const char** segments, nc_coap_server_resource_handler handler, void* userData, struct nc_coap_server_resource** resource)
@@ -495,7 +495,7 @@ nabto_coap_method method, const char** segments, void* payload, size_t payloadSi
     nn_string_map_init(&virReq->parameters, np_allocator_get());
     nc_virtual_connection_add_coap_request(conn->connectionImplCtx, req);
 
-    struct nc_coap_server_resource* resource =  nabto_coap_server_find_resource_data(&ctx->server, method, segments, &virReq->parameters);
+    struct nc_coap_server_resource* resource =  nabto_coap_server_find_resource_data(&ctx->server, coap_method_to_code(method), segments, &virReq->parameters);
     if (resource == NULL) {
         virReq->serverFreed = true;
         nc_coap_server_send_error_response(req, NABTO_COAP_CODE_NOT_FOUND, "Resource not found");

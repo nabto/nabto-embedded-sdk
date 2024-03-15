@@ -225,7 +225,7 @@ nabto_device_virtual_coap_request_new(NabtoDeviceVirtualConnection* connection, 
 
     virReq->connection = conn;
     virReq->responseReady = false;
-    virReq->method = method;
+    virReq->method = nabto_device_coap_method_to_code(method);
     virReq->path = nn_strdup(path, np_allocator_get());
     virReq->apiReq.dev = conn->dev;
     virReq->apiReq.connectionRef = conn->connection->connectionRef;
@@ -304,7 +304,7 @@ void NABTO_DEVICE_API nabto_device_virtual_coap_request_execute(NabtoDeviceVirtu
     nabto_device_future_reset(fut);
 
     req->future = fut;
-    req->apiReq.req = nc_coap_server_create_virtual_request(&dev->core.coapServer, req->connection->connection, nabto_device_coap_method_to_code(req->method), req->segments, req->payload, req->payloadSize, req->contentFormat, &response_handler, req);
+    req->apiReq.req = nc_coap_server_create_virtual_request(&dev->core.coapServer, req->connection->connection, req->method, req->segments, req->payload, req->payloadSize, req->contentFormat, &response_handler, req);
     if (req->apiReq.req == NULL) {
         nabto_device_future_resolve(fut, NABTO_DEVICE_EC_OUT_OF_MEMORY);
     }

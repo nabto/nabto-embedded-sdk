@@ -49,9 +49,8 @@ class Spake2Client {
                  uint8_t* clientFp, uint8_t* deviceFp)
         : clientFp_(clientFp, clientFp+32), deviceFp_(deviceFp, deviceFp+32)
     {
-        int status = 0;
         mbedtls_ecp_group_init(&grp_);
-        status |= mbedtls_ecp_group_load(&grp_, MBEDTLS_ECP_DP_SECP256R1);
+        mbedtls_ecp_group_load(&grp_, MBEDTLS_ECP_DP_SECP256R1);
         mbedtls_mpi_init(&x_);
         mbedtls_mpi_init(&w_);
         mbedtls_ecp_point_init(&M_);
@@ -60,17 +59,15 @@ class Spake2Client {
         mbedtls_ecp_point_init(&T_);
         mbedtls_ecp_point_init(&S_);
 
-        status |=
-            mbedtls_ecp_point_read_binary(&grp_, &M_, Mdata, sizeof(Mdata));
-        status |=
-            mbedtls_ecp_point_read_binary(&grp_, &N_, Ndata, sizeof(Ndata));
+        mbedtls_ecp_point_read_binary(&grp_, &M_, Mdata, sizeof(Mdata));
+        mbedtls_ecp_point_read_binary(&grp_, &N_, Ndata, sizeof(Ndata));
 
         uint8_t wHash[32];
-        status |= sha256(
+        sha256(
             reinterpret_cast<const uint8_t*>(password.data()), password.size(),
             wHash);
 
-        status |= mbedtls_mpi_read_binary(&w_, wHash, 32);
+        mbedtls_mpi_read_binary(&w_, wHash, 32);
     }
 
     ~Spake2Client()
