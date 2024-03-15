@@ -221,8 +221,10 @@ size_t nm_iam_cbor_encode_user(struct nm_iam_user* user, void* buffer, size_t bu
             cbor_encoder_create_map(&array, &fpMap, CborIndefiniteLength);
             cbor_encode_text_stringz(&fpMap, "Fingerprint");
             cbor_encode_text_stringz(&fpMap, fp->fingerprint);
-            cbor_encode_text_stringz(&fpMap, "Name");
-            cbor_encode_text_stringz(&fpMap, fp->name);
+            if (fp->name != NULL) {
+                cbor_encode_text_stringz(&fpMap, "Name");
+                cbor_encode_text_stringz(&fpMap, fp->name);
+            }
             cbor_encoder_close_container(&array, &fpMap);
         }
         cbor_encoder_close_container(&map, &array);
