@@ -215,12 +215,12 @@ static bool parse_args(int argc, char** argv, struct args* args)
 
     const char* localPort = NULL;
     if (gopt_arg(options, OPTION_SPECIFIC_LOCAL_PORT, &localPort)) {
-        args->localPort = atoi(localPort);
+        args->localPort = (uint16_t)atoi(localPort);
     }
 
     const char* p2pPort = NULL;
     if (gopt_arg(options, OPTION_SPECIFIC_P2P_PORT, &p2pPort)) {
-        args->p2pPort = atoi(p2pPort);
+        args->p2pPort = (uint16_t)atoi(p2pPort);
     }
 
     if (gopt(options, OPTION_INIT)) {
@@ -671,7 +671,7 @@ bool handle_main(struct args* args, struct tcp_tunnel* tunnel)
         nm_iam_set_state_changed_callback(&iam, iam_user_changed, tunnel);
 
         nabto_device_start(tunnel->device, tunnel->startFuture);
-        NabtoDeviceError ec = nabto_device_future_wait(tunnel->startFuture);
+        ec = nabto_device_future_wait(tunnel->startFuture);
         if (ec != NABTO_DEVICE_EC_OK) {
             if (ec == NABTO_DEVICE_EC_ADDRESS_IN_USE) {
                 printf("The device could not be started as one or more udp sockets" NEWLINE);

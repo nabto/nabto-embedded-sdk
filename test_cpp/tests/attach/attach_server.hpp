@@ -77,7 +77,7 @@ class CoapError {
             std::vector<uint8_t> cbor = nlohmann::json::to_cbor(root);
             response->setPayload(cbor);
         }
-        response->setCode(coapErrorCode_);
+        response->setCode((uint16_t)coapErrorCode_);
     }
 
  private:

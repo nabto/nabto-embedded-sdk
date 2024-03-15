@@ -162,7 +162,7 @@ class Spake2Client {
 
     void encode(std::vector<uint8_t> value, std::vector<uint8_t>& out)
     {
-        uint32_t val = value.size();
+        uint32_t val = (uint32_t)value.size();
         uint8_t b0 = (uint8_t)(val >> 24);
         uint8_t b1 = (uint8_t)(val >> 16);
         uint8_t b2 = (uint8_t)(val >> 8);
