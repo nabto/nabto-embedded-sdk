@@ -257,8 +257,18 @@ void resource_callback(struct nabto_coap_server_request* request, void* userData
     res->handler(req, res->userData);
 }
 
+nabto_coap_code coap_method_to_code(nabto_coap_method method) {
+    switch(method) {
+        case NABTO_COAP_METHOD_GET: return NABTO_COAP_CODE_GET;
+        case NABTO_COAP_METHOD_POST: return NABTO_COAP_CODE_POST;
+        case NABTO_COAP_METHOD_PUT: return NABTO_COAP_CODE_PUT;
+        case NABTO_COAP_METHOD_DELETE: return NABTO_COAP_CODE_DELETE;
+    }
+    // Should hopefully not happen, since all possibilities should be covered in switch
+    return NABTO_COAP_CODE_GET;
+}
 
-nabto_coap_error nc_coap_server_add_resource(struct nc_coap_server_context* server, nabto_coap_code method, const char** segments, nc_coap_server_resource_handler handler, void* userData, struct nc_coap_server_resource** resource)
+nabto_coap_error nc_coap_server_add_resource(struct nc_coap_server_context* server, nabto_coap_method method, const char** segments, nc_coap_server_resource_handler handler, void* userData, struct nc_coap_server_resource** resource)
 {
     *resource = np_calloc(1, sizeof(struct nc_coap_server_resource));
     if (*resource == NULL) {
@@ -268,7 +278,7 @@ nabto_coap_error nc_coap_server_add_resource(struct nc_coap_server_context* serv
     (*resource)->userData = userData;
     (*resource)->device = server->device;
     nn_llist_init(&(*resource)->virtualRequests);
-    return nabto_coap_server_add_resource(&server->server, method, segments, &resource_callback, *resource, &(*resource)->resource);
+    return nabto_coap_server_add_resource(&server->server, coap_method_to_code(method), segments, &resource_callback, *resource, &(*resource)->resource);
 }
 
 void nc_coap_server_remove_resource(struct nc_coap_server_resource* resource)
@@ -307,7 +317,7 @@ void nc_coap_server_response_set_code(struct nc_coap_server_request* request, na
         request->virRequest->respStatusCode = code;
         return;
     }
-    return nabto_coap_server_response_set_code(request->request, code);
+    nabto_coap_server_response_set_code(request->request, code);
 }
 void nc_coap_server_response_set_code_human(struct nc_coap_server_request* request, uint16_t humanCode)
 {
@@ -317,7 +327,7 @@ void nc_coap_server_response_set_code_human(struct nc_coap_server_request* reque
         request->virRequest->respStatusCode = (nabto_coap_code)(NABTO_COAP_CODE(klass, code));
         return;
     }
-    return nabto_coap_server_response_set_code_human(request->request, humanCode);
+    nabto_coap_server_response_set_code_human(request->request, humanCode);
 }
 
 nabto_coap_error nc_coap_server_response_set_payload(struct nc_coap_server_request* request, const void* data, size_t dataSize)
@@ -340,7 +350,7 @@ void nc_coap_server_response_set_content_format(struct nc_coap_server_request* r
         request->virRequest->respContentFormat = format;
         return;
     }
-    return nabto_coap_server_response_set_content_format(request->request, format);
+    nabto_coap_server_response_set_content_format(request->request, format);
 }
 
 nabto_coap_error nc_coap_server_response_ready(struct nc_coap_server_request* request)
@@ -456,7 +466,7 @@ const char* nc_coap_server_request_get_parameter(struct nc_coap_server_request* 
 
 
 struct nc_coap_server_request* nc_coap_server_create_virtual_request(struct nc_coap_server_context* ctx, struct nc_connection* conn,
-nabto_coap_code method, const char** segments, void* payload, size_t payloadSize, uint16_t contentFormat, nc_coap_server_virtual_response_handler handler, void* userData)
+nabto_coap_method method, const char** segments, void* payload, size_t payloadSize, uint16_t contentFormat, nc_coap_server_virtual_response_handler handler, void* userData)
 {
     struct nc_coap_server_request* req = np_calloc(1, sizeof(struct nc_coap_server_request));
     struct nc_coap_server_virtual_request* virReq = np_calloc(1, sizeof(struct nc_coap_server_virtual_request));
@@ -485,7 +495,7 @@ nabto_coap_code method, const char** segments, void* payload, size_t payloadSize
     nn_string_map_init(&virReq->parameters, np_allocator_get());
     nc_virtual_connection_add_coap_request(conn->connectionImplCtx, req);
 
-    struct nc_coap_server_resource* resource =  nabto_coap_server_find_resource_data(&ctx->server, method, segments, &virReq->parameters);
+    struct nc_coap_server_resource* resource =  nabto_coap_server_find_resource_data(&ctx->server, coap_method_to_code(method), segments, &virReq->parameters);
     if (resource == NULL) {
         virReq->serverFreed = true;
         nc_coap_server_send_error_response(req, NABTO_COAP_CODE_NOT_FOUND, "Resource not found");
@@ -538,7 +548,7 @@ uint16_t nc_coap_server_response_get_code_human(struct nc_coap_server_request* r
     if (!request->isVirtual ||
         request->virRequest == NULL ||
         !request->virRequest->responseReady) {
-        return -1;
+        return 0;
     } else {
         uint8_t compactCode = request->virRequest->respStatusCode;
         return ((compactCode >> 5)) * 100 + (compactCode & 0x1f);

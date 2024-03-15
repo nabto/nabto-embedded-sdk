@@ -190,16 +190,16 @@ const char* NABTO_DEVICE_API nabto_device_coap_request_get_parameter(NabtoDevice
  *******************************************/
 
 
-nabto_coap_code nabto_device_coap_method_to_code(NabtoDeviceCoapMethod method)
+nabto_coap_method nabto_device_coap_method_to_code(NabtoDeviceCoapMethod method)
 {
     switch(method) {
-        case NABTO_DEVICE_COAP_GET: return NABTO_COAP_CODE_GET;
-        case NABTO_DEVICE_COAP_POST: return NABTO_COAP_CODE_POST;
-        case NABTO_DEVICE_COAP_PUT: return NABTO_COAP_CODE_PUT;
-        case NABTO_DEVICE_COAP_DELETE: return NABTO_COAP_CODE_DELETE;
+        case NABTO_DEVICE_COAP_GET: return NABTO_COAP_METHOD_GET;
+        case NABTO_DEVICE_COAP_POST: return NABTO_COAP_METHOD_POST;
+        case NABTO_DEVICE_COAP_PUT: return NABTO_COAP_METHOD_PUT;
+        case NABTO_DEVICE_COAP_DELETE: return NABTO_COAP_METHOD_DELETE;
     }
     // Should hopefully not happen, since all possibilities should be covered in switch
-    return NABTO_COAP_CODE_GET;
+    return NABTO_COAP_METHOD_GET;
 }
 
 np_error_code nabto_device_coap_listener_callback(const np_error_code ec, struct nabto_device_future* future, void* eventData, void* listenerData)

@@ -23,21 +23,21 @@ np_error_code nm_tcp_tunnel_coap_init(struct nm_tcp_tunnels* tunnels, struct nc_
 {
     nabto_coap_error err;
 
-    err = nc_coap_server_add_resource(server, NABTO_COAP_CODE_GET,
+    err = nc_coap_server_add_resource(server, NABTO_COAP_METHOD_GET,
                                          (const char*[]){"tcp-tunnels", "services", NULL},
                                          list_services, tunnels, &tunnels->coapListServices);
     if (err != NABTO_COAP_ERROR_OK) {
         nm_tcp_tunnel_coap_deinit(tunnels);
         return nc_coap_error_to_core(err);
     }
-    err = nc_coap_server_add_resource(server, NABTO_COAP_CODE_GET,
+    err = nc_coap_server_add_resource(server, NABTO_COAP_METHOD_GET,
                                          (const char*[]){"tcp-tunnels", "services", "{id}", NULL},
                                          get_service, tunnels, &tunnels->coapGetService);
     if (err != NABTO_COAP_ERROR_OK) {
         nm_tcp_tunnel_coap_deinit(tunnels);
         return nc_coap_error_to_core(err);
     }
-    err = nc_coap_server_add_resource(server, NABTO_COAP_CODE_GET,
+    err = nc_coap_server_add_resource(server, NABTO_COAP_METHOD_GET,
                                          (const char*[]){"tcp-tunnels", "connect", "{id}", NULL},
                                          get_connect, tunnels, &tunnels->coapGetConnect);
     if (err != NABTO_COAP_ERROR_OK) {

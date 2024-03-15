@@ -14,7 +14,7 @@ size_t fromHex(const std::string str, uint8_t* data)
     size_t i;
     int value;
     for (i = 0; i < dataLength && sscanf(str.data() + i * 2, "%2x", &value) == 1; i++) {
-        data[i] = value;
+        data[i] = (uint8_t)value;
     }
     return dataLength;
 }

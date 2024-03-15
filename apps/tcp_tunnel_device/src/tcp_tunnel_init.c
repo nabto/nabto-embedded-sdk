@@ -145,7 +145,7 @@ bool create_state_interactive_custom(struct nm_fs* fsImpl, const char* file) {
     printf("[1]: Guest         - allowed pairing and manage own user actions [Default]" NEWLINE);
     printf("[2]: Standard      - Guest actions and Tunnelling" NEWLINE);
     printf("[3]: Administrator - Standard actions and management of users and pairing modes" NEWLINE);
-    pickedRole = prompt_uint16(NULL, 3);
+    pickedRole = (uint8_t)prompt_uint16(NULL, 3);
 
     struct nm_iam_state* state = nm_iam_state_new();
 
@@ -337,9 +337,9 @@ bool tcp_tunnel_demo_config(struct tcp_tunnel* tcpTunnel)
         const char* message = "Enter a valid number";
         uint8_t choice;
         if (numServices == 0) {
-            choice = prompt_uint16_default(message, 3, 1);
+            choice = (uint8_t)prompt_uint16_default(message, 3, 1);
         } else {
-            choice = prompt_uint16_default(message, 3, 0);
+            choice = (uint8_t)prompt_uint16_default(message, 3, 0);
         }
 
 

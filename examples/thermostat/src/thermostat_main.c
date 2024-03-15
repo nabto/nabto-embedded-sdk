@@ -16,7 +16,7 @@
 #include <stdio.h>
 
 #if defined(_WIN32)
-#include <direct.h>´
+#include <direct.h>
 #endif
 
 #if defined(HAVE_UNISTD_H)

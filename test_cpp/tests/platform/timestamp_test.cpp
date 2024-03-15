@@ -35,9 +35,9 @@ BOOST_DATA_TEST_CASE(difference, nabto::test::TestPlatformFactory::multi(), tps)
     uint32_t s2 = 1;
     uint32_t s3 = INT32_MAX;
     uint32_t s4 = INT32_MAX; s4 += 42;
-    uint32_t s5 = INT32_MIN;
-    uint32_t s6 = INT32_MIN; s6 -= 42;
-    uint32_t s7 = -1;
+    uint32_t s5 = (uint32_t)INT32_MIN;
+    uint32_t s6 = (uint32_t)INT32_MIN; s6 -= 42;
+    uint32_t s7 = (uint32_t)-1;
 
     BOOST_TEST(np_timestamp_difference(s1, s1) >= 0);
     BOOST_TEST(np_timestamp_difference(s1, s2) < 0);

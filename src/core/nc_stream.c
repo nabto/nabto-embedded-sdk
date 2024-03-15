@@ -358,11 +358,13 @@ void nc_stream_async_accept(struct nc_stream_context* stream, struct np_completi
 {
     NABTO_LOG_TRACE(LOG, "nc_stream_async_accept");
     if (stream->stopped || stream->virt.stopped) {
-        return np_completion_event_resolve(acceptEv, NABTO_EC_STOPPED);
+        np_completion_event_resolve(acceptEv, NABTO_EC_STOPPED);
+        return;
     }
 
     if (stream->acceptEv != NULL) {
-        return np_completion_event_resolve(acceptEv, NABTO_EC_OPERATION_IN_PROGRESS);
+        np_completion_event_resolve(acceptEv, NABTO_EC_OPERATION_IN_PROGRESS);
+        return;
     }
     stream->acceptEv = acceptEv;
     if (stream->isVirtual) {
@@ -378,15 +380,18 @@ void nc_stream_async_read_all(struct nc_stream_context* stream, void* buffer, si
 {
     NABTO_LOG_TRACE(LOG, "nc_stream_async_read_all");
     if (stream->stopped || stream->virt.stopped) {
-        return np_completion_event_resolve(readAllEv, NABTO_EC_STOPPED);
+        np_completion_event_resolve(readAllEv, NABTO_EC_STOPPED);
+        return;
     }
 
     if (stream->readAllEv != NULL || stream->readSomeEv != NULL) {
-        return np_completion_event_resolve(readAllEv, NABTO_EC_OPERATION_IN_PROGRESS);
+        np_completion_event_resolve(readAllEv, NABTO_EC_OPERATION_IN_PROGRESS);
+        return;
     }
 
     if (stream->isVirtual && stream->virt.closed) {
-        return np_completion_event_resolve(readAllEv, NABTO_EC_EOF);
+        np_completion_event_resolve(readAllEv, NABTO_EC_EOF);
+        return;
     }
     stream->readAllEv = readAllEv;
 
@@ -402,17 +407,20 @@ void nc_stream_async_read_some(struct nc_stream_context* stream, void* buffer, s
 {
     NABTO_LOG_TRACE(LOG, "nc_stream_async_read_some");
     if (stream->stopped || stream->virt.stopped) {
-        return np_completion_event_resolve(readSomeEv, NABTO_EC_STOPPED);
+        np_completion_event_resolve(readSomeEv, NABTO_EC_STOPPED);
+        return;
     }
 
     if (stream->readAllEv != NULL || stream->readSomeEv != NULL) {
-        return np_completion_event_resolve(readSomeEv, NABTO_EC_OPERATION_IN_PROGRESS);
+        np_completion_event_resolve(readSomeEv, NABTO_EC_OPERATION_IN_PROGRESS);
+        return;
     }
 
     if (stream->isVirtual && stream->virt.writeEv == NULL && stream->virt.closed) {
         // If virtual, and we are not currently in virtual write, and virtual was closed: send EOF.
         // If we are in virtual write, it should resolve before we send EOF.
-        return np_completion_event_resolve(readSomeEv, NABTO_EC_EOF);
+        np_completion_event_resolve(readSomeEv, NABTO_EC_EOF);
+        return;
     }
 
     stream->readSomeEv = readSomeEv;
@@ -429,15 +437,18 @@ void nc_stream_async_write(struct nc_stream_context* stream, const void* buffer,
 {
     NABTO_LOG_TRACE(LOG, "nc_stream_async_write");
     if (stream->stopped || stream->virt.stopped) {
-        return np_completion_event_resolve(writeEv, NABTO_EC_STOPPED);
+        np_completion_event_resolve(writeEv, NABTO_EC_STOPPED);
+        return;
     }
 
     if (stream->writeEv != NULL) {
-        return np_completion_event_resolve(writeEv, NABTO_EC_OPERATION_IN_PROGRESS);
+        np_completion_event_resolve(writeEv, NABTO_EC_OPERATION_IN_PROGRESS);
+        return;
     }
 
     if (stream->closed) {
-        return np_completion_event_resolve(writeEv, NABTO_EC_CLOSED);
+        np_completion_event_resolve(writeEv, NABTO_EC_CLOSED);
+        return;
     }
     stream->writeEv = writeEv;
 
@@ -454,11 +465,13 @@ void nc_stream_async_write(struct nc_stream_context* stream, const void* buffer,
 void nc_stream_async_close(struct nc_stream_context* stream, struct np_completion_event* closeEv)
 {
     if (stream->stopped || stream->virt.stopped) {
-        return np_completion_event_resolve(closeEv, NABTO_EC_STOPPED);
+        np_completion_event_resolve(closeEv, NABTO_EC_STOPPED);
+        return;
     }
 
     if (stream->closeEv != NULL) {
-        return np_completion_event_resolve(closeEv, NABTO_EC_OPERATION_IN_PROGRESS);
+        np_completion_event_resolve(closeEv, NABTO_EC_OPERATION_IN_PROGRESS);
+        return;
     }
     stream->closeEv = closeEv;
     stream->closed = true;

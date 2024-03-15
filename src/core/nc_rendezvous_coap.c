@@ -17,7 +17,7 @@ np_error_code nc_rendezvous_coap_init(struct nc_rendezvous_coap_context* context
     memset(context, 0, sizeof(struct nc_rendezvous_coap_context));
     context->coap = coap;
     context->rendezvous = rendezvous;
-    nabto_coap_error err = nc_coap_server_add_resource(coap, NABTO_COAP_CODE_POST,
+    nabto_coap_error err = nc_coap_server_add_resource(coap, NABTO_COAP_METHOD_POST,
                                                           (const char*[]){"p2p", "rendezvous", NULL},
                                                           &nc_rendezvous_handle_coap_p2p_rendezvous, context,
                                                           &context->resource);

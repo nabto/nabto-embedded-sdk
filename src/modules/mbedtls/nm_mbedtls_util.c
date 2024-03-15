@@ -327,5 +327,5 @@ int nm_mbedtls_recv_data(mbedtls_ssl_context *ssl, uint8_t** data)
         totalRecvLength += ret;
     }
     *data = recvBuffer;
-    return totalRecvLength;
+    return (int)totalRecvLength;
 }
