@@ -386,7 +386,7 @@ BOOST_AUTO_TEST_CASE(coap_delete_fingerprint, *boost::unit_test::timeout(180))
 
     std::string path = "/iam/users/testuser/fingerprints/" + nabto::test::aFp;
     ctx.createCoapRequest(NABTO_DEVICE_COAP_DELETE, path);
-    ctx.executeCoap(204);
+    ctx.executeCoap(202);
 
     BOOST_TEST(!nm_iam_check_access(&ctx.iam_, ctx.ref_, "Admin:foo", NULL));
 
