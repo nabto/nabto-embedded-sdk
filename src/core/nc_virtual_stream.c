@@ -159,13 +159,16 @@ void nc_virtual_stream_client_async_write(struct nc_stream_context* stream, cons
 {
     NABTO_LOG_TRACE(LOG, "nc_virtual_stream_client_async_write");
     if (stream->stopped || stream->virt.stopped) {
-        return np_completion_event_resolve(writeEv, NABTO_EC_STOPPED);
+        np_completion_event_resolve(writeEv, NABTO_EC_STOPPED);
+        return;
     }
     if (stream->virt.closed) {
-        return np_completion_event_resolve(writeEv, NABTO_EC_CLOSED);
+        np_completion_event_resolve(writeEv, NABTO_EC_CLOSED);
+        return;
     }
     if (stream->virt.writeEv != NULL) {
-        return np_completion_event_resolve(writeEv, NABTO_EC_OPERATION_IN_PROGRESS);
+        np_completion_event_resolve(writeEv, NABTO_EC_OPERATION_IN_PROGRESS);
+        return;
     }
     stream->virt.writeEv = writeEv;
     stream->virt.writeBuffer = buffer;
@@ -241,10 +244,12 @@ void nc_virtual_stream_client_async_read_all(struct nc_stream_context* stream, v
 {
     NABTO_LOG_TRACE(LOG, "nc_virtual_stream_client_async_read_all");
     if (stream->virt.readAllEv != NULL || stream->virt.readSomeEv != NULL) {
-        return np_completion_event_resolve(readEv, NABTO_EC_OPERATION_IN_PROGRESS);
+        np_completion_event_resolve(readEv, NABTO_EC_OPERATION_IN_PROGRESS);
+        return;
     }
     if (stream->closed) {
-        return np_completion_event_resolve(readEv, NABTO_EC_EOF);
+        np_completion_event_resolve(readEv, NABTO_EC_EOF);
+        return;
     }
     stream->virt.readAllEv = readEv;
     stream->virt.readBuffer = buffer;
@@ -259,10 +264,12 @@ void nc_virtual_stream_client_async_read_some(struct nc_stream_context* stream, 
 {
     NABTO_LOG_TRACE(LOG, "nc_virtual_stream_client_async_read_some");
     if (stream->virt.readAllEv != NULL || stream->virt.readSomeEv != NULL) {
-        return np_completion_event_resolve(readEv, NABTO_EC_OPERATION_IN_PROGRESS);
+        np_completion_event_resolve(readEv, NABTO_EC_OPERATION_IN_PROGRESS);
+        return;
     }
     if (stream->closed) {
-        return np_completion_event_resolve(readEv, NABTO_EC_EOF);
+        np_completion_event_resolve(readEv, NABTO_EC_EOF);
+        return;
     }
     stream->virt.readSomeEv = readEv;
     stream->virt.readBuffer = buffer;

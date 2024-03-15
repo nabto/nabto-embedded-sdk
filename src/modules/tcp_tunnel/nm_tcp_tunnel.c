@@ -91,7 +91,7 @@ np_error_code nm_tcp_tunnel_limit_concurrent_connections_by_type(struct nm_tcp_t
         // handle it as unlimited
         return NABTO_EC_OK;
     }
-    struct nn_string_int_map_iterator it = nn_string_int_map_insert(&tunnels->limitsByType, type, limit);
+    struct nn_string_int_map_iterator it = nn_string_int_map_insert(&tunnels->limitsByType, type, (int)limit);
     if (nn_string_int_map_is_end(&it)) {
         return NABTO_EC_OUT_OF_MEMORY;
     }

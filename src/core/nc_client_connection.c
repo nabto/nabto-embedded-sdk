@@ -94,7 +94,7 @@ np_error_code nc_client_connection_start(struct nc_client_connection* connection
     // Remove connection ID before passing packet to DTLS
     uint8_t* start = buffer + 16;
     bufferSize = bufferSize-16;
-    ec = pl->dtlsS.handle_packet(pl, connection->dtls, connection->currentChannel.channelId, start, bufferSize);
+    ec = pl->dtlsS.handle_packet(pl, connection->dtls, connection->currentChannel.channelId, start, (uint16_t)bufferSize);
 #endif
     return ec;
 }

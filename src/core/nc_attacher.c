@@ -439,7 +439,8 @@ void handle_state_change(struct nc_attach_context* ctx)
                 if (ec != NABTO_EC_OK) {
                     NABTO_LOG_ERROR(LOG, "Dtls connection creation failed");
                     ctx->state = NC_ATTACHER_STATE_RETRY_WAIT;
-                    return handle_state_change(ctx);
+                    handle_state_change(ctx);
+                    return;
                 }
             ctx->pl->dtlsC.connect(ctx->dtls);
         }

@@ -317,7 +317,7 @@ void nc_coap_server_response_set_code(struct nc_coap_server_request* request, na
         request->virRequest->respStatusCode = code;
         return;
     }
-    return nabto_coap_server_response_set_code(request->request, code);
+    nabto_coap_server_response_set_code(request->request, code);
 }
 void nc_coap_server_response_set_code_human(struct nc_coap_server_request* request, uint16_t humanCode)
 {
@@ -327,7 +327,7 @@ void nc_coap_server_response_set_code_human(struct nc_coap_server_request* reque
         request->virRequest->respStatusCode = (nabto_coap_code)(NABTO_COAP_CODE(klass, code));
         return;
     }
-    return nabto_coap_server_response_set_code_human(request->request, humanCode);
+    nabto_coap_server_response_set_code_human(request->request, humanCode);
 }
 
 nabto_coap_error nc_coap_server_response_set_payload(struct nc_coap_server_request* request, const void* data, size_t dataSize)
@@ -350,7 +350,7 @@ void nc_coap_server_response_set_content_format(struct nc_coap_server_request* r
         request->virRequest->respContentFormat = format;
         return;
     }
-    return nabto_coap_server_response_set_content_format(request->request, format);
+    nabto_coap_server_response_set_content_format(request->request, format);
 }
 
 nabto_coap_error nc_coap_server_response_ready(struct nc_coap_server_request* request)
@@ -548,7 +548,7 @@ uint16_t nc_coap_server_response_get_code_human(struct nc_coap_server_request* r
     if (!request->isVirtual ||
         request->virRequest == NULL ||
         !request->virRequest->responseReady) {
-        return -1;
+        return 0;
     } else {
         uint8_t compactCode = request->virRequest->respStatusCode;
         return ((compactCode >> 5)) * 100 + (compactCode & 0x1f);

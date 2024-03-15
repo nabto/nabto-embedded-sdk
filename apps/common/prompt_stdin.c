@@ -6,7 +6,7 @@
 static void to_lowercase(char* buffer, size_t size)
 {
     for (int i = 0; i < size && buffer[i] != 0; i++) {
-        buffer[i] = tolower(buffer[i]);
+        buffer[i] = (char)tolower(buffer[i]);
     }
 }
 
@@ -30,7 +30,7 @@ bool prompt(const char* msg, char* buffer, size_t bufferSize, ...)
 {
     char c;
     int i = 0;
-    int n = bufferSize-1;
+    int n = (int)bufferSize-1;
 
     va_list args;
     va_start(args, bufferSize);
@@ -39,7 +39,7 @@ bool prompt(const char* msg, char* buffer, size_t bufferSize, ...)
 
     printf(": ");
 
-    while ((c = getchar())) {
+    while ((c = (char)getchar())) {
         if (c == '\n' || c == EOF) {
             int nullBytePosition = i < n ? i : n;
             buffer[nullBytePosition] = 0;
@@ -155,7 +155,7 @@ uint16_t prompt_uint16(const char* msg, uint16_t max)
 
         long num = strtol(buffer, NULL, 10);
         if (num <= max) {
-            return num;
+            return (uint16_t)num;
         }
     }
 }
@@ -188,7 +188,7 @@ uint16_t prompt_uint16_default(const char* msg, uint16_t max, uint16_t def)
 
         long num = strtol(buffer, NULL, 10);
         if (num <= max) {
-            return num;
+            return (uint16_t)num;
         }
     }
 }
