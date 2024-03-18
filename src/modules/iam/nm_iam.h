@@ -209,7 +209,7 @@ void nm_iam_set_max_user_fingerprints(struct nm_iam* iam, size_t n);
  * Check if the given connection has access to do the given action. Configured IAM polices are
  * evaluated in context of the connection and optional specified attributes.
  *
- * In addition to the specified attributes, the IAM module add the `Connection:IsLocal` as `true` or `false` based on `nabto_device_connection_is_local()`. Some CoAP requests and TCP Tunnels may call this function. In those cases, the action and any additional attributes are documented there.
+ * In addition to the specified attributes, the IAM module add the `Connection:IsLocal` as `true` or `false` based on `nabto_device_connection_is_local()` as well as the `Connection:Username` if the connection is authorized as a specific IAM user. Some CoAP requests and TCP Tunnels may call this function. In those cases, the action and any additional attributes are documented there.
  *
  * @param iam [in] IAM module to query
  * @param ref [in] the connection to check
