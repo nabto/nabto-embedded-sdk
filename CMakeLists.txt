@@ -44,6 +44,7 @@ set(src_dir ${CMAKE_CURRENT_SOURCE_DIR}/src)
 if (DEVICE_STATIC_LINK_VCRUNTIME)
   cmake_policy(SET CMP0091 NEW)
   set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>")
+  include(InstallRequiredSystemLibraries)
 endif()
 
 if ("x_${CMAKE_HOST_SYSTEM_NAME}" STREQUAL "x_Darwin")
