@@ -52,7 +52,7 @@ jobs:
           path: |
             ${{ github.workspace }}/artifacts/bin/tcp_tunnel_device_${{matrix.friendly_name}}${{ matrix.exe_postfix }}
             ${{ github.workspace }}/artifacts/bin/thermostat_device_${{matrix.friendly_name}}${{ matrix.exe_postfix }}
-            ${{ github.workspace }}/artifacts/bin/thermostat_device_${{matrix.friendly_name}}${{ matrix.exe_postfix }}/artifacts/lib
+            ${{ github.workspace }}/artifacts/lib
           if-no-files-found: error
 
   build-linux-arm:
