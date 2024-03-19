@@ -13,7 +13,6 @@ add_executable(tcp_tunnel_device "${csrc}")
 target_link_libraries(tcp_tunnel_device nabto_device_static 3rdparty_gopt apps_common nm_fs_posix)
 
 install(TARGETS tcp_tunnel_device
-  ${CMAKE_INSTALL_SYSTEM_RUNTIME_LIBS}
   RUNTIME DESTINATION bin
   LIBRARY DESTINATION lib
   PUBLIC_HEADER DESTINATION include/nabto
