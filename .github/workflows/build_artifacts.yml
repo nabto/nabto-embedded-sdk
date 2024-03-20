@@ -51,11 +51,11 @@ jobs:
           mkdir -p ${{ github.workspace }}/release-tunnel
           mv ${{ github.workspace }}/artifacts/bin/tcp_tunnel_device.exe ${{ github.workspace }}/release-tunnel/tcp_tunnel_device_windows.exe
           cp ${{ github.workspace }}/artifacts/bin/*.dll ${{ github.workspace }}/release-tunnel/
-          zip -r ${{ github.workspace }}/artifacts/bin/tcp_tunnel_device_windows.zip ${{ github.workspace }}/release-tunnel
+          Compress-Archive -Path ${{ github.workspace }}/release-tunnel/* -Destination ${{ github.workspace }}/artifacts/bin/tcp_tunnel_device_windows.zip
           mkdir -p ${{ github.workspace }}/release-thermostat
           mv ${{ github.workspace }}/artifacts/bin/thermostat_device.exe ${{ github.workspace }}/release-thermostat/thermostat_device_${{matrix.friendly_name}}.exe
           cp ${{ github.workspace }}/artifacts/bin/*.dll ${{ github.workspace }}/release-thermostat/
-          zip -r ${{ github.workspace }}/artifacts/bin/thermostat_device_windows.zip ${{ github.workspace }}/release-thermostat
+          Compress-Archive -Path ${{ github.workspace }}/release-thermostat/* -Destination ${{ github.workspace }}/artifacts/bin/thermostat_device_windows.zip
 
       - name: Upload artifacts to github actions workspace artifacts
         if: ${{ success() }}
