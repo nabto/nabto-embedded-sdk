@@ -14,7 +14,7 @@ jobs:
           - os: windows-2022
             exe_postfix: .exe
             friendly_name: windows
-            build_command: cmake --build build-dir --parallel --target install
+            build_command: cmake --build build-dir --parallel --target install --config Release
           - os: ubuntu-20.04
             exe_postfix:
             friendly_name: linux_x86_64
