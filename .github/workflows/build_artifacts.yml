@@ -12,9 +12,9 @@ jobs:
         os: [windows-2022, ubuntu-20.04, macos-12]
         include:
           - os: windows-2022
-            exe_postfix: .exe
+            exe_postfix: .zip
             friendly_name: windows
-            build_command: cmake --build build-dir --parallel --target install
+            build_command: cmake --build build-dir --parallel --target install --config Release
           - os: ubuntu-20.04
             exe_postfix:
             friendly_name: linux_x86_64
@@ -39,10 +39,23 @@ jobs:
       - name: Build
         run: ${{matrix.build_command}}
 
-      - name: Prepate assets
+      - if: matrix.os != 'windows-2022'
+        name: Prepare assets
         run: |
-          mv ${{ github.workspace }}/artifacts/bin/tcp_tunnel_device${{ matrix.exe_postfix }} ${{ github.workspace }}/artifacts/bin/tcp_tunnel_device_${{matrix.friendly_name}}${{ matrix.exe_postfix }}
-          mv ${{ github.workspace }}/artifacts/bin/thermostat_device${{ matrix.exe_postfix }} ${{ github.workspace }}/artifacts/bin/thermostat_device_${{matrix.friendly_name}}${{ matrix.exe_postfix }}
+          mv ${{ github.workspace }}/artifacts/bin/tcp_tunnel_device ${{ github.workspace }}/artifacts/bin/tcp_tunnel_device_${{matrix.friendly_name}}
+          mv ${{ github.workspace }}/artifacts/bin/thermostat_device ${{ github.workspace }}/artifacts/bin/thermostat_device_${{matrix.friendly_name}}
+
+      - if: matrix.os == 'windows-2022'
+        name: Prepare assets windows
+        run: |
+          mkdir -p ${{ github.workspace }}/release-tunnel
+          mv ${{ github.workspace }}/artifacts/bin/tcp_tunnel_device.exe ${{ github.workspace }}/release-tunnel/tcp_tunnel_device_windows.exe
+          cp ${{ github.workspace }}/artifacts/bin/*.dll ${{ github.workspace }}/release-tunnel/
+          Compress-Archive -Path ${{ github.workspace }}/release-tunnel/* -Destination ${{ github.workspace }}/artifacts/bin/tcp_tunnel_device_windows.zip
+          mkdir -p ${{ github.workspace }}/release-thermostat
+          mv ${{ github.workspace }}/artifacts/bin/thermostat_device.exe ${{ github.workspace }}/release-thermostat/thermostat_device_${{matrix.friendly_name}}.exe
+          cp ${{ github.workspace }}/artifacts/bin/*.dll ${{ github.workspace }}/release-thermostat/
+          Compress-Archive -Path ${{ github.workspace }}/release-thermostat/* -Destination ${{ github.workspace }}/artifacts/bin/thermostat_device_windows.zip
 
       - name: Upload artifacts to github actions workspace artifacts
         if: ${{ success() }}
@@ -123,7 +136,7 @@ jobs:
     strategy:
       matrix:
         binary: [tcp_tunnel_device, thermostat_device]
-        suffix: [linux_x86_64, linux_armv6, linux_armhf, linux_aarch64, windows.exe, macos]
+        suffix: [linux_x86_64, linux_armv6, linux_armhf, linux_aarch64, windows.zip, macos]
     name: Release Assets
     needs: [ build, build-linux-arm ]
     runs-on: ubuntu-22.04

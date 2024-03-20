@@ -16,7 +16,7 @@ jobs:
         os: [windows-2022, ubuntu-22.04, macos-12]
         include:
           - os: windows-2022
-            build_command: cmake --build build-dir --parallel --target install
+            build_command: cmake --build build-dir --parallel --target install --config Release
           - os: ubuntu-22.04
             build_command: cmake --build build-dir --parallel --target install
           - os: macos-12
