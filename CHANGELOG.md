@@ -2,7 +2,7 @@
 
 ## [Unreleased]
 
-## [5.13.0] 2024-03-??
+## [5.13.0] 2024-03-21
 
 ### Added
  * Experimental `nabto_device_get_attach_certificate_expiration()` function
@@ -25,6 +25,8 @@
  * * Fingerprints now has a `FingerprintName` to identify which device it belongs to. This is added as an optional field in existing pairing CoAP endpoints.
  * * The IAM state serializer now has a new JSON format for an IAM user. This means the resulting JSON objects will have their `Version` field bumped to `2`. The serializer still understands `Version: 1` and will translate to the new format. This means running a new version of eg. the TCP Tunnel Device application will overwrite the state with the new format breaking the state for old applications.
  * If a connection is password authenticated as an IAM user, any action made on the connection will now be authenticated as that user. (previously, only password based pairing accepted password based authentication.)
+ * MbedTLS upgraded to v2.28.7
+ * libevent upgraded to v2.2.1-alpha
 
 
 ## [5.12.0] 2022-12-16
