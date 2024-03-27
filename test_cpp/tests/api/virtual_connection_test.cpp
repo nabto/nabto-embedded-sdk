@@ -297,6 +297,8 @@ BOOST_AUTO_TEST_CASE(execute_coap)
 
 BOOST_AUTO_TEST_CASE(execute_coap_no_free)
 {
+    std::vector<NabtoDeviceCoapRequest*> cleanUpRequests;
+
     const char* data = "FOOBAR";
     const char* coapPath = "/hello/world";
     size_t dataLen = strlen(data);
@@ -309,40 +311,47 @@ BOOST_AUTO_TEST_CASE(execute_coap_no_free)
             BOOST_TEST(ec == NABTO_DEVICE_EC_OK);
             char* payload;
             size_t len;
-            if (nabto_device_coap_request_get_payload(req, (void**)&payload, &len) != NABTO_DEVICE_EC_OK) {
+            if (nabto_device_coap_request_get_payload(
+                    req, (void**)&payload, &len) != NABTO_DEVICE_EC_OK) {
                 nabto_device_coap_error_response(req, 400, "Missing payload");
                 return;
             }
             BOOST_TEST(memcmp(payload, data, strlen(data)) == 0);
             uint16_t cf;
-            BOOST_TEST(nabto_device_coap_request_get_content_format(req, &cf) == NABTO_DEVICE_EC_OK);
+            BOOST_TEST(nabto_device_coap_request_get_content_format(req, &cf) ==
+                       NABTO_DEVICE_EC_OK);
             BOOST_TEST(cf == NABTO_DEVICE_COAP_CONTENT_FORMAT_TEXT_PLAIN_UTF8);
 
-            const char* key = nabto_device_coap_request_get_parameter(req, "name");
+            const char* key =
+                nabto_device_coap_request_get_parameter(req, "name");
 
             BOOST_TEST(strcmp(key, "world") == 0);
-
 
             nabto_device_coap_response_set_code(req, 205);
             nabto_device_coap_response_set_content_format(req, cf);
             nabto_device_coap_response_set_payload(req, data, dataLen);
             nabto_device_coap_response_ready(req);
+
+            // defer the free such that valgrind is happy
+            cleanUpRequests.push_back(req);
             // nabto_device_coap_request_free(req);
-        }
-        else {
+        } else {
             BOOST_TEST(ec == NABTO_DEVICE_EC_STOPPED);
             return;
         }
-
-        });
+    });
     NabtoDeviceVirtualConnection* conn = td.makeConnection();
 
-    NabtoDeviceVirtualCoapRequest* req = nabto_device_virtual_coap_request_new(conn, NABTO_DEVICE_COAP_GET, coapPath);
+    NabtoDeviceVirtualCoapRequest* req = nabto_device_virtual_coap_request_new(
+        conn, NABTO_DEVICE_COAP_GET, coapPath);
 
     BOOST_TEST((req != NULL));
 
-    BOOST_TEST(nabto_device_virtual_coap_request_set_payload(req, data, dataLen) == NABTO_DEVICE_EC_OK);
-    BOOST_TEST(nabto_device_virtual_coap_request_set_content_format(req, NABTO_DEVICE_COAP_CONTENT_FORMAT_TEXT_PLAIN_UTF8) == NABTO_DEVICE_EC_OK);
+    BOOST_TEST(nabto_device_virtual_coap_request_set_payload(
+                   req, data, dataLen) == NABTO_DEVICE_EC_OK);
+    BOOST_TEST(nabto_device_virtual_coap_request_set_content_format(
+                   req, NABTO_DEVICE_COAP_CONTENT_FORMAT_TEXT_PLAIN_UTF8) ==
+               NABTO_DEVICE_EC_OK);
 
     NabtoDeviceFuture* fut = nabto_device_future_new(td.device_);
 
@@ -351,23 +360,31 @@ BOOST_AUTO_TEST_CASE(execute_coap_no_free)
     NabtoDeviceError ec = nabto_device_future_wait(fut);
 
     uint16_t status;
-    BOOST_TEST(nabto_device_virtual_coap_request_get_response_status_code(req, &status) == NABTO_DEVICE_EC_OK);
+    BOOST_TEST(nabto_device_virtual_coap_request_get_response_status_code(
+                   req, &status) == NABTO_DEVICE_EC_OK);
     BOOST_TEST(status == 205);
 
     uint16_t cf;
-    BOOST_TEST(nabto_device_virtual_coap_request_get_response_content_format(req, &cf) == NABTO_DEVICE_EC_OK);
+    BOOST_TEST(nabto_device_virtual_coap_request_get_response_content_format(
+                   req, &cf) == NABTO_DEVICE_EC_OK);
     BOOST_TEST(cf == NABTO_DEVICE_COAP_CONTENT_FORMAT_TEXT_PLAIN_UTF8);
 
     char* payload;
     size_t len;
-    BOOST_TEST(nabto_device_virtual_coap_request_get_response_payload(req, (void**)&payload, &len) == NABTO_DEVICE_EC_OK);
+    BOOST_TEST(nabto_device_virtual_coap_request_get_response_payload(
+                   req, (void**)&payload, &len) == NABTO_DEVICE_EC_OK);
     BOOST_TEST(memcmp(payload, data, strlen(data)) == 0);
-
 
     BOOST_TEST(ec == NABTO_DEVICE_EC_OK);
     nabto_device_future_free(fut);
 
     nabto_device_virtual_coap_request_free(req);
+
+    // cleanup before the device is freed
+    for (auto const& r : cleanUpRequests) {
+        nabto_device_coap_request_free(r);
+    }
+    cleanUpRequests.clear();
 }
 
 BOOST_AUTO_TEST_CASE(coap_path_trailing_slash)
