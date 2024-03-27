@@ -26,17 +26,22 @@ static uint8_t secp2566r1GroupOrder[32] = {
 #define MBEDTLS_PRIVATE(m) m
 #endif
 
+NabtoDeviceError nabto_device_set_private_key_secp256r1_alloc(
+    NabtoDevice* device, const uint8_t* key, size_t keyLength);
+
+NabtoDeviceError nabto_device_set_private_key_secp256r1_compute(
+    NabtoDevice* device, const uint8_t* key, size_t keyLength,
+    mbedtls_pk_context* pk, mbedtls_mpi* n, mbedtls_entropy_context* entropy,
+    mbedtls_ctr_drbg_context* ctrDrbg);
+
 NabtoDeviceError NABTO_DEVICE_API
 nabto_device_set_private_key_secp256r1(NabtoDevice* device, const uint8_t* key, size_t keyLength)
 {
-    if (keyLength != 32) {
-        return NABTO_DEVICE_EC_INVALID_ARGUMENT;
-    }
+    return nabto_device_set_private_key_secp256r1_alloc(device, key, keyLength);
+}
 
-    int status;
-    const mbedtls_pk_info_t * pkInfo = mbedtls_pk_info_from_type( MBEDTLS_PK_ECKEY );
-
-
+NabtoDeviceError nabto_device_set_private_key_secp256r1_alloc(NabtoDevice* device, const uint8_t* key, size_t keyLength)
+{
     mbedtls_pk_context pk;
     mbedtls_mpi n; // n is the order of the secp256r1 group
     mbedtls_entropy_context entropy;
@@ -47,17 +52,41 @@ nabto_device_set_private_key_secp256r1(NabtoDevice* device, const uint8_t* key, 
     mbedtls_ctr_drbg_init( &ctrDrbg );
     mbedtls_entropy_init( &entropy );
 
-    status =  mbedtls_pk_setup( &pk, pkInfo);
+    NabtoDeviceError status = nabto_device_set_private_key_secp256r1_compute(
+        device, key, keyLength, &pk, &n, &entropy, &ctrDrbg);
+
+    mbedtls_ctr_drbg_free(&ctrDrbg);
+    mbedtls_entropy_free(&entropy);
+
+    mbedtls_pk_free(&pk);
+    mbedtls_mpi_free(&n);
+
+    return status;
+}
+
+NabtoDeviceError nabto_device_set_private_key_secp256r1_compute(
+    NabtoDevice* device, const uint8_t* key, size_t keyLength,
+    mbedtls_pk_context* pk, mbedtls_mpi* n, mbedtls_entropy_context* entropy,
+    mbedtls_ctr_drbg_context* ctrDrbg)
+{
+    if (keyLength != 32) {
+        return NABTO_DEVICE_EC_INVALID_ARGUMENT;
+    }
+
+    int status;
+    const mbedtls_pk_info_t * pkInfo = mbedtls_pk_info_from_type( MBEDTLS_PK_ECKEY );
+
+    status =  mbedtls_pk_setup( pk, pkInfo);
     if (status != 0) {
         return NABTO_DEVICE_EC_INVALID_STATE;
     }
 
-    status = mbedtls_ctr_drbg_seed( &ctrDrbg, mbedtls_entropy_func, &entropy, NULL, 0);
+    status = mbedtls_ctr_drbg_seed( ctrDrbg, mbedtls_entropy_func, entropy, NULL, 0);
     if (status != 0) {
         return NABTO_DEVICE_EC_INVALID_STATE;
     }
 
-    mbedtls_ecp_keypair* keyPair = mbedtls_pk_ec(pk);
+    mbedtls_ecp_keypair* keyPair = mbedtls_pk_ec(*pk);
     if (keyPair == NULL) {
         return NABTO_DEVICE_EC_INVALID_STATE;
     }
@@ -69,7 +98,7 @@ nabto_device_set_private_key_secp256r1(NabtoDevice* device, const uint8_t* key, 
 
     mbedtls_mpi_read_binary(&keyPair->MBEDTLS_PRIVATE(d), key, keyLength);
 
-    mbedtls_mpi_read_binary(&n, secp2566r1GroupOrder, 32);
+    mbedtls_mpi_read_binary(n, secp2566r1GroupOrder, 32);
 
     // valid private keys should be in the range [1,n-1], d != 0 && d < n;
 
@@ -79,14 +108,14 @@ nabto_device_set_private_key_secp256r1(NabtoDevice* device, const uint8_t* key, 
     }
     // test that d < n
     // check that d lesser than n, in this case the cmp function returns -1
-    if (mbedtls_mpi_cmp_mpi(&keyPair->MBEDTLS_PRIVATE(d), &n) != -1) {
+    if (mbedtls_mpi_cmp_mpi(&keyPair->MBEDTLS_PRIVATE(d), n) != -1) {
         return NABTO_DEVICE_EC_INVALID_ARGUMENT;
     }
 
     // Q = dG
 
     {
-        status = mbedtls_ecp_mul(&keyPair->MBEDTLS_PRIVATE(grp), &keyPair->MBEDTLS_PRIVATE(Q), &keyPair->MBEDTLS_PRIVATE(d), &keyPair->MBEDTLS_PRIVATE(grp).G, mbedtls_ctr_drbg_random, &ctrDrbg);
+        status = mbedtls_ecp_mul(&keyPair->MBEDTLS_PRIVATE(grp), &keyPair->MBEDTLS_PRIVATE(Q), &keyPair->MBEDTLS_PRIVATE(d), &keyPair->MBEDTLS_PRIVATE(grp).G, mbedtls_ctr_drbg_random, ctrDrbg);
         if (status != 0) {
             return NABTO_DEVICE_EC_INVALID_STATE;
         }
@@ -100,16 +129,10 @@ nabto_device_set_private_key_secp256r1(NabtoDevice* device, const uint8_t* key, 
     // -----END EC PRIVATE KEY-----
     uint8_t buffer[512];
 
-    status = mbedtls_pk_write_key_pem(&pk, buffer, sizeof(buffer));
+    status = mbedtls_pk_write_key_pem(pk, buffer, sizeof(buffer));
     if (status != 0) {
         return NABTO_DEVICE_EC_INVALID_STATE;
     }
-
-    mbedtls_ctr_drbg_free(&ctrDrbg);
-    mbedtls_entropy_free(&entropy);
-
-    mbedtls_pk_free(&pk);
-    mbedtls_mpi_free(&n);
 
     return nabto_device_set_private_key(device, (const char*)buffer);
 }
