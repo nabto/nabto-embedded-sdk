@@ -811,13 +811,17 @@ BOOST_AUTO_TEST_CASE(get_turn, *boost::unit_test::timeout(300))
             void* elm;
             NN_VECTOR_FOREACH_REFERENCE(elm, &ctx->iceServers) {
                 struct nc_attacher_ice_server* ts = (struct nc_attacher_ice_server*)elm;
-                std::string un(ts->username);
-                BOOST_TEST(un == at.productId_ + ":" + at.deviceId_ + ":" + identifier);
-                std::string cred(ts->credential);
+                if (ts->username != NULL){
+                    std::string un(ts->username);
+                    BOOST_TEST(un == at.productId_ + ":" + at.deviceId_ + ":" + identifier);
+                }
                 bool is1 = false;
                 bool is2 = false;
-                BOOST_TEST(((is1 = cred == "verySecretAccessKey") || (is2 = cred == "anotherVerySecretAccessKey")));
-                BOOST_TEST(is1 != is2);
+
+                if (ts->credential != NULL) {
+                    std::string cred(ts->credential);
+                    BOOST_TEST(((is1 = cred == "verySecretAccessKey") || (is2 = cred == "anotherVerySecretAccessKey") || (ts->credential == NULL)));
+                }
                 if (is1) {
                     char* url = NULL;
                     BOOST_TEST(nn_vector_size(&ts->urls) == (size_t)2);
@@ -829,12 +833,17 @@ BOOST_AUTO_TEST_CASE(get_turn, *boost::unit_test::timeout(300))
                     nn_vector_get(&ts->urls, 1, &url);
                     BOOST_TEST((url != NULL));
                     BOOST_TEST(std::string(url) == "turn:turn.nabto.net:9991?transport=tcp");
-                }
-                if (is2) {
+                } else if (is2) {
                     char* url;
                     BOOST_TEST(nn_vector_size(&ts->urls) == (size_t)1);
                     nn_vector_get(&ts->urls, 0, &url);
                     BOOST_TEST(std::string(url) == "turns:turn.nabto.net:443?transport=tcp");
+
+                } else {
+                    char* url;
+                    BOOST_TEST(nn_vector_size(&ts->urls) == (size_t)1);
+                    nn_vector_get(&ts->urls, 0, &url);
+                    BOOST_TEST(std::string(url) == "stun:stun.nabto.net:5874");
 
                 }
             }

@@ -294,7 +294,7 @@ class AttachServer : public AttachCoapServer,
                     self->handleServiceInvoke(connection, request, response);
             });
         dtlsServer_.addResourceHandler(
-            NABTO_COAP_CODE_POST, "/device/turn",
+            NABTO_COAP_CODE_POST, "/device/ice-servers",
             [self](DtlsConnectionPtr connection,
                 std::shared_ptr<CoapServerRequest> request,
                 std::shared_ptr<CoapServerResponse> response) {
@@ -343,8 +343,10 @@ class AttachServer : public AttachCoapServer,
         s2["Username"] = "test:devTest:" + identifier;
         s2["Credential"] = "anotherVerySecretAccessKey";
         s2["Urls"] = nlohmann::json::array({ "turns:turn.nabto.net:443?transport=tcp" });
+        nlohmann::json s3;
+        s3["Urls"] = nlohmann::json::array({ "stun:stun.nabto.net:5874" });
 
-        nlohmann::json root = nlohmann::json::array({s1, s2});
+        nlohmann::json root = nlohmann::json::array({s1, s2, s3});
 
         std::vector<uint8_t> b = nlohmann::json::to_cbor(root);
         response->setPayload(b);

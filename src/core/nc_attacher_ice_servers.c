@@ -17,7 +17,7 @@ size_t encode_request(const char* identifier, uint8_t* buffer, size_t bufferSize
 bool parse_response(const uint8_t* buffer, size_t bufferSize, struct nc_attacher_request_ice_servers_context* ctx);
 
 
-const char* coapPath[] = { "device", "turn" };
+const char* coapPath[] = { "device", "ice-servers" };
 
 static void ice_server_clean(struct nc_attacher_ice_server* server) {
         void* url;
@@ -125,7 +125,7 @@ static void coap_handler(struct nabto_coap_client_request* request, void* data)
         if (resCode != 201) {
             struct nc_coap_rest_error error;
             nc_coap_rest_error_decode_response(res, &error);
-            NABTO_LOG_ERROR(LOG, "Failed to get TURN server. %s", error.message);
+            NABTO_LOG_ERROR(LOG, "Failed to get TURN server. (%d)%s", resCode, error.message);
             nc_coap_rest_error_deinit(&error);
             ec = NABTO_EC_FAILED;
         }
@@ -181,9 +181,9 @@ bool parse_response(const uint8_t* buffer, size_t bufferSize, struct nc_attacher
         memset(&server, 0, sizeof(struct nc_attacher_ice_server));
 
         CborValue urlsIt;
-        if (!nc_cbor_copy_text_string(&username, &server.username, 4096) ||
-            !nc_cbor_copy_text_string(&credential, &server.credential, 4096) ||
-            !cbor_value_is_array(&urls) ||
+        nc_cbor_copy_text_string(&username, &server.username, 4096);
+        nc_cbor_copy_text_string(&credential, &server.credential, 4096);
+        if (!cbor_value_is_array(&urls) ||
             cbor_value_enter_container(&urls, &urlsIt) != CborNoError)
         {
             ice_server_clean(&server);
