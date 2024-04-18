@@ -19,6 +19,7 @@
 const char* keyFile = "device.key";
 
 const char* coapPath[] = { "hello-world", NULL };
+const char* coapPathVoid[] = { "void", NULL };
 const char* defaultString = "Hello world";
 const char* sct = "demosct";
 char helloWorld[128];
@@ -33,17 +34,21 @@ struct context {
 
     NabtoDeviceListener* getListener;
     NabtoDeviceListener* postListener;
+    NabtoDeviceListener* getListenerVoid;
     NabtoDeviceListener* deviceEventListener;
 
     NabtoDeviceCoapRequest* getRequest;
+    NabtoDeviceCoapRequest* getRequestVoid;
 
     NabtoDeviceCoapRequest* postRequest;
 };
 
 void get_request_callback(NabtoDeviceFuture* fut, NabtoDeviceError ec, void* data);
+void get_request_callback_void(NabtoDeviceFuture* fut, NabtoDeviceError ec, void* data);
 void post_request_callback(NabtoDeviceFuture* fut, NabtoDeviceError ec, void* data);
 bool start_device(struct context* ctxc, const char* productId, const char* deviceId);
 void handle_coap_get_request(NabtoDeviceCoapRequest* request);
+void handle_coap_get_request_void(NabtoDeviceCoapRequest* request);
 void handle_coap_post_request(NabtoDeviceCoapRequest* request);
 void handle_device_error(struct context* ctx, char* msg);
 void wait_for_device_events(struct context* ctx);
@@ -107,6 +112,11 @@ int main_with_ctx(int argc, char* argv[], struct context* ctx)
         return -1;
     }
 
+    if (nabto_device_coap_init_listener(ctx->device, ctx->getListenerVoid, NABTO_DEVICE_COAP_GET, coapPathVoid) != NABTO_DEVICE_EC_OK) {
+        handle_device_error(ctx, "CoAP listener initialization failed");
+        return -1;
+    }
+
     // both post and get handler can exist on the same path. Different paths are also ok
     if (nabto_device_coap_init_listener(ctx->device, ctx->postListener, NABTO_DEVICE_COAP_POST, coapPath) != NABTO_DEVICE_EC_OK) {
         handle_device_error(ctx, "CoAP listener initialization failed");
@@ -115,6 +125,9 @@ int main_with_ctx(int argc, char* argv[], struct context* ctx)
 
     nabto_device_listener_new_coap_request(ctx->getListener, ctx->getFuture, &ctx->getRequest);
     nabto_device_future_set_callback(ctx->getFuture, &get_request_callback, ctx);
+
+    nabto_device_listener_new_coap_request(ctx->getListenerVoid, ctx->getFuture, &ctx->getRequestVoid);
+    nabto_device_future_set_callback(ctx->getFuture, &get_request_callback_void, ctx);
 
     nabto_device_listener_new_coap_request(ctx->postListener, ctx->postFuture, &ctx->postRequest);
     nabto_device_future_set_callback(ctx->postFuture, &post_request_callback, ctx);
@@ -273,6 +286,20 @@ void get_request_callback(NabtoDeviceFuture* fut, NabtoDeviceError ec, void* dat
     }
 }
 
+void get_request_callback_void(NabtoDeviceFuture* fut, NabtoDeviceError ec, void* data)
+{
+    struct context* ctx = (struct context*)data;
+    if (ec == NABTO_DEVICE_EC_OK) {
+        handle_coap_get_request_void(ctx->getRequestVoid);
+        nabto_device_listener_new_coap_request(ctx->getListenerVoid, fut, &(ctx->getRequestVoid));
+        nabto_device_future_set_callback(fut, &get_request_callback_void, ctx);
+    } else if (ec == NABTO_DEVICE_EC_STOPPED) {
+        // stop invoked - cleanup triggered from main
+    } else {
+        printf("An error occurred when handling CoAP void request, ec=%d\n", ec);
+    }
+}
+
 void handle_coap_get_request(NabtoDeviceCoapRequest* request)
 {
     nabto_device_coap_response_set_code(request, 205);
@@ -282,6 +309,14 @@ void handle_coap_get_request(NabtoDeviceCoapRequest* request)
         nabto_device_coap_response_ready(request);
     }
     printf("Responded to CoAP request\n");
+    nabto_device_coap_request_free(request);
+}
+
+void handle_coap_get_request_void(NabtoDeviceCoapRequest* request)
+{
+    nabto_device_coap_response_set_code(request, 205);
+    nabto_device_coap_response_ready(request);
+    printf("Responded to void CoAP request\n");
     nabto_device_coap_request_free(request);
 }
 
@@ -343,6 +378,7 @@ bool allocate_context(struct context* c)
     c->deviceEventFuture = nabto_device_future_new(c->device);
 
     c->getListener = nabto_device_listener_new(c->device);
+    c->getListenerVoid = nabto_device_listener_new(c->device);
     c->postListener = nabto_device_listener_new(c->device);
     c->deviceEventListener = nabto_device_listener_new(c->device);
 
@@ -352,6 +388,7 @@ bool allocate_context(struct context* c)
         c->closeFuture == NULL ||
         c->deviceEventFuture == NULL ||
         c->getListener == NULL ||
+        c->getListenerVoid == NULL ||
         c->postListener == NULL ||
         c->deviceEventListener == NULL)
     {
@@ -365,6 +402,7 @@ void free_context(struct context* ctx)
     nabto_device_listener_free(ctx->deviceEventListener);
     nabto_device_listener_free(ctx->postListener);
     nabto_device_listener_free(ctx->getListener);
+    nabto_device_listener_free(ctx->getListenerVoid);
     nabto_device_future_free(ctx->deviceEventFuture);
     nabto_device_future_free(ctx->closeFuture);
     nabto_device_future_free(ctx->postFuture);
