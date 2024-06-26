@@ -2,7 +2,19 @@
 
 ## [Unreleased]
 
+## [5.13.1]
+
+### Bug fixes
+ * Reintroduce the mistakenly removed `Fingerprint` field to user objects in IAM CoAP responses.
+ * Add breaking change warning to 5.13.0 changelog
+
+### Changed
+ * The reintroduced `Fingerprint` field is deprecated.
+
 ## [5.13.0] 2024-03-21
+
+### Breaking changes
+ * The IAM state structure has been updated to support multiple fingerprints for a single user. This means the `fingerprint` field has been replaced with the `fingerprints` field.
 
 ### Added
  * Experimental `nabto_device_get_attach_certificate_expiration()` function

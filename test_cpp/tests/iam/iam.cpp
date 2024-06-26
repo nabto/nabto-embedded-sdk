@@ -237,6 +237,43 @@ BOOST_AUTO_TEST_CASE(user_multi_fingerprint, *boost::unit_test::timeout(180))
     BOOST_TEST(nm_iam_check_access(&ctx.iam_, ctx.ref_, "Admin:foo", NULL));
 }
 
+BOOST_AUTO_TEST_CASE(get_user_wellformed, *boost::unit_test::timeout(180))
+{
+    nabto::test::IamVirtualConnTester ctx(nabto::test::c2, nabto::test::s2);
+
+    BOOST_TEST(nm_iam_authorize_connection(&ctx.iam_, ctx.ref_, "testuser") == NM_IAM_ERROR_OK);
+
+    ctx.createCoapRequest(NABTO_DEVICE_COAP_GET, "/iam/users/testuser");
+    nlohmann::json root;
+    ctx.setCborPayload(root);
+    ctx.executeCoap(205);
+
+    uint16_t ct;
+    nabto_device_virtual_coap_request_get_response_content_format(ctx.req_, &ct);
+    BOOST_TEST(ct == NABTO_DEVICE_COAP_CONTENT_FORMAT_APPLICATION_CBOR);
+
+    uint8_t* pl = NULL;
+    size_t plLen;
+    BOOST_TEST(nabto_device_virtual_coap_request_get_response_payload(ctx.req_, (void**)&pl, &plLen) == NABTO_DEVICE_EC_OK);
+
+    BOOST_REQUIRE(pl != NULL);
+    BOOST_REQUIRE(plLen > 0);
+
+    std::vector<uint8_t> plVec(pl, pl+plLen);
+    auto resp = nlohmann::json::from_cbor(plVec);
+
+    BOOST_TEST(resp["DisplayName"].get<std::string>() == "Display Name");
+    BOOST_TEST(resp["Fingerprint"].get<std::string>() == "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb");
+    BOOST_TEST(resp["OauthSubject"].get<std::string>() == "oauth_subject");
+    BOOST_TEST(resp["Role"].get<std::string>() == "Admin");
+    BOOST_TEST(resp["Username"].get<std::string>() == "testuser");
+    BOOST_TEST((resp["Fingerprints"].size() == 2));
+    BOOST_TEST(resp["Fingerprints"][0]["Fingerprint"].get<std::string>() == "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa");
+    BOOST_TEST(resp["Fingerprints"][0]["Name"].get<std::string>() == "myphone");
+    BOOST_TEST(resp["Fingerprints"][1]["Fingerprint"].get<std::string>() == "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb");
+    BOOST_TEST(resp["Fingerprints"][1]["Name"].get<std::string>() == "yourphone");
+}
+
 BOOST_AUTO_TEST_CASE(can_remove_displayname, *boost::unit_test::timeout(180))
 {
     nabto::test::IamVirtualConnTester ctx(nabto::test::c2, nabto::test::s2);
