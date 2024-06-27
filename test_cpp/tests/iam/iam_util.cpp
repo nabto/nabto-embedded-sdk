@@ -112,6 +112,9 @@ IamVirtualConnTester::IamVirtualConnTester(std::string& confStr, std::string& st
 
 IamVirtualConnTester::~IamVirtualConnTester()
 {
+    if (req_) {
+        nabto_device_virtual_coap_request_free(req_);
+    }
     nabto_device_virtual_connection_free(connection_);
     nabto_device_stop(device_);
     nabto_device_future_free(future_);
@@ -121,6 +124,9 @@ IamVirtualConnTester::~IamVirtualConnTester()
 
 void IamVirtualConnTester::createCoapRequest(NabtoDeviceCoapMethod method, std::string path)
 {
+    if (req_) {
+        nabto_device_virtual_coap_request_free(req_);
+    }
     req_ = nabto_device_virtual_coap_request_new(connection_, method, path.c_str());
     BOOST_TEST((req_ != NULL));
 }
@@ -147,7 +153,6 @@ void IamVirtualConnTester::executeCoap(uint16_t expectedStatus)
     BOOST_TEST(nabto_device_virtual_coap_request_get_response_status_code(req_, &status) == NABTO_DEVICE_EC_OK);
     BOOST_TEST(status == expectedStatus);
     // TODO: save payload if one is returned
-    nabto_device_virtual_coap_request_free(req_);
 }
 
 struct nm_iam_user* IamVirtualConnTester::findStateUser(std::string username)
