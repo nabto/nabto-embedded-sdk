@@ -321,6 +321,31 @@ NABTO_DEVICE_DECL_PREFIX NabtoDeviceError NABTO_DEVICE_API
 nabto_device_set_private_key(NabtoDevice* device, const char* privKey);
 
 /**
+ * Set a private key for the device.
+ *
+ * An ecc key pair consists of a private key and a public key. For the
+ * ECC group secp256r1 there is an element G which is a generator for
+ * the group. The public key is simple k*G, where k is the private key
+ * and a simple number. The argument given to this function is the 32
+ * bytes which a private key consists of.
+ *
+ * These bytes can be found using openssl ec -in key.pem -text and
+ * looking into the `priv:` section or using an asn1 parser. Or they
+ * can be generated.
+ *
+ * Not all 32 byte strings are valid private keys. The range of valid
+ * private keys for secp256r1 are [1,n-1] where n = FFFFFFFF 00000000
+ * FFFFFFFF FFFFFFFF BCE6FAAD A7179E84 F3B9CAC2 FC632551
+ *
+ * @param device [in]  the device
+ * @param key [in]  The key as 32 bytes data.
+ * @param keyLength [in]  Must be 32.
+ * @return NABTO_DEVICE_EC_OK  iff the key could be set.
+ */
+NABTO_DEVICE_DECL_PREFIX NabtoDeviceError NABTO_DEVICE_API
+nabto_device_set_private_key_secp256r1(NabtoDevice* device, const uint8_t* key, size_t keyLength);
+
+/**
  * Set root certs
  *
  * By default the device is configured to trust "Nabto Root CA
@@ -1457,6 +1482,83 @@ nabto_device_add_tcp_tunnel_service(NabtoDevice* device,
 NABTO_DEVICE_DECL_PREFIX NabtoDeviceError NABTO_DEVICE_API
 nabto_device_remove_tcp_tunnel_service(NabtoDevice* device, const char* serviceId);
 
+/**
+ * Add a key-value pair to the metadata of a TCP tunnel service.
+ * If the given key already exists in the metadata, then its corresponding value will be overwritten.
+ *
+ * @param device [in]      The device instance.
+ * @param serviceId [in]   The unique id of a service on the device.
+ * @param key [in]         The key of the key-value pair.
+ * @param value [in]       The value of the key-value pair.
+ * @return NABTO_DEVICE_EC_OK if the key-value pair was added to the metadata of the service.
+ *         NABTO_DEVICE_EC_NOT_FOUND if no service with the given id was located on the device.
+ */
+NABTO_DEVICE_DECL_PREFIX NabtoDeviceError NABTO_DEVICE_API
+nabto_device_add_tcp_tunnel_service_metadata(NabtoDevice* device, const char* serviceId, const char* key, const char* value);
+
+/**
+ * Remove a key-value pair from the metadata of a TCP tunnel service.
+ *
+ * @param device [in]      The device instance.
+ * @param serviceId [in]   The unique id of a service on the device.
+ * @param key [in]         The key of the key-value pair.
+ * @return NABTO_DEVICE_EC_OK if the key-value pair was removed or if no key-value pair was found.
+ *         NABTO_DEVICE_EC_NOT_FOUND if no service with the given id was located on the device.
+ */
+NABTO_DEVICE_DECL_PREFIX NabtoDeviceError NABTO_DEVICE_API
+nabto_device_remove_tcp_tunnel_service_metadata(NabtoDevice* device, const char* serviceId, const char* key);
+
+/**
+ * A TCP probe is used to probe for tcp reachability from the device
+ * perspective. The intention is that this feature can be used in conjunction
+ * with TCP Tunnels to test if the configured services are reachable. Often
+ * there are problems on embedded devices with TCP reachability, either the
+ * services are not running, people specify the wrong port numbers or the
+ * loopback interface is simply not enabled. This leads to confusion about why
+ * things are not working, so this is a tool to help debugging these issues.
+*/
+typedef struct NabtoDeviceTcpProbe_ NabtoDeviceTcpProbe;
+
+/**
+ * Create a TCP Probe instance.
+ *
+ * A TCP Probe instance can be used for a single reachability check. If it is
+ * reused for more than one check, the behavior is undefined.
+ *
+ * @param device [in]  The device.
+ * @return A new instance or NULL it the instance could not be allocated.
+ */
+NABTO_DEVICE_DECL_PREFIX NabtoDeviceTcpProbe* NABTO_DEVICE_API nabto_device_tcp_probe_new(NabtoDevice* device);
+
+/**
+ * Free a TCP probe instance.
+ * @param probe [in]  The TCP probe to be freed.
+ */
+NABTO_DEVICE_DECL_PREFIX void NABTO_DEVICE_API nabto_device_tcp_probe_free(NabtoDeviceTcpProbe* probe);
+
+/**
+ * Stop a TCP probe. This is a nonblocking stop function.
+ * @param probe [in]  The TCP probe to be freed.
+ */
+NABTO_DEVICE_DECL_PREFIX void NABTO_DEVICE_API nabto_device_tcp_probe_stop(NabtoDeviceTcpProbe* probe);
+
+/**
+ * Check reachability of a tcp service. This function makes a tcp connect
+ * to the defined service. If the connect is OK the future resolves with
+ * NABTO_DEVICE_EC_OK else an appropriate error is returned.
+ *
+ * Future Status:
+ *   NABTO_DEVICE_EC_OK  if it was possible to make a TCP connection to the TCP service.
+ *   Something else if the reachability check failed.
+ *
+ * @param probe [in]  The TCP probe to be freed.
+ * @param host [in]   The IPV4 host of the TCP service
+ * @param port [in]   The port number of the TCP service
+ * @param future [in] The future to resolve when the result is ready.
+ */
+NABTO_DEVICE_DECL_PREFIX void NABTO_DEVICE_API nabto_device_tcp_probe_check_reachability(NabtoDeviceTcpProbe* probe, const char* host, uint16_t port, NabtoDeviceFuture* future);
+
+
 /*************************
  * Server Connect Tokens
  *************************/
@@ -2149,6 +2251,28 @@ nabto_device_mdns_add_txt_item(NabtoDevice* device, const char* key, const char*
 typedef struct NabtoDeviceServiceInvocation_ NabtoDeviceServiceInvocation;
 
 /**
+ * Format of the message received by the basestation in a service invocation
+ * response
+ * ```
+ * NABTO_DEVICE_SERVICE_INVOKE_MESSAGE_FORMAT_BINARY;
+ * NABTO_DEVICE_SERVICE_INVOKE_MESSAGE_FORMAT_NONE;
+ * NABTO_DEVICE_SERVICE_INVOKE_MESSAGE_FORMAT_TEXT;
+ * ```
+ */
+typedef int NabtoDeviceServiceInvokeMessageFormat;
+
+// The HTTP service returned a base64 encoded string of data
+NABTO_DEVICE_DECL_PREFIX extern const NabtoDeviceServiceInvokeMessageFormat
+    NABTO_DEVICE_SERVICE_INVOKE_MESSAGE_FORMAT_BINARY;
+// The HTTP service returned an empty body, message length is 0.
+NABTO_DEVICE_DECL_PREFIX extern const NabtoDeviceServiceInvokeMessageFormat
+    NABTO_DEVICE_SERVICE_INVOKE_MESSAGE_FORMAT_NONE;
+// The HTTP service returned a text body.
+NABTO_DEVICE_DECL_PREFIX extern const NabtoDeviceServiceInvokeMessageFormat
+    NABTO_DEVICE_SERVICE_INVOKE_MESSAGE_FORMAT_TEXT;
+
+
+/**
  * Create a new service invocation object.
  *
  * @param device [in]  The device instance
@@ -2242,6 +2366,121 @@ nabto_device_service_invocation_get_response_message_data(NabtoDeviceServiceInvo
  */
 NABTO_DEVICE_DECL_PREFIX size_t NABTO_DEVICE_API
 nabto_device_service_invocation_get_response_message_size(NabtoDeviceServiceInvocation* serviceInvocation);
+
+/**
+ * Get the message format of a service invocation response. This can be used to determine how to decode the response message. The message format is undefined if the service invocation failed.
+ *
+ * @param serviceInvocation [in]  The service invocation object.
+ * @return The format of the response message.
+ */
+NABTO_DEVICE_DECL_PREFIX NabtoDeviceServiceInvokeMessageFormat NABTO_DEVICE_API
+nabto_device_service_invocation_get_response_message_format(NabtoDeviceServiceInvocation* serviceInvocation);
+
+
+/**********************
+ * ICE servers Requests
+ **********************/
+
+/**
+ * @intro ICE Servers Requests
+ *
+ * ICE Servers Requests can be used to retreive credentials for ICE servers from the Nabto Basestation to use in WebRTC connections. For details about WebRTC, see our [WebRTC documentation](/developer/guides/webrtc/intro.html).
+ *
+ */
+
+/**
+ * Represents an Ice Server Request
+ */
+typedef struct NabtoDeviceIceServersRequest_ NabtoDeviceIceServersRequest;
+
+/**
+ * Allocate new ICE servers request.
+ *
+ * @param device [in] The device context
+ * @return The created ICE servers request or NULL on failure
+ */
+NABTO_DEVICE_DECL_PREFIX NabtoDeviceIceServersRequest* NABTO_DEVICE_API
+nabto_device_ice_servers_request_new(NabtoDevice* device);
+
+/**
+ * Free a previously allocated ICE servers request.
+ * @param request [in] The request to free.
+ */
+NABTO_DEVICE_DECL_PREFIX void NABTO_DEVICE_API
+nabto_device_ice_servers_request_free(NabtoDeviceIceServersRequest* request);
+
+/**
+ * Request ICE Servers from the Basestation.
+ *
+ * The request takes an `identifier` which, combined with the product ID and device ID, will be used to generate the username for TURN servers. This can be used to differentiate credentials created for the device or for the client.
+ *
+ * @param identifier [in] Identifier used in the username. Only characters [a-zA-Z0-9-_] are allowed.
+ * @param request [in] Request to send
+ * @param future [in] Future to resolve when the result is ready.
+ * @retval NABTO_DEVICE_EC_OK iff the request was sent.
+ * @retval NABTO_DEVICE_EC_INVALID_ARGUMENT if the identifier was invalid.
+ * @retval NABTO_DEVICE_EC_NOT_ATTACHED if the device is not attached.
+ */
+NABTO_DEVICE_DECL_PREFIX NabtoDeviceError NABTO_DEVICE_API nabto_device_ice_servers_request_send(const char* identifier, NabtoDeviceIceServersRequest* request, NabtoDeviceFuture* future);
+
+/**
+ * Get the number of ICE servers returned from a successfully resolved ICE server request. This count is used to generate indices as [0, count-1] for the get functions below.
+ *
+ * @param request [in] Request to get count from
+ * @return The number of ICE servers returned by the basestation.
+ */
+NABTO_DEVICE_DECL_PREFIX size_t NABTO_DEVICE_API
+nabto_device_ice_servers_request_get_server_count(NabtoDeviceIceServersRequest* request);
+
+/**
+ * Get the username of an ICE server from its index.
+ *
+ * If the ICE server at the index is a STUN server, the username is NULL. The username is freed with the request.
+ *
+ * @param request [in] The request to get the ICE server from
+ * @param index [in] Index of the ICE server to get the username of.
+ * @return The username for a TURN server, or NULL for a STUN server.
+ */
+NABTO_DEVICE_DECL_PREFIX const char* NABTO_DEVICE_API
+nabto_device_ice_servers_request_get_username(NabtoDeviceIceServersRequest* request, size_t index);
+
+/**
+ * Get the credential of an ICE server from its index.
+ *
+ * If the ICE server at the index is a STUN server, the credential is NULL. The credential is freed with the request.
+ *
+ * @param request [in] The request to get the ICE server from
+ * @param index [in] Index of the ICE server to get the credential of.
+ * @return The credential for a TURN server, or NULL for a STUN server.
+ */
+NABTO_DEVICE_DECL_PREFIX const char* NABTO_DEVICE_API
+nabto_device_ice_servers_request_get_credential(NabtoDeviceIceServersRequest* request, size_t index);
+
+/**
+ * Get the number of URLs for an ICE server from its index.
+ *
+ * This count is used to generate URL indices as [0, count-1] for `nabto_device_ice_servers_request_get_url()`.
+ *
+ * @param request [in] The request to get the ICE server from
+ * @param index [in] Index of the ICE server to get the URL count of.
+ * @return The number of URLs for the ICE server
+ */
+NABTO_DEVICE_DECL_PREFIX size_t NABTO_DEVICE_API
+nabto_device_ice_servers_request_get_urls_count(NabtoDeviceIceServersRequest* request, size_t index);
+
+/**
+ * Get an URL of an ICE server from its index.
+ *
+ * The URL is freed with the request.
+ *
+ * @param request [in] The request to get the ICE server from
+ * @param serverIndex [in] Index of the ICE server to get the URL from.
+ * @param urlIndex [in] Index of the URL to get.
+ * @return An URL for the ICE server.
+ */
+NABTO_DEVICE_DECL_PREFIX const char* NABTO_DEVICE_API
+nabto_device_ice_servers_request_get_url(NabtoDeviceIceServersRequest* request, size_t serverIndex, size_t urlIndex);
+
 
 /********
  * Limits
