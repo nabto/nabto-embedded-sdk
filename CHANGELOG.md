@@ -2,14 +2,17 @@
 
 ## [Unreleased]
 
-## [5.13.1]
-
 ### Bug fixes
  * Reintroduce the mistakenly removed `Fingerprint` field to user objects in IAM CoAP responses.
  * Add breaking change warning to 5.13.0 changelog
 
 ### Changed
  * The reintroduced `Fingerprint` field is deprecated.
+ * The following functions has been moved out of experimental:
+ * * `nabto_device_add_tcp_tunnel_service_metadata()`
+ * * `nabto_device_remove_tcp_tunnel_service_metadata()`
+ * * `nabto_device_service_invocation_get_response_message_format()`
+ * * `nabto_device_ice_servers_request_*()`
 
 ## [5.13.0] 2024-03-21
 
