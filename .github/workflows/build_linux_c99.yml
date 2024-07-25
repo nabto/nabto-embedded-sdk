@@ -15,7 +15,7 @@ jobs:
       - name: Install compiler
         run: sudo apt update && sudo apt install -y build-essential cmake git ninja-build
 
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
         with:
           submodules: recursive
           fetch-depth: 0
