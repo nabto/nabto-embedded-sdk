@@ -13,7 +13,7 @@ jobs:
         run: apt-get update && apt-get install software-properties-common -y && add-apt-repository ppa:git-core/ppa
       - name: Install sw
         run: apt-get update && apt-get install -y git cmake build-essential
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
         with:
           submodules: recursive
           fetch-depth: 0
