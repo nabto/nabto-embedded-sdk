@@ -55,11 +55,13 @@ target_link_libraries( nabto_device_static ${CMAKE_THREAD_LIBS_INIT} )
 target_link_libraries(nabto_device_static nm_libevent event_core)
 
 
-add_library( nabto_device SHARED "${src}" "${ne_api_src}" "${ne_api_future_queue_src}" "${ne_api_test_src}")
+add_library( nabto_device "${src}" "${ne_api_src}" "${ne_api_future_queue_src}" "${ne_api_test_src}")
 add_library(NabtoEmbeddedSDK::nabto_device ALIAS nabto_device)
 
-target_compile_definitions(nabto_device PRIVATE NABTO_DEVICE_API_EXPORTS)
-target_compile_definitions(nabto_device PRIVATE NABTO_DEVICE_API_SHARED)
+if (BUILD_SHARED_LIBS)
+  target_compile_definitions(nabto_device PRIVATE NABTO_DEVICE_API_EXPORTS)
+  target_compile_definitions(nabto_device PRIVATE NABTO_DEVICE_API_SHARED)
+endif()
 
 target_link_libraries( nabto_device
   nc_core
@@ -119,5 +121,5 @@ set(integration_test_src
 if (DEVICE_BUILD_TESTS)
   add_executable(nabto_device_libevent_integration_test ${integration_test_src})
   target_include_directories(nabto_device_libevent_integration_test PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/../../test_cpp)
-  target_link_libraries(nabto_device_libevent_integration_test nabto_device_static test_util)
+  target_link_libraries(nabto_device_libevent_integration_test nabto_device test_util)
 endif()
