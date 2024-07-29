@@ -10,7 +10,7 @@
 #include <platform/np_allocator.h>
 #include <core/nc_packet.h>
 
-#include <cbor.h>
+#include <tinycbor/cbor.h>
 
 
 #define LOG NABTO_LOG_MODULE_COAP

@@ -1,4 +1,11 @@
 cmake_minimum_required(VERSION 3.3)
+
+option(NABTO_DEVICE_USE_VCPKG "Use vcpkg for providing dependencies" OFF)
+if (NABTO_DEVICE_USE_VCPKG)
+  set(CMAKE_TOOLCHAIN_FILE "${CMAKE_CURRENT_SOURCE_DIR}/3rdparty/vcpkg/scripts/buildsystems/vcpkg.cmake" CACHE STRING "Vcpkg toolchain file")
+endif()
+set(CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake;${CMAKE_MODULE_PATH}")
+
 project(nabto-embedded-sdk)
 
 set(CMAKE_POLICY_DEFAULT_CMP0063 NEW)
@@ -13,9 +20,13 @@ set(CMAKE_XCODE_SCHEME_ADDRESS_SANITIZER_USE_AFTER_RETURN ON)
 
 include(CheckIncludeFiles)
 include(CheckSymbolExists)
+include(FetchContent)
 include(${CMAKE_CURRENT_SOURCE_DIR}/nabto_primary_files.cmake)
 
 message("CMake Version: ${CMAKE_VERSION}")
+
+SET(FETCHCONTENT_TRY_FIND_PACKAGE_MODE ALWAYS)
+
 
 # build all of nabto on linux, windows, mac
 set(CMAKE_POSITION_INDEPENDENT_CODE ON)
@@ -38,7 +49,6 @@ option(DEVICE_MBEDTLS_2 "Set this to true if the device is built against mbedtls
 
 set(NABTO_DEVICE_MBEDTLS_PROVIDER "module" CACHE STRING "Provider of MbedTLS library")
 set_property(CACHE NABTO_DEVICE_MBEDTLS_PROVIDER PROPERTY STRINGS "module" "package")
-
 
 set(src_dir ${CMAKE_CURRENT_SOURCE_DIR}/src)
 if (DEVICE_STATIC_LINK_VCRUNTIME)
@@ -194,7 +204,13 @@ endif()
 add_subdirectory(3rdparty/mbedtls)
 add_subdirectory(3rdparty/cjson)
 add_subdirectory(3rdparty/gopt)
-add_subdirectory(3rdparty/tinycbor)
+
+FetchContent_Declare(
+  TinyCBOR
+  SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/3rdparty/tinycbor
+)
+FetchContent_MakeAvailable(TinyCBOR)
+
 add_subdirectory(3rdparty/nlohmann-json)
 add_subdirectory(3rdparty/cxxopts)
 add_subdirectory(3rdparty/libevent)

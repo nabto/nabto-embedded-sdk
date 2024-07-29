@@ -7,7 +7,7 @@
 
 
 
-#include <cbor.h>
+#include <tinycbor/cbor.h>
 
 static const char* LOGM = "iam";
 

@@ -14,11 +14,15 @@ set(src
   src/thermostat_state.c
   src/thermostat_state_file_backend.c
   src/thermostat_state_data.c
+  src/cbor_extra.c
   )
 
 add_executable(thermostat_device ${src})
 
-target_link_libraries(thermostat_device nabto_device_static 3rdparty_tinycbor 3rdparty_gopt 3rdparty_cjson nn apps_common nm_fs_posix)
+target_link_libraries(thermostat_device nabto_device_static 3rdparty_gopt 3rdparty_cjson nn apps_common nm_fs_posix)
+
+find_package(TinyCBOR REQUIRED)
+target_link_libraries(thermostat_device TinyCBOR::tinycbor)
 
 #target_link_libraries( thermostat_device ${CMAKE_THREAD_LIBS_INIT} )
 

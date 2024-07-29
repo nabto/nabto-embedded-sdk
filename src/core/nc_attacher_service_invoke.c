@@ -7,7 +7,7 @@
 #include <platform/np_allocator.h>
 #include <coap/nabto_coap_client.h>
 
-#include "cbor.h"
+#include "tinycbor/cbor.h"
 
 #define LOG NABTO_LOG_MODULE_ATTACHER
 

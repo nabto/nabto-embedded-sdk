@@ -8,7 +8,7 @@
 #include <platform/np_allocator.h>
 #include <coap/nabto_coap_client.h>
 
-#include "cbor.h"
+#include "tinycbor/cbor.h"
 
 #define LOG NABTO_LOG_MODULE_ATTACHER
 
@@ -222,5 +222,3 @@ bool parse_response(const uint8_t* buffer, size_t bufferSize, struct nc_attacher
     return true;
 
 }
-
-

@@ -10,7 +10,11 @@ add_library( nc_core STATIC "${ne_core_src}")
 
 add_dependencies(nc_core GENERATE_VERSION)
 
-target_link_libraries( nc_core np_platform nabto_stream nabto_stun_client coap 3rdparty_tinycbor nn)
+target_link_libraries( nc_core np_platform nabto_stream nabto_stun_client coap nn)
+
+find_package(TinyCBOR REQUIRED)
+target_link_libraries(nc_core TinyCBOR::tinycbor)
+
 if (NABTO_DEVICE_MBEDTLS)
   target_link_libraries(nc_core 3rdparty_mbedtls)
 endif()

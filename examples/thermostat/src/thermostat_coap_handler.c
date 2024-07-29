@@ -1,6 +1,6 @@
 #include "thermostat_coap_handler.h"
 
-#include <cbor.h>
+#include <tinycbor/cbor.h>
 
 static void start_listen(struct thermostat_coap_handler* handler);
 static void request_callback(NabtoDeviceFuture* future, NabtoDeviceError ec, void* userData);
