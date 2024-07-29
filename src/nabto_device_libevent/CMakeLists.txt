@@ -56,6 +56,7 @@ target_link_libraries(nabto_device_static nm_libevent event_core)
 
 
 add_library( nabto_device SHARED "${src}" "${ne_api_src}" "${ne_api_future_queue_src}" "${ne_api_test_src}")
+add_library(NabtoEmbeddedSDK::nabto_device ALIAS nabto_device)
 
 target_compile_definitions(nabto_device PRIVATE NABTO_DEVICE_API_EXPORTS)
 target_compile_definitions(nabto_device PRIVATE NABTO_DEVICE_API_SHARED)
@@ -98,6 +99,11 @@ if (HAVE_WINDOWS_H)
 endif()
 
 set_target_properties(nabto_device PROPERTIES PUBLIC_HEADER "../../include/nabto/nabto_device.h;../../include/nabto/nabto_device_experimental.h")
+target_include_directories(nabto_device
+  PUBLIC
+    "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/../../include>"
+    "$<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>"
+)
 
 install(TARGETS nabto_device
   RUNTIME DESTINATION bin
