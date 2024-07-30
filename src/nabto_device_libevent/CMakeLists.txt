@@ -1,4 +1,6 @@
 find_package( Threads )
+find_package(MbedTLS REQUIRED COMPONENTS mbedtls mbedcrypto mbedx509)
+find_package(TinyCBOR REQUIRED)
 
 include_directories(${EVENT__INCLUDE_DIRS})
 
@@ -17,44 +19,6 @@ endif()
 
 target_link_libraries(nabto_device_threads PUBLIC nn)
 
-add_library( nabto_device_static STATIC "${src}" "${ne_api_src}" "${ne_api_future_queue_src}" "${ne_api_test_src}")
-target_compile_definitions(nabto_device_static PRIVATE NABTO_DEVICE_WIN32_API_STATIC)
-target_compile_definitions(nabto_device_static PUBLIC NABTO_DEVICE_WIN32_API_STATIC)
-
-target_link_libraries(nabto_device_static
-  nc_core
-  np_platform
-  nm_mdns
-  nm_tcp_tunnel
-  nm_logging_api
-  nabto_device_threads
-  nm_event_queue
-  )
-
-if (NABTO_DEVICE_MBEDTLS)
-  target_link_libraries(nabto_device_static
-    nm_mbedtls_cli
-    nm_mbedtls_srv
-    nm_mbedtls_random
-    nm_mbedtls_spake2
-    3rdparty_mbedtls
-  )
-endif()
-
-if(NABTO_DEVICE_WOLFSSL)
-  target_link_libraries(nabto_device_static
-    nm_wolfssl_cli
-    nm_wolfssl_srv
-    nm_wolfssl_random
-    nm_wolfssl_spake2
-  )
-endif()
-
-target_link_libraries( nabto_device_static ${CMAKE_THREAD_LIBS_INIT} )
-
-target_link_libraries(nabto_device_static nm_libevent event_core)
-
-
 add_library( nabto_device "${src}" "${ne_api_src}" "${ne_api_future_queue_src}" "${ne_api_test_src}")
 add_library(NabtoEmbeddedSDK::nabto_device ALIAS nabto_device)
 
@@ -63,27 +27,38 @@ if (BUILD_SHARED_LIBS)
   target_compile_definitions(nabto_device PRIVATE NABTO_DEVICE_API_SHARED)
 endif()
 
-target_link_libraries( nabto_device
-  nc_core
-  np_platform
-  nm_mdns
-  nm_tcp_tunnel
-  nm_logging_api
-  nabto_device_threads
-  nm_event_queue
+target_link_libraries( nabto_device PRIVATE
+  $<TARGET_OBJECTS:nc_core>
+  $<TARGET_OBJECTS:np_platform>
+  $<TARGET_OBJECTS:nm_mdns>
+  $<TARGET_OBJECTS:nm_tcp_tunnel>
+  $<TARGET_OBJECTS:nm_logging_api>
+  $<TARGET_OBJECTS:nabto_device_threads>
+  $<TARGET_OBJECTS:nm_event_queue>
+  $<TARGET_OBJECTS:nm_communication_buffer>
+  $<TARGET_OBJECTS:nm_libevent>
+  nn
+  mdns_server
+  nabto_stream
+  coap
+  nabto_stun_client
+  MbedTLS::mbedtls
+  MbedTLS::mbedcrypto
+  MbedTLS::mbedx509
   )
 
 if (NABTO_DEVICE_MBEDTLS)
-  target_link_libraries(nabto_device
-    nm_mbedtls_cli
-    nm_mbedtls_srv
-    nm_mbedtls_random
-    nm_mbedtls_spake2
+  target_link_libraries(nabto_device PRIVATE
+  $<TARGET_OBJECTS:nm_mbedtls_cli>
+  $<TARGET_OBJECTS:nm_mbedtls_srv>
+  $<TARGET_OBJECTS:nm_mbedtls_random>
+  $<TARGET_OBJECTS:nm_mbedtls_spake2>
+  $<TARGET_OBJECTS:nm_mbedtls_common>
   )
 endif()
 
 if(NABTO_DEVICE_WOLFSSL)
-  target_link_libraries(nabto_device
+  target_link_libraries(nabto_device PRIVATE
     nm_wolfssl_cli
     nm_wolfssl_srv
     nm_wolfssl_random
@@ -91,13 +66,12 @@ if(NABTO_DEVICE_WOLFSSL)
   )
 endif()
 
-target_link_libraries( nabto_device ${CMAKE_THREAD_LIBS_INIT} )
+target_link_libraries( nabto_device PRIVATE ${CMAKE_THREAD_LIBS_INIT} )
 
-target_link_libraries(nabto_device nm_libevent event_core)
+target_link_libraries(nabto_device PRIVATE 3rdparty_libevent TinyCBOR::tinycbor)
 
 if (HAVE_WINDOWS_H)
   target_link_libraries(nabto_device ws2_32)
-  target_link_libraries(nabto_device_static ws2_32)
 endif()
 
 set_target_properties(nabto_device PROPERTIES PUBLIC_HEADER "../../include/nabto/nabto_device.h;../../include/nabto/nabto_device_experimental.h")
@@ -108,11 +82,27 @@ target_include_directories(nabto_device
 )
 
 install(TARGETS nabto_device
+  EXPORT nabto_device
   RUNTIME DESTINATION bin
   LIBRARY DESTINATION lib
   ARCHIVE DESTINATION lib
   PUBLIC_HEADER DESTINATION include/nabto
   )
+
+install(EXPORT nabto_device
+  FILE NabtoEmbeddedSDKTargets.cmake
+  NAMESPACE NabtoEmbeddedSDK::
+  DESTINATION lib/cmake/nabto_client)
+
+include(CMakePackageConfigHelpers)
+# generate the config file that includes the exports
+  configure_package_config_file(${CMAKE_CURRENT_SOURCE_DIR}/Config.cmake.in
+    "${CMAKE_CURRENT_BINARY_DIR}/NabtoEmbeddedSDKConfig.cmake"
+    INSTALL_DESTINATION "lib/cmake/NabtoEmbeddedSDK"
+    NO_SET_AND_CHECK_MACRO
+    NO_CHECK_REQUIRED_COMPONENTS_MACRO
+  )
+
 
 set(integration_test_src
     nabto_device_libevent_integration_test.cpp

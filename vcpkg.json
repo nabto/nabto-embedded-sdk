@@ -2,6 +2,8 @@
     "name": "nabto-embedded-sdk",
     "version-string": "0.0.1",
     "dependencies": [
-      "tinycbor"
+      "tinycbor",
+      "libevent",
+      "mbedtls"
     ]
   }

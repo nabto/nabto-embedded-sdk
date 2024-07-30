@@ -17,7 +17,7 @@ size_t encode_request(const char* identifier, uint8_t* buffer, size_t bufferSize
 bool parse_response(const uint8_t* buffer, size_t bufferSize, struct nc_attacher_request_ice_servers_context* ctx);
 
 
-const char* coapPath[] = { "device", "ice-servers" };
+static const char* coapPath[] = { "device", "ice-servers" };
 
 static void ice_server_clean(struct nc_attacher_ice_server* server) {
         void* url;

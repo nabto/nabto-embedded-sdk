@@ -77,8 +77,8 @@ elseif ("x_${CMAKE_HOST_SYSTEM_NAME}" STREQUAL "x_Linux")
   set(CMAKE_CXX_LINK_FLAGS "${CMAKE_CXX_LINK_FLAGS} -latomic")
 endif()
 
-include_directories(${CMAKE_CURRENT_SOURCE_DIR}/3rdparty/libevent/libevent/include)
-include_directories(${CMAKE_CURRENT_BINARY_DIR}/3rdparty/libevent/libevent/include)
+#include_directories(${CMAKE_CURRENT_SOURCE_DIR}/3rdparty/libevent/libevent/include)
+#include_directories(${CMAKE_CURRENT_BINARY_DIR}/3rdparty/libevent/libevent/include)
 
 CHECK_INCLUDE_FILES("event2/event.h" HAVE_LIBEVENT_HEADERS)
 CHECK_INCLUDE_FILES("sys/socket.h" HAVE_SYS_SOCKET_H)
@@ -201,18 +201,33 @@ else()
     add_subdirectory(src/modules/mbedtls)
 endif()
 
-add_subdirectory(3rdparty/mbedtls)
+#add_subdirectory(3rdparty/mbedtls)
 add_subdirectory(3rdparty/cjson)
 add_subdirectory(3rdparty/gopt)
-
-FetchContent_Declare(
-  TinyCBOR
-  SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/3rdparty/tinycbor
-)
-FetchContent_MakeAvailable(TinyCBOR)
-
+add_subdirectory(3rdparty/tinycbor)
 add_subdirectory(3rdparty/nlohmann-json)
 add_subdirectory(3rdparty/cxxopts)
+
+
+set(EVENT__DISABLE_OPENSSL ON CACHE BOOL "disable libevent openssl")
+set(EVENT__DISABLE_BENCHMARK ON CACHE BOOL "disable libevent benchmarks")
+set(EVENT__DISABLE_TESTS ON CACHE BOOL "disable libevent tests")
+set(EVENT__DISABLE_REGRESS ON CACHE BOOL "disable libevent regression tests")
+set(EVENT__DISABLE_SAMPLES ON CACHE BOOL "disable libevent samples")
+set(EVENT__DISABLE_MBEDTLS ON CACHE BOOL "disable libevent mbedtls")
+set(EVENT__DISABLE_OPENSSL ON CACHE BOOL "disable libevent openssl")
+#set(EVENT__LIBRARY_TYPE STATIC CACHE STRING "libevent library type")
+
+set(ENABLE_TESTING OFF CACHE BOOL "disable MbedTLS testing")
+set(ENABLE_PROGRAMS OFF CACHE BOOL "disable MbedTLS programs")
+
+FetchContent_Declare(
+  MbedTLS
+  SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/3rdparty/mbedtls/mbedtls
+)
+FetchContent_MakeAvailable(MbedTLS)
+
+
 add_subdirectory(3rdparty/libevent)
 
 set(NN_BUILD_TESTS OFF CACHE BOOL "enable nn tests")

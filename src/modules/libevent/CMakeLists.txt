@@ -1,4 +1,3 @@
-
 set(src
   nm_libevent_dns.c
   nm_libevent.c

@@ -18,7 +18,7 @@
 
 const char* keyFile = "device.key";
 
-const char* coapPath[] = { "hello-world", NULL };
+static const char* coapPath[] = { "hello-world", NULL };
 const char* defaultString = "Hello world";
 const char* sct = "demosct";
 char helloWorld[128];

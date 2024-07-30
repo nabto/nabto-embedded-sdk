@@ -1,3 +1,6 @@
+find_package(TinyCBOR REQUIRED)
+find_package(MbedTLS COMPONENTS mbedtls mbedcrypto mbedx509)
+
 
 add_custom_target(GENERATE_VERSION ALL
   WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
@@ -6,7 +9,7 @@ add_custom_target(GENERATE_VERSION ALL
   ${CMAKE_CURRENT_SOURCE_DIR}/version.cmake
   )
 
-add_library( nc_core STATIC "${ne_core_src}")
+add_library( nc_core "${ne_core_src}")
 
 add_dependencies(nc_core GENERATE_VERSION)
 
@@ -16,5 +19,5 @@ find_package(TinyCBOR REQUIRED)
 target_link_libraries(nc_core TinyCBOR::tinycbor)
 
 if (NABTO_DEVICE_MBEDTLS)
-  target_link_libraries(nc_core 3rdparty_mbedtls)
+  target_link_libraries(nc_core MbedTLS::mbedtls MbedTLS::mbedcrypto MbedTLS::mbedx509)
 endif()

@@ -41,7 +41,6 @@ else()
     nm_mbedtls_srv
     nm_mbedtls_random
     nm_mbedtls_spake2
-    3rdparty_mbedtls
     )
 endif()
 
