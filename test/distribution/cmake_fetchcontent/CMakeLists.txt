@@ -3,12 +3,13 @@ project(cmake_fetchcontent)
 cmake_minimum_required(VERSION 3.24)
 
 include(FetchContent)
-SET(FETCHCONTENT_TRY_FIND_PACKAGE_MODE ALWAYS)
+#SET(FETCHCONTENT_TRY_FIND_PACKAGE_MODE ALWAYS)
 
 FetchContent_Declare(
   NabtoEmbeddedSDK
   # GIT ...
   SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/../../..
+  FIND_PACKAGE_ARGS
 )
 FetchContent_MakeAvailable(NabtoEmbeddedSDK)
 
