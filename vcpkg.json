@@ -4,6 +4,8 @@
     "dependencies": [
       "tinycbor",
       "libevent",
-      "mbedtls"
+      "mbedtls",
+      "boost-test",
+      "boost-asio"
     ]
   }

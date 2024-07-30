@@ -1,4 +1,4 @@
-
+find_package(Boost COMPONENTS asio unit_test_framework)
 set(CMAKE_CXX_STANDARD 14)
 
 set(util_src
@@ -57,23 +57,21 @@ set(test_src
   ../src/api_test/nabto_device_test_logging.c
   )
 
-
-add_subdirectory(../nabto-common/3rdparty/boost boost)
 add_subdirectory(fixtures/udp_server)
 add_subdirectory(fixtures/coap_server)
 add_subdirectory(fixtures/dtls_server)
 
 add_library(test_util ${util_src})
 target_include_directories(test_util PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
-target_link_libraries(test_util 3rdparty_boost_asio nn nabto_device)
+target_link_libraries(test_util Boost::asio nn nabto_device)
 
 
 add_executable(embedded_unit_test "${test_src}")
 target_link_libraries(embedded_unit_test
 
   #test_platform
-  3rdparty_boost_test
-  3rdparty_boost_asio
+  Boost::unit_test_framework
+  Boost::asio
   nm_communication_buffer
   #common_util
   nc_core
@@ -81,7 +79,6 @@ target_link_libraries(embedded_unit_test
   nm_logging_test
   nm_iam
   nabto_device
-  3rdparty_boost_test
   np_platform
   nm_event_queue
   test_util

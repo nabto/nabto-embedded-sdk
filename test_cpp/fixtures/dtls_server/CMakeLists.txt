@@ -1,4 +1,5 @@
 find_package(MbedTLS COMPONENTS mbedtls mbedcrypto mbedx509)
+find_package(Boost COMPONENTS asio)
 
 set(src
   dtls_server.cpp
@@ -13,4 +14,4 @@ set(src
 add_library(dtls_server_cpp ${src})
 include_directories(../../)
 
-target_link_libraries(dtls_server_cpp udp_server_cpp coap coap_server_cpp 3rdparty_boost_asio MbedTLS::mbedtls MbedTLS::mbedcrypto MbedTLS::mbedx509 )
+target_link_libraries(dtls_server_cpp udp_server_cpp coap coap_server_cpp Boost::asio MbedTLS::mbedtls MbedTLS::mbedcrypto MbedTLS::mbedx509 )
