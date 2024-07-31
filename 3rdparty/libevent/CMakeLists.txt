@@ -1,9 +1,9 @@
 find_package(Libevent COMPONENTS core extra pthreads)
 
-if (libevent_FOUND)
-  add_library(3rdparty_libevent INTERFACE)
-  target_link_libraries(3rdparty_libevent libevent::core libevent::extra libevent::pthreads)
+if (Libevent_FOUND)
 else ()
+
+
   set(EVENT__DISABLE_OPENSSL ON CACHE BOOL "disable libevent openssl")
   set(EVENT__DISABLE_BENCHMARK ON CACHE BOOL "disable libevent benchmarks")
   set(EVENT__DISABLE_TESTS ON CACHE BOOL "disable libevent tests")
@@ -13,18 +13,28 @@ else ()
   set(EVENT__DISABLE_OPENSSL ON CACHE BOOL "disable libevent openssl")
   set(EVENT__LIBRARY_TYPE STATIC CACHE STRING "libevent library type")
 
-  include_directories(libevent/include)
+  FetchContent_Declare(
+    Libevent
+    SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/libevent
+    FIND_PACKAGE_ARGS
+  )
+  FetchContent_MakeAvailable(Libevent)
 
-  add_subdirectory(libevent EXCLUDE_FROM_ALL)
+  # include_directories(libevent/include)
 
-  add_library(3rdparty_libevent INTERFACE)
+  # add_subdirectory(libevent)
 
-  target_link_libraries(3rdparty_libevent INTERFACE event_core event_extra)
-
-  if (NOT WIN32)
-    target_link_libraries(3rdparty_libevent INTERFACE event_pthreads)
+  if (NOT TARGET libevent::core)
+    add_library(libevent::core ALIAS event_core)
   endif()
 
-  target_include_directories(3rdparty_libevent INTERFACE ${CMAKE_CURRENT_BINARY_DIR}/libevent/include)
-  target_include_directories(3rdparty_libevent INTERFACE ${CMAKE_CURRENT_SOURCE_DIR}/libevent/include)
+  if (NOT TARGET libevent::extra)
+    add_library(libevent::extra ALIAS event_extra)
+  endif()
+
+  if (NOT WIN32)
+    if (NOT TARGET libevent::pthreads)
+      add_library(libevent::pthreads ALIAS event_pthreads)
+    endif()
+  endif()
 endif()

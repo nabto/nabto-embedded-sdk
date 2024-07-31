@@ -6,7 +6,7 @@ if (NABTO_DEVICE_USE_VCPKG)
 endif()
 set(CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake;${CMAKE_MODULE_PATH}")
 
-project(nabto-embedded-sdk)
+project(NabtoEmbeddedSDK VERSION 0.0.1)
 
 set(CMAKE_POLICY_DEFAULT_CMP0063 NEW)
 cmake_policy(SET CMP0063 NEW)
@@ -204,7 +204,14 @@ endif()
 #add_subdirectory(3rdparty/mbedtls)
 add_subdirectory(3rdparty/cjson)
 add_subdirectory(3rdparty/gopt)
-add_subdirectory(3rdparty/tinycbor)
+
+FetchContent_Declare(
+  TinyCBOR
+  SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/3rdparty/tinycbor
+)
+FetchContent_MakeAvailable(TinyCBOR)
+
+#add_subdirectory(3rdparty/tinycbor)
 add_subdirectory(3rdparty/nlohmann-json)
 add_subdirectory(3rdparty/cxxopts)
 
@@ -228,8 +235,8 @@ FetchContent_Declare(
 )
 FetchContent_MakeAvailable(MbedTLS)
 
-
 add_subdirectory(3rdparty/libevent)
+find_package(Libevent COMPONENTS core extra pthreads)
 
 set(NN_BUILD_TESTS OFF CACHE BOOL "enable nn tests")
 
@@ -311,3 +318,51 @@ endif()
 if (DEVICE_BUILD_APPS)
   add_subdirectory(apps/tcp_tunnel_device)
 endif()
+
+
+include(GNUInstallDirs)
+set(config_install_dir "${CMAKE_INSTALL_LIBDIR}/cmake/${PROJECT_NAME}")
+set(generated_dir "${CMAKE_CURRENT_BINARY_DIR}/generated")
+
+set(version_config "${generated_dir}/${PROJECT_NAME}ConfigVersion.cmake")
+set(project_config "${generated_dir}/${PROJECT_NAME}Config.cmake")
+set(TARGETS_EXPORT_NAME "${PROJECT_NAME}Targets")
+set(namespace "${PROJECT_NAME}::")
+
+include(CMakePackageConfigHelpers)
+
+install(
+    TARGETS nabto_device
+    EXPORT "${TARGETS_EXPORT_NAME}"
+    LIBRARY DESTINATION "${CMAKE_INSTALL_LIBDIR}"
+    ARCHIVE DESTINATION "${CMAKE_INSTALL_LIBDIR}"
+    RUNTIME DESTINATION "${CMAKE_INSTALL_BINDIR}"
+    INCLUDES DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}"
+    FILE_SET public_headers
+)
+
+write_basic_package_version_file(
+    "${version_config}" COMPATIBILITY SameMajorVersion
+)
+
+configure_package_config_file(
+    "cmake-scripts/Config.cmake.in"
+    "${project_config}"
+    INSTALL_DESTINATION "${config_install_dir}"
+)
+
+# Config
+#   * <prefix>/lib/cmake/Foo/FooConfig.cmake
+#   * <prefix>/lib/cmake/Foo/FooConfigVersion.cmake
+install(
+    FILES "${project_config}" "${version_config}"
+    DESTINATION "${config_install_dir}"
+)
+
+# Config
+#   * <prefix>/lib/cmake/Foo/FooTargets.cmake
+install(
+    EXPORT "${TARGETS_EXPORT_NAME}"
+    NAMESPACE "${namespace}"
+    DESTINATION "${config_install_dir}"
+)

@@ -10,4 +10,4 @@ set(src
   )
 
 add_library(apps_common ${src})
-target_link_libraries(apps_common nabto_device 3rdparty_cjson nn MbedTLS::mbedtls MbedTLS::mbedcrypto MbedTLS::mbedx509)
+target_link_libraries(apps_common nabto_device 3rdparty_cjson NabtoCommon::nn MbedTLS::mbedtls MbedTLS::mbedcrypto MbedTLS::mbedx509)

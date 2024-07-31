@@ -2,6 +2,7 @@ find_package( Threads )
 find_package(MbedTLS REQUIRED COMPONENTS mbedtls mbedcrypto mbedx509)
 find_package(TinyCBOR REQUIRED)
 find_package(NabtoCommon REQUIRED COMPONENTS nn nabto_stream mdns_server coap nabto_stun_client)
+find_package(Libevent COMPONENTS core)
 
 include_directories(${EVENT__INCLUDE_DIRS})
 
@@ -18,17 +19,9 @@ else()
   message(error "missing thread library")
 endif()
 
-target_link_libraries(nabto_device_threads PUBLIC nn)
+target_link_libraries(nabto_device_threads PUBLIC NabtoCommon::nn)
 
-add_library( nabto_device "${src}" "${ne_api_src}" "${ne_api_future_queue_src}" "${ne_api_test_src}")
-add_library(NabtoEmbeddedSDK::nabto_device ALIAS nabto_device)
-
-if (BUILD_SHARED_LIBS)
-  target_compile_definitions(nabto_device PRIVATE NABTO_DEVICE_API_EXPORTS)
-  target_compile_definitions(nabto_device PRIVATE NABTO_DEVICE_API_SHARED)
-endif()
-
-target_link_libraries( nabto_device PRIVATE
+set(nabto_device_dependencies
   $<TARGET_OBJECTS:nc_core>
   $<TARGET_OBJECTS:np_platform>
   $<TARGET_OBJECTS:nm_mdns>
@@ -38,6 +31,28 @@ target_link_libraries( nabto_device PRIVATE
   $<TARGET_OBJECTS:nm_event_queue>
   $<TARGET_OBJECTS:nm_communication_buffer>
   $<TARGET_OBJECTS:nm_libevent>
+
+  )
+
+if (NABTO_DEVICE_MBEDTLS)
+  list(APPEND nabto_device_dependencies
+    $<TARGET_OBJECTS:nm_mbedtls_cli>
+    $<TARGET_OBJECTS:nm_mbedtls_srv>
+    $<TARGET_OBJECTS:nm_mbedtls_random>
+    $<TARGET_OBJECTS:nm_mbedtls_spake2>
+    $<TARGET_OBJECTS:nm_mbedtls_common>
+  )
+endif()
+
+add_library( nabto_device "${src}" "${ne_api_src}" "${ne_api_future_queue_src}" "${ne_api_test_src}" "${nabto_device_dependencies}")
+add_library(NabtoEmbeddedSDK::nabto_device ALIAS nabto_device)
+
+if (BUILD_SHARED_LIBS)
+  target_compile_definitions(nabto_device PRIVATE NABTO_DEVICE_API_EXPORTS)
+  target_compile_definitions(nabto_device PRIVATE NABTO_DEVICE_API_SHARED)
+endif()
+
+target_link_libraries( nabto_device PRIVATE
   NabtoCommon::nn
   NabtoCommon::mdns_server
   NabtoCommon::nabto_stream
@@ -48,15 +63,15 @@ target_link_libraries( nabto_device PRIVATE
   MbedTLS::mbedx509
   )
 
-if (NABTO_DEVICE_MBEDTLS)
-  target_link_libraries(nabto_device PRIVATE
-  $<TARGET_OBJECTS:nm_mbedtls_cli>
-  $<TARGET_OBJECTS:nm_mbedtls_srv>
-  $<TARGET_OBJECTS:nm_mbedtls_random>
-  $<TARGET_OBJECTS:nm_mbedtls_spake2>
-  $<TARGET_OBJECTS:nm_mbedtls_common>
-  )
-endif()
+# if (NABTO_DEVICE_MBEDTLS)
+#   target_link_libraries(nabto_device PRIVATE
+#   $<TARGET_OBJECTS:nm_mbedtls_cli>
+#   $<TARGET_OBJECTS:nm_mbedtls_srv>
+#   $<TARGET_OBJECTS:nm_mbedtls_random>
+#   $<TARGET_OBJECTS:nm_mbedtls_spake2>
+#   $<TARGET_OBJECTS:nm_mbedtls_common>
+#   )
+# endif()
 
 if(NABTO_DEVICE_WOLFSSL)
   target_link_libraries(nabto_device PRIVATE
@@ -69,40 +84,50 @@ endif()
 
 target_link_libraries( nabto_device PRIVATE ${CMAKE_THREAD_LIBS_INIT} )
 
-target_link_libraries(nabto_device PRIVATE 3rdparty_libevent TinyCBOR::tinycbor)
+target_link_libraries(nabto_device PRIVATE libevent::core libevent::extra libevent::pthreads TinyCBOR::tinycbor)
+target_link_libraries(nabto_device PRIVATE NabtoCommon::nn)
 
 if (HAVE_WINDOWS_H)
   target_link_libraries(nabto_device ws2_32)
 endif()
 
-set_target_properties(nabto_device PROPERTIES PUBLIC_HEADER "../../include/nabto/nabto_device.h;../../include/nabto/nabto_device_experimental.h")
 target_include_directories(nabto_device
   PUBLIC
     "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/../../include>"
     "$<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>"
 )
 
-install(TARGETS nabto_device
-  EXPORT nabto_device
-  RUNTIME DESTINATION bin
-  LIBRARY DESTINATION lib
-  ARCHIVE DESTINATION lib
-  PUBLIC_HEADER DESTINATION include/nabto
-  )
+target_sources(nabto_device PUBLIC
+    FILE_SET public_headers
+    TYPE HEADERS
+    BASE_DIRS ../../include
+    FILES
+        ../../include/nabto/nabto_device.h
+        ../../include/nabto/nabto_device_experimental.h
+)
 
-install(EXPORT nabto_device
-  FILE NabtoEmbeddedSDKTargets.cmake
-  NAMESPACE NabtoEmbeddedSDK::
-  DESTINATION lib/cmake/nabto_client)
 
-include(CMakePackageConfigHelpers)
-# generate the config file that includes the exports
-  configure_package_config_file(${CMAKE_CURRENT_SOURCE_DIR}/Config.cmake.in
-    "${CMAKE_CURRENT_BINARY_DIR}/NabtoEmbeddedSDKConfig.cmake"
-    INSTALL_DESTINATION "lib/cmake/NabtoEmbeddedSDK"
-    NO_SET_AND_CHECK_MACRO
-    NO_CHECK_REQUIRED_COMPONENTS_MACRO
-  )
+# install(TARGETS nabto_device
+#   EXPORT nabto_device
+#   RUNTIME DESTINATION bin
+#   LIBRARY DESTINATION lib
+#   ARCHIVE DESTINATION lib
+#   PUBLIC_HEADER DESTINATION include/nabto
+#   )
+
+# install(EXPORT nabto_device
+#   FILE NabtoEmbeddedSDKTargets.cmake
+#   NAMESPACE NabtoEmbeddedSDK::
+#   DESTINATION lib/cmake/nabto_client)
+
+# include(CMakePackageConfigHelpers)
+# # generate the config file that includes the exports
+#   configure_package_config_file(${CMAKE_CURRENT_SOURCE_DIR}/Config.cmake.in
+#     "${CMAKE_CURRENT_BINARY_DIR}/NabtoEmbeddedSDKConfig.cmake"
+#     INSTALL_DESTINATION "lib/cmake/NabtoEmbeddedSDK"
+#     NO_SET_AND_CHECK_MACRO
+#     NO_CHECK_REQUIRED_COMPONENTS_MACRO
+#   )
 
 
 set(integration_test_src

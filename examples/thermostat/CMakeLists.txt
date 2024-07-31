@@ -20,7 +20,7 @@ set(src
 
 add_executable(thermostat_device ${src})
 
-target_link_libraries(thermostat_device nabto_device 3rdparty_gopt 3rdparty_cjson nn apps_common nm_fs_posix)
+target_link_libraries(thermostat_device nabto_device 3rdparty_gopt 3rdparty_cjson NabtoCommon::nn apps_common nm_fs_posix)
 
 target_link_libraries(thermostat_device TinyCBOR::tinycbor)
 

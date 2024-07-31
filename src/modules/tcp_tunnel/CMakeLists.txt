@@ -7,4 +7,4 @@ set(src
   )
 
 add_library(nm_tcp_tunnel "${src}")
-target_link_libraries(nm_tcp_tunnel nc_core TinyCBOR::tinycbor)
+target_link_libraries(nm_tcp_tunnel PRIVATE nc_core TinyCBOR::tinycbor)

@@ -1,3 +1,5 @@
+find_package(TinyCBOR REQUIRED)
+
 set(src
 
   nm_iam.c
@@ -50,7 +52,6 @@ set(src
   )
 
 add_library(nm_iam ${src})
-target_link_libraries(nm_iam PRIVATE nabto_device 3rdparty_cjson nn)
+target_link_libraries(nm_iam PRIVATE nabto_device 3rdparty_cjson NabtoCommon::nn )
 
-find_package(TinyCBOR REQUIRED)
 target_link_libraries(nm_iam PUBLIC TinyCBOR::tinycbor)
