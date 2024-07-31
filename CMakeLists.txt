@@ -220,6 +220,7 @@ set(EVENT__DISABLE_OPENSSL ON CACHE BOOL "disable libevent openssl")
 
 set(ENABLE_TESTING OFF CACHE BOOL "disable MbedTLS testing")
 set(ENABLE_PROGRAMS OFF CACHE BOOL "disable MbedTLS programs")
+set(DISABLE_PACKAGE_CONFIG_AND_INSTALL OFF CACHE BOOL "disable mbedtls package config and install")
 
 FetchContent_Declare(
   MbedTLS
@@ -231,11 +232,19 @@ FetchContent_MakeAvailable(MbedTLS)
 add_subdirectory(3rdparty/libevent)
 
 set(NN_BUILD_TESTS OFF CACHE BOOL "enable nn tests")
-add_subdirectory(nabto-common/components/nn)
-add_subdirectory(nabto-common/components/streaming)
-add_subdirectory(nabto-common/components/stun)
-add_subdirectory(nabto-common/components/coap)
-add_subdirectory(nabto-common/components/mdns)
+
+FetchContent_Declare(
+  NabtoCommon
+  SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/nabto-common
+)
+FetchContent_MakeAvailable(NabtoCommon)
+
+
+# add_subdirectory(nabto-common/components/nn)
+# add_subdirectory(nabto-common/components/streaming)
+# add_subdirectory(nabto-common/components/stun)
+# add_subdirectory(nabto-common/components/coap)
+# add_subdirectory(nabto-common/components/mdns)
 
 add_subdirectory(src/modules/mdns)
 add_subdirectory(src/modules/tcp_tunnel)

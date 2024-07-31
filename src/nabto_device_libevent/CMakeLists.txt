@@ -1,6 +1,7 @@
 find_package( Threads )
 find_package(MbedTLS REQUIRED COMPONENTS mbedtls mbedcrypto mbedx509)
 find_package(TinyCBOR REQUIRED)
+find_package(NabtoCommon REQUIRED COMPONENTS nn nabto_stream mdns_server coap nabto_stun_client)
 
 include_directories(${EVENT__INCLUDE_DIRS})
 
@@ -37,11 +38,11 @@ target_link_libraries( nabto_device PRIVATE
   $<TARGET_OBJECTS:nm_event_queue>
   $<TARGET_OBJECTS:nm_communication_buffer>
   $<TARGET_OBJECTS:nm_libevent>
-  nn
-  mdns_server
-  nabto_stream
-  coap
-  nabto_stun_client
+  NabtoCommon::nn
+  NabtoCommon::mdns_server
+  NabtoCommon::nabto_stream
+  NabtoCommon::coap
+  NabtoCommon::nabto_stun_client
   MbedTLS::mbedtls
   MbedTLS::mbedcrypto
   MbedTLS::mbedx509
