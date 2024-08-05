@@ -84,11 +84,13 @@ endif()
 
 target_link_libraries( nabto_device PRIVATE ${CMAKE_THREAD_LIBS_INIT} )
 
-target_link_libraries(nabto_device PRIVATE libevent::core libevent::extra libevent::pthreads TinyCBOR::tinycbor)
+target_link_libraries(nabto_device PRIVATE libevent::core libevent::extra TinyCBOR::tinycbor)
 target_link_libraries(nabto_device PRIVATE NabtoCommon::nn)
 
 if (HAVE_WINDOWS_H)
   target_link_libraries(nabto_device PRIVATE ws2_32)
+else()
+  target_link_libraries(nabto_device PRIVATE libevent::pthreads)
 endif()
 
 target_include_directories(nabto_device

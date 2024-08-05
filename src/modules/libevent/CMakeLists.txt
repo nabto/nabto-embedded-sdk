@@ -11,5 +11,8 @@ set(src
 add_library(nm_libevent ${src})
 
 target_link_libraries(nm_libevent PRIVATE nm_communication_buffer)
-target_link_libraries(nm_libevent PUBLIC libevent::core libevent::extra libevent::pthreads)
+target_link_libraries(nm_libevent PUBLIC libevent::core libevent::extra)
+if(NOT HAVE_WINDOWS_H)
+  target_link_libraries(nm_libevent PRIVATE libevent::pthreads)
+endif()
 #target_link_libraries(nm_libevent ${LIBEVENT_STATIC_LIBRARIES})
