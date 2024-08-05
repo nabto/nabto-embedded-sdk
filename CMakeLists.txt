@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.3)
+cmake_minimum_required(VERSION 3.24)
 
 option(NABTO_DEVICE_USE_VCPKG "Use vcpkg for providing dependencies" OFF)
 if (NABTO_DEVICE_USE_VCPKG)
