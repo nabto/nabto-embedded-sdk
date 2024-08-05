@@ -13,11 +13,11 @@ jobs:
     strategy:
       matrix:
         cli-only: [0, 1]
-        os: [windows-2022, ubuntu-22.04, macos-12]
+        os: [windows-2022, ubuntu-24.04, macos-12]
         include:
           - os: windows-2022
             build_command: cmake --build build-dir --parallel --target install --config Release
-          - os: ubuntu-22.04
+          - os: ubuntu-24.04
             build_command: cmake --build build-dir --parallel --target install
           - os: macos-12
             # 2024-01-05: Sometimes mac fails on github actions when doing builds so we use make without parallellism directly, since we hope that fixes the unknown problem.
