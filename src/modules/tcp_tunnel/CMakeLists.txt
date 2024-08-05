@@ -1,4 +1,4 @@
-find_package(TinyCBOR)
+find_package(TinyCBOR REQUIRED)
 
 set(src
   nm_tcp_tunnel.c

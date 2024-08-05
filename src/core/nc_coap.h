@@ -2,7 +2,7 @@
 #define _NC_COAP_H_
 
 #include <platform/np_error_code.h>
-#include <coap/nabto_coap.h>
+#include <nabto_coap/nabto_coap.h>
 
 // translate nabto_coap_error to np_error_code, coap errors are common
 // for server and client

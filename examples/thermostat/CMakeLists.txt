@@ -1,5 +1,5 @@
 find_package( Threads )
-find_package( TinyCBOR )
+find_package( TinyCBOR REQUIRED )
 
 set(src
   ${ne_iam_src}

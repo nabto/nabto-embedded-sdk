@@ -9,7 +9,7 @@
 #include <platform/np_logging.h>
 #include <platform/np_allocator.h>
 
-#include <streaming/nabto_stream_log_helper.h>
+#include <nabto_stream/nabto_stream_log_helper.h>
 
 #define LOG NABTO_LOG_MODULE_STREAM_MANAGER
 

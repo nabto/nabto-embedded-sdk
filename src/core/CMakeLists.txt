@@ -14,7 +14,7 @@ add_library( nc_core "${ne_core_src}")
 
 add_dependencies(nc_core GENERATE_VERSION)
 
-target_link_libraries( nc_core PUBLIC np_platform NabtoCommon::nabto_stream NabtoCommon::nabto_stun_client NabtoCommon::coap NabtoCommon::nn)
+target_link_libraries( nc_core PUBLIC np_platform NabtoCommon::nabto_stream NabtoCommon::nabto_stun NabtoCommon::nabto_coap NabtoCommon::nn)
 
 find_package(TinyCBOR REQUIRED)
 target_link_libraries(nc_core PRIVATE TinyCBOR::tinycbor)

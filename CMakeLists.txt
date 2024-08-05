@@ -50,6 +50,16 @@ option(DEVICE_MBEDTLS_2 "Set this to true if the device is built against mbedtls
 set(NABTO_DEVICE_MBEDTLS_PROVIDER "module" CACHE STRING "Provider of MbedTLS library")
 set_property(CACHE NABTO_DEVICE_MBEDTLS_PROVIDER PROPERTY STRINGS "module" "package")
 
+set(NABTO_DEVICE_TINYCBOR_PROVIDER "module" CACHE STRING "Provider of TinyCBOR library")
+set_property(CACHE NABTO_DEVICE_TINYCBOR_PROVIDER PROPERTY STRINGS "module" "package")
+
+set(NABTO_DEVICE_NABTOCOMMON_PROVIDER "module" CACHE STRING "Provider of NabtoCommon library")
+set_property(CACHE NABTO_DEVICE_NABTOCOMMON_PROVIDER PROPERTY STRINGS "module" "package")
+
+set(NABTO_DEVICE_LIBEVENT_PROVIDER "module" CACHE STRING "Provider of Libevent library")
+set_property(CACHE NABTO_DEVICE_LIBEVENT_PROVIDER PROPERTY STRINGS "module" "package")
+
+
 set(src_dir ${CMAKE_CURRENT_SOURCE_DIR}/src)
 if (DEVICE_STATIC_LINK_VCRUNTIME)
   cmake_policy(SET CMP0091 NEW)
@@ -205,47 +215,46 @@ endif()
 add_subdirectory(3rdparty/cjson)
 add_subdirectory(3rdparty/gopt)
 
-FetchContent_Declare(
-  TinyCBOR
-  SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/3rdparty/tinycbor
-)
-FetchContent_MakeAvailable(TinyCBOR)
+if (NABTO_DEVICE_TINYCBOR_PROVIDER STREQUAL "module")
+  FetchContent_Declare(
+    TinyCBOR
+    SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/3rdparty/tinycbor
+    FIND_PACKAGE_ARGS
+  )
+  FetchContent_MakeAvailable(TinyCBOR)
+endif()
 
 #add_subdirectory(3rdparty/tinycbor)
 add_subdirectory(3rdparty/nlohmann-json)
 add_subdirectory(3rdparty/cxxopts)
 
-
-set(EVENT__DISABLE_OPENSSL ON CACHE BOOL "disable libevent openssl")
-set(EVENT__DISABLE_BENCHMARK ON CACHE BOOL "disable libevent benchmarks")
-set(EVENT__DISABLE_TESTS ON CACHE BOOL "disable libevent tests")
-set(EVENT__DISABLE_REGRESS ON CACHE BOOL "disable libevent regression tests")
-set(EVENT__DISABLE_SAMPLES ON CACHE BOOL "disable libevent samples")
-set(EVENT__DISABLE_MBEDTLS ON CACHE BOOL "disable libevent mbedtls")
-set(EVENT__DISABLE_OPENSSL ON CACHE BOOL "disable libevent openssl")
-#set(EVENT__LIBRARY_TYPE STATIC CACHE STRING "libevent library type")
-
 set(ENABLE_TESTING OFF CACHE BOOL "disable MbedTLS testing")
 set(ENABLE_PROGRAMS OFF CACHE BOOL "disable MbedTLS programs")
 set(DISABLE_PACKAGE_CONFIG_AND_INSTALL OFF CACHE BOOL "disable mbedtls package config and install")
 
-FetchContent_Declare(
-  MbedTLS
-  SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/3rdparty/mbedtls/mbedtls
-)
-FetchContent_MakeAvailable(MbedTLS)
+if (NABTO_DEVICE_MBEDTLS_PROVIDER STREQUAL "module")
+  FetchContent_Declare(
+    MbedTLS
+    SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/3rdparty/mbedtls/mbedtls
+  )
+  FetchContent_MakeAvailable(MbedTLS)
+endif()
+
 
 add_subdirectory(3rdparty/libevent)
+
 find_package(Libevent COMPONENTS core extra pthreads)
 
 set(NN_BUILD_TESTS OFF CACHE BOOL "enable nn tests")
 
-FetchContent_Declare(
-  NabtoCommon
-  SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/nabto-common
-)
-FetchContent_MakeAvailable(NabtoCommon)
-
+if (NABTO_DEVICE_NABTOCOMMON_PROVIDER STREQUAL "module")
+  FetchContent_Declare(
+    NabtoCommon
+    SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/nabto-common
+    FIND_PACKAGE_ARGS
+  )
+  FetchContent_MakeAvailable(NabtoCommon)
+endif()
 
 # add_subdirectory(nabto-common/components/nn)
 # add_subdirectory(nabto-common/components/streaming)

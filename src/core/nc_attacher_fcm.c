@@ -4,7 +4,7 @@
 #include <platform/np_error_code.h>
 #include <platform/np_logging.h>
 #include <platform/np_allocator.h>
-#include <coap/nabto_coap_client.h>
+#include <nabto_coap/nabto_coap_client.h>
 
 
 #include "tinycbor/cbor.h"

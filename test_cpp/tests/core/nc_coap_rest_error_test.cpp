@@ -1,7 +1,7 @@
 #include <boost/test/unit_test.hpp>
 
-#include <coap/nabto_coap_client.h>
-#include <coap/nabto_coap_client_test.h>
+#include <nabto_coap/nabto_coap_client.h>
+#include <nabto_coap/nabto_coap_client_test.h>
 #include <core/nc_coap_rest_error.h>
 
 #include <nlohmann/json.hpp>

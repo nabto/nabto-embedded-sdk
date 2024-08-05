@@ -54,10 +54,10 @@ endif()
 
 target_link_libraries( nabto_device PRIVATE
   NabtoCommon::nn
-  NabtoCommon::mdns_server
+  NabtoCommon::nabto_mdns
   NabtoCommon::nabto_stream
-  NabtoCommon::coap
-  NabtoCommon::nabto_stun_client
+  NabtoCommon::nabto_coap
+  NabtoCommon::nabto_stun
   MbedTLS::mbedtls
   MbedTLS::mbedcrypto
   MbedTLS::mbedx509

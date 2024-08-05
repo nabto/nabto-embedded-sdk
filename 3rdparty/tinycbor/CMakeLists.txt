@@ -1,10 +1,4 @@
 project(TinyCBOR VERSION 0.6.0)
-
-find_package(TinyCBOR)
-
-if (TinyCBOR_FOUND)
-
-else()
   set(src
     tinycbor_src/src/cborencoder.c
     tinycbor_src/src/cborparser.c
@@ -73,6 +67,3 @@ else()
       NAMESPACE "${namespace}"
       DESTINATION "${config_install_dir}"
   )
-
-
-endif()
