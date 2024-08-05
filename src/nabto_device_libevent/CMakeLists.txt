@@ -44,6 +44,15 @@ if (NABTO_DEVICE_MBEDTLS)
   )
 endif()
 
+if(NABTO_DEVICE_WOLFSSL)
+  list(APPEND nabto_device_dependencies
+    $<TARGET_OBJECTS:nm_wolfssl_cli>
+    $<TARGET_OBJECTS:nm_wolfssl_srv>
+    $<TARGET_OBJECTS:nm_wolfssl_random>
+    $<TARGET_OBJECTS:nm_wolfssl_spake2>
+  )
+endif()
+
 add_library( nabto_device "${src}" "${ne_api_src}" "${ne_api_future_queue_src}" "${ne_api_test_src}" "${nabto_device_dependencies}")
 add_library(NabtoEmbeddedSDK::nabto_device ALIAS nabto_device)
 
@@ -58,28 +67,18 @@ target_link_libraries( nabto_device PRIVATE
   NabtoCommon::nabto_stream
   NabtoCommon::nabto_coap
   NabtoCommon::nabto_stun
-  MbedTLS::mbedtls
-  MbedTLS::mbedcrypto
-  MbedTLS::mbedx509
-  )
+)
 
-# if (NABTO_DEVICE_MBEDTLS)
-#   target_link_libraries(nabto_device PRIVATE
-#   $<TARGET_OBJECTS:nm_mbedtls_cli>
-#   $<TARGET_OBJECTS:nm_mbedtls_srv>
-#   $<TARGET_OBJECTS:nm_mbedtls_random>
-#   $<TARGET_OBJECTS:nm_mbedtls_spake2>
-#   $<TARGET_OBJECTS:nm_mbedtls_common>
-#   )
-# endif()
-
-if(NABTO_DEVICE_WOLFSSL)
+if (NABTO_DEVICE_MBEDTLS)
   target_link_libraries(nabto_device PRIVATE
-    nm_wolfssl_cli
-    nm_wolfssl_srv
-    nm_wolfssl_random
-    nm_wolfssl_spake2
-  )
+    MbedTLS::mbedtls
+    MbedTLS::mbedcrypto
+    MbedTLS::mbedx509
+    )
+endif()
+
+if (NABTO_DEVICE_WOLFSSL)
+  target_link_libraries(nabto_device PRIVATE wolfssl)
 endif()
 
 target_link_libraries( nabto_device PRIVATE ${CMAKE_THREAD_LIBS_INIT} )
