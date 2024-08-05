@@ -88,7 +88,7 @@ target_link_libraries(nabto_device PRIVATE libevent::core libevent::extra libeve
 target_link_libraries(nabto_device PRIVATE NabtoCommon::nn)
 
 if (HAVE_WINDOWS_H)
-  target_link_libraries(nabto_device ws2_32)
+  target_link_libraries(nabto_device PRIVATE ws2_32)
 endif()
 
 target_include_directories(nabto_device
