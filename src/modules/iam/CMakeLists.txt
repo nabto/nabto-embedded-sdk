@@ -52,6 +52,7 @@ set(src
   )
 
 add_library(nm_iam ${src})
-target_link_libraries(nm_iam PRIVATE nabto_device 3rdparty_cjson NabtoCommon::nn )
+target_link_libraries(nm_iam PRIVATE nabto_device NabtoCommon::nn )
 
+target_link_libraries(nm_iam PUBLIC 3rdparty_cjson)
 target_link_libraries(nm_iam PUBLIC TinyCBOR::tinycbor)
