@@ -12,7 +12,9 @@ jobs:
       - name: update git repo
         run: apt-get update && apt-get install software-properties-common -y && add-apt-repository ppa:git-core/ppa
       - name: Install sw
-        run: apt-get update && apt-get install -y git cmake build-essential
+        run: apt-get update && apt-get install -y git build-essential
+      - name: Install newer cmake
+        run: curl -sSL "https://github.com/Kitware/CMake/releases/download/v3.30.2/cmake-3.30.2-linux-x86_64.tar.gz" | tar --strip-components=1 -xz -C /usr/local
       - uses: actions/checkout@v4
         with:
           submodules: recursive
