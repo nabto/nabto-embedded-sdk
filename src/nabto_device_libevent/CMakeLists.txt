@@ -59,6 +59,8 @@ add_library(NabtoEmbeddedSDK::nabto_device ALIAS nabto_device)
 if (BUILD_SHARED_LIBS)
   target_compile_definitions(nabto_device PRIVATE NABTO_DEVICE_API_EXPORTS)
   target_compile_definitions(nabto_device PRIVATE NABTO_DEVICE_API_SHARED)
+else()
+  target_compile_definitions(nabto_device PUBLIC NABTO_DEVICE_WIN32_API_STATIC)
 endif()
 
 target_link_libraries( nabto_device PRIVATE

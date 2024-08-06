@@ -91,7 +91,7 @@ endif()
 
 add_subdirectory(3rdparty/libevent)
 
-find_package(Libevent COMPONENTS core extra pthreads)
+find_package(Libevent COMPONENTS core extra)
 
 set(NN_BUILD_TESTS OFF CACHE BOOL "enable nn tests")
 
