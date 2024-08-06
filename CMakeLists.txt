@@ -27,9 +27,6 @@ include(${CMAKE_CURRENT_SOURCE_DIR}/nabto_primary_files.cmake)
 
 message("CMake Version: ${CMAKE_VERSION}")
 
-SET(FETCHCONTENT_TRY_FIND_PACKAGE_MODE ALWAYS)
-
-
 # build all of nabto on linux, windows, mac
 set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 
@@ -37,7 +34,6 @@ set(CMAKE_CXX_STANDARD 14)
 set(CMAKE_C_STANDARD 99)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_OSX_ARCHITECTURES "arm64;x86_64" CACHE STRING "" FORCE)
-#set(CMAKE_OSX_ARCHITECTURES arm64 CACHE STRING "")
 add_definitions(-DNODEFAULTLIB)
 add_definitions(-DBOOST_ALL_NO_LIB)
 
@@ -50,19 +46,25 @@ option(DEVICE_BUILD_APPS "build applications" ON)
 option(DEVICE_STATIC_LINK_VCRUNTIME "Static link visual c runtime" OFF)
 option(DEVICE_MBEDTLS_2 "Set this to true if the device is built against mbedtls version 2" ON)
 
-set(NABTO_DEVICE_MBEDTLS_PROVIDER "module" CACHE STRING "Provider of MbedTLS library")
+if(NABTO_DEVICE_USE_VCPKG)
+  set(NABTO_DEVICE_DEFAULT_PROVIDER "package")
+else()
+  set(NABTO_DEVICE_DEFAULT_PROVIDER "module")
+endif()
+
+set(NABTO_DEVICE_MBEDTLS_PROVIDER ${NABTO_DEVICE_DEFAULT_PROVIDER} CACHE STRING "Provider of MbedTLS library")
 set_property(CACHE NABTO_DEVICE_MBEDTLS_PROVIDER PROPERTY STRINGS "module" "package")
 
-set(NABTO_DEVICE_TINYCBOR_PROVIDER "module" CACHE STRING "Provider of TinyCBOR library")
+set(NABTO_DEVICE_TINYCBOR_PROVIDER ${NABTO_DEVICE_DEFAULT_PROVIDER} CACHE STRING "Provider of TinyCBOR library")
 set_property(CACHE NABTO_DEVICE_TINYCBOR_PROVIDER PROPERTY STRINGS "module" "package")
 
-set(NABTO_DEVICE_NABTOCOMMON_PROVIDER "module" CACHE STRING "Provider of NabtoCommon library")
+set(NABTO_DEVICE_NABTOCOMMON_PROVIDER ${NABTO_DEVICE_DEFAULT_PROVIDER} CACHE STRING "Provider of NabtoCommon library")
 set_property(CACHE NABTO_DEVICE_NABTOCOMMON_PROVIDER PROPERTY STRINGS "module" "package")
 
-set(NABTO_DEVICE_LIBEVENT_PROVIDER "module" CACHE STRING "Provider of Libevent library")
+set(NABTO_DEVICE_LIBEVENT_PROVIDER ${NABTO_DEVICE_DEFAULT_PROVIDER} CACHE STRING "Provider of Libevent library")
 set_property(CACHE NABTO_DEVICE_LIBEVENT_PROVIDER PROPERTY STRINGS "module" "package")
 
-set(NABTO_DEVICE_BOOST_PROVIDER "module" CACHE STRING "Provider of boost library")
+set(NABTO_DEVICE_BOOST_PROVIDER ${NABTO_DEVICE_DEFAULT_PROVIDER} CACHE STRING "Provider of boost library")
 set_property(CACHE NABTO_DEVICE_BOOST_PROVIDER PROPERTY STRINGS "module" "package")
 
 
@@ -106,7 +108,7 @@ if (NABTO_DEVICE_NABTOCOMMON_PROVIDER STREQUAL "module")
   FetchContent_Declare(
     NabtoCommon
     SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/nabto-common
-    OVERRRIDE_FIND_PACKAGE
+    OVERRIDE_FIND_PACKAGE
   )
   FetchContent_MakeAvailable(NabtoCommon)
 endif()
