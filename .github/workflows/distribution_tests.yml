@@ -1,4 +1,4 @@
-name: Build And Test Linux Mac Windows
+name: Distribution tests
 
 on:
   push:

@@ -14,6 +14,7 @@ jobs:
           - os: windows-2022
             exe_postfix: .zip
             friendly_name: windows
+            generate_extra_options: -DNABTO_DEVICE_USE_VCPKG=ON
             build_command: cmake --build build-dir --parallel --target install --config Release
           - os: ubuntu-20.04
             exe_postfix:
@@ -34,7 +35,7 @@ jobs:
           submodules: recursive
           fetch-depth: 0
       - name: Configure cmake
-        run: mkdir build-dir && cd build-dir && cmake -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=${{ github.workspace }}/artifacts -DDEVICE_STATIC_LINK_VCRUNTIME=ON ..
+        run: mkdir build-dir && cd build-dir && cmake -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=${{ github.workspace }}/artifacts -DDEVICE_STATIC_LINK_VCRUNTIME=ON ${{ matrix.generate_extra_options }} ..
 
       - name: Build
         run: ${{matrix.build_command}}

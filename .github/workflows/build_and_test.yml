@@ -16,6 +16,7 @@ jobs:
         os: [windows-2022, ubuntu-24.04, macos-12]
         include:
           - os: windows-2022
+            generate_extra_options: -DNABTO_DEVICE_USE_VCPKG=ON
             build_command: cmake --build build-dir --parallel --target install --config Release
           - os: ubuntu-24.04
             build_command: cmake --build build-dir --parallel --target install
@@ -29,7 +30,7 @@ jobs:
           submodules: recursive
           fetch-depth: 0
       - name: Configure cmake
-        run: mkdir build-dir && cd build-dir && cmake -DCMAKE_INSTALL_PREFIX=${{ github.workspace }}/artifacts -DDEVICE_BUILD_TESTS=ON -DNABTO_DEVICE_DTLS_CLIENT_ONLY=${{ matrix.cli-only }} ..
+        run: mkdir build-dir && cd build-dir && cmake -DCMAKE_INSTALL_PREFIX=${{ github.workspace }}/artifacts -DDEVICE_BUILD_TESTS=ON -DNABTO_DEVICE_DTLS_CLIENT_ONLY=${{ matrix.cli-only }} ${{ matrix.generate_extra_options }} ..
 
       - name: Build
         run: ${{matrix.build_command}}
