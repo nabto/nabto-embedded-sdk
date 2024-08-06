@@ -69,6 +69,10 @@ set_property(CACHE NABTO_DEVICE_LIBEVENT_PROVIDER PROPERTY STRINGS "module" "pac
 set(NABTO_DEVICE_BOOST_PROVIDER ${NABTO_DEVICE_DEFAULT_PROVIDER} CACHE STRING "Provider of boost library")
 set_property(CACHE NABTO_DEVICE_BOOST_PROVIDER PROPERTY STRINGS "module" "package")
 
+if (DEVICE_STATIC_LINK_VCRUNTIME)
+  cmake_policy(SET CMP0091 NEW)
+  set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>")
+endif()
 
 #add_subdirectory(3rdparty/mbedtls)
 add_subdirectory(3rdparty/cjson)
@@ -137,10 +141,6 @@ endif()
 
 
 set(src_dir ${CMAKE_CURRENT_SOURCE_DIR}/src)
-if (DEVICE_STATIC_LINK_VCRUNTIME)
-  cmake_policy(SET CMP0091 NEW)
-  set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>")
-endif()
 
 if ("x_${CMAKE_HOST_SYSTEM_NAME}" STREQUAL "x_Darwin")
   add_definitions("-Wall")
