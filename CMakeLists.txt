@@ -72,13 +72,15 @@ set_property(CACHE NABTO_DEVICE_BOOST_PROVIDER PROPERTY STRINGS "module" "packag
 set(NABTO_DEVICE_CJSON_PROVIDER ${NABTO_DEVICE_DEFAULT_PROVIDER} CACHE STRING "Provider of cjson library")
 set_property(CACHE NABTO_DEVICE_CJSON_PROVIDER PROPERTY STRINGS "module" "package")
 
+set(NABTO_DEVICE_NLOHMANNJSON_PROVIDER ${NABTO_DEVICE_DEFAULT_PROVIDER} CACHE STRING "Provider of nlohmann_json library")
+set_property(CACHE NABTO_DEVICE_NLOHMANNJSON_PROVIDER PROPERTY STRINGS "module" "package")
+
+
 if (DEVICE_STATIC_LINK_VCRUNTIME)
   cmake_policy(SET CMP0091 NEW)
   set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>")
 endif()
 
-#add_subdirectory(3rdparty/mbedtls)
-#add_subdirectory(3rdparty/cjson)
 add_subdirectory(3rdparty/gopt)
 
 if (NABTO_DEVICE_TINYCBOR_PROVIDER STREQUAL "module")
@@ -90,9 +92,6 @@ if (NABTO_DEVICE_TINYCBOR_PROVIDER STREQUAL "module")
   FetchContent_MakeAvailable(TinyCBOR)
 endif()
 
-#add_subdirectory(3rdparty/tinycbor)
-add_subdirectory(3rdparty/nlohmann-json)
-add_subdirectory(3rdparty/cxxopts)
 
 set(ENABLE_TESTING OFF CACHE BOOL "disable MbedTLS testing")
 set(ENABLE_PROGRAMS OFF CACHE BOOL "disable MbedTLS programs")
@@ -151,6 +150,14 @@ if (NABTO_DEVICE_CJSON_PROVIDER STREQUAL "module")
   FetchContent_MakeAvailable(cJSON)
 endif()
 
+if (NABTO_DEVICE_NLOHMANNJSON_PROVIDER STREQUAL "module")
+  FetchContent_Declare(
+    nlohmann_json
+    URL https://github.com/nlohmann/json/releases/download/v3.11.3/json.tar.xz
+    OVERRIDE_FIND_PACKAGE
+  )
+  FetchContent_MakeAvailable(nlohmann_json)
+endif()
 
 set(src_dir ${CMAKE_CURRENT_SOURCE_DIR}/src)
 
@@ -174,9 +181,6 @@ elseif ("x_${CMAKE_HOST_SYSTEM_NAME}" STREQUAL "x_Linux")
   add_compile_options(-Wall)
   set(CMAKE_CXX_LINK_FLAGS "${CMAKE_CXX_LINK_FLAGS} -latomic")
 endif()
-
-#include_directories(${CMAKE_CURRENT_SOURCE_DIR}/3rdparty/libevent/libevent/include)
-#include_directories(${CMAKE_CURRENT_BINARY_DIR}/3rdparty/libevent/libevent/include)
 
 CHECK_INCLUDE_FILES("event2/event.h" HAVE_LIBEVENT_HEADERS)
 CHECK_INCLUDE_FILES("sys/socket.h" HAVE_SYS_SOCKET_H)

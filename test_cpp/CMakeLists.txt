@@ -1,4 +1,6 @@
 find_package(Boost COMPONENTS asio unit_test_framework)
+find_package(nlohmann_json REQUIRED)
+
 set(CMAKE_CXX_STANDARD 14)
 
 set(util_src
@@ -92,7 +94,7 @@ if (HAVE_SELECT_UNIX)
     )
 endif()
 
-target_link_libraries(embedded_unit_test nm_libevent 3rdparty_json)
+target_link_libraries(embedded_unit_test nm_libevent nlohmann_json::nlohmann_json)
 
 target_include_directories(embedded_unit_test PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
 target_include_directories(embedded_unit_test PRIVATE platform)
