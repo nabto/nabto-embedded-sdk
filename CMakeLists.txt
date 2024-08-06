@@ -10,6 +10,8 @@ project(NabtoEmbeddedSDK VERSION 0.0.1)
 
 set(CMAKE_POLICY_DEFAULT_CMP0063 NEW)
 cmake_policy(SET CMP0063 NEW)
+cmake_policy(SET CMP0090 NEW)
+set(CMAKE_FIND_USE_SYSTEM_PACKAGE_REGISTRY OFF)
 
 set(CMAKE_VISIBILITY_INLINES_HIDDEN ON)
 set(CMAKE_C_VISIBILITY_PRESET hidden)
@@ -34,7 +36,8 @@ set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 set(CMAKE_CXX_STANDARD 14)
 set(CMAKE_C_STANDARD 99)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
-set(CMAKE_OSX_ARCHITECTURES arm64 x86_64)
+set(CMAKE_OSX_ARCHITECTURES "arm64;x86_64" CACHE STRING "" FORCE)
+#set(CMAKE_OSX_ARCHITECTURES arm64 CACHE STRING "")
 add_definitions(-DNODEFAULTLIB)
 add_definitions(-DBOOST_ALL_NO_LIB)
 
@@ -59,6 +62,10 @@ set_property(CACHE NABTO_DEVICE_NABTOCOMMON_PROVIDER PROPERTY STRINGS "module" "
 set(NABTO_DEVICE_LIBEVENT_PROVIDER "module" CACHE STRING "Provider of Libevent library")
 set_property(CACHE NABTO_DEVICE_LIBEVENT_PROVIDER PROPERTY STRINGS "module" "package")
 
+set(NABTO_DEVICE_BOOST_PROVIDER "module" CACHE STRING "Provider of boost library")
+set_property(CACHE NABTO_DEVICE_BOOST_PROVIDER PROPERTY STRINGS "module" "package")
+
+
 #add_subdirectory(3rdparty/mbedtls)
 add_subdirectory(3rdparty/cjson)
 add_subdirectory(3rdparty/gopt)
@@ -67,7 +74,7 @@ if (NABTO_DEVICE_TINYCBOR_PROVIDER STREQUAL "module")
   FetchContent_Declare(
     TinyCBOR
     SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/3rdparty/tinycbor
-    FIND_PACKAGE_ARGS
+    OVERRIDE_FIND_PACKAGE
   )
   FetchContent_MakeAvailable(TinyCBOR)
 endif()
@@ -84,7 +91,7 @@ if (NABTO_DEVICE_MBEDTLS_PROVIDER STREQUAL "module")
   FetchContent_Declare(
     MbedTLS
     SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/3rdparty/mbedtls/mbedtls
-    FIND_PACKAGE_ARGS
+    OVERRIDE_FIND_PACKAGE
   )
   FetchContent_MakeAvailable(MbedTLS)
 endif()
@@ -99,9 +106,29 @@ if (NABTO_DEVICE_NABTOCOMMON_PROVIDER STREQUAL "module")
   FetchContent_Declare(
     NabtoCommon
     SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/nabto-common
-    FIND_PACKAGE_ARGS
+    OVERRRIDE_FIND_PACKAGE
   )
   FetchContent_MakeAvailable(NabtoCommon)
+endif()
+
+if (${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
+  set(BOOST_CONTEXT_ABI "sysv" CACHE STRING "boost context abi")
+  set(BOOST_CONTEXT_ARCHITECTURE "combined" CACHE STRING "boost context architecture")
+endif()
+
+if (DEVICE_BUILD_TESTS)
+  if (NABTO_DEVICE_BOOST_PROVIDER STREQUAL "module")
+    message("Downloading boost libraries this can take some time")
+    set(BOOST_INCLUDE_LIBRARIES asio system test)
+    FetchContent_Declare(
+      Boost
+      URL https://github.com/boostorg/boost/releases/download/boost-1.85.0/boost-1.85.0-cmake.tar.xz
+      #GIT_REPOSITORY https://github.com/boostorg/boost.git
+      #GIT_TAG boost-1.85.0
+      OVERRIDE_FIND_PACKAGE
+    )
+    FetchContent_MakeAvailable(Boost)
+  endif()
 endif()
 
 

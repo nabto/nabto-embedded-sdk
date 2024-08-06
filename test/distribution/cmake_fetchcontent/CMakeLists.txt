@@ -9,7 +9,7 @@ FetchContent_Declare(
   NabtoEmbeddedSDK
   # GIT ...
   SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/../../..
-  FIND_PACKAGE_ARGS
+  OVERRIDE_FIND_PACKAGE
 )
 FetchContent_MakeAvailable(NabtoEmbeddedSDK)
 

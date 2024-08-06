@@ -15,7 +15,7 @@ if (NABTO_DEVICE_LIBEVENT_PROVIDER STREQUAL "module")
     GIT_REPOSITORY https://github.com/libevent/libevent.git
     GIT_TAG        7f23b5b5aa61f5496627c2651fd6d8185f34ffde
     PATCH_COMMAND ${libevent_patch_command}
-    FIND_PACKAGE_ARGS
+    OVERRIDE_FIND_PACKAGE
   )
   FetchContent_MakeAvailable(Libevent)
 endif()

@@ -26,7 +26,7 @@ set(dtls_srv_src
 )
 
 add_library(nm_mbedtls_common ${dtls_common_src})
-target_link_libraries(nm_mbedtls_common NabtoCommon::nn MbedTLS::mbedcrypto)
+target_link_libraries(nm_mbedtls_common NabtoCommon::nn MbedTLS::mbedtls MbedTLS::mbedcrypto MbedTLS::mbedx509)
 
 add_library( nm_mbedtls_srv STATIC ${dtls_srv_src})
 target_link_libraries(nm_mbedtls_srv MbedTLS::mbedtls MbedTLS::mbedcrypto MbedTLS::mbedx509 NabtoCommon::nn np_platform nm_mbedtls_common)
