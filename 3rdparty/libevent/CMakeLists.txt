@@ -8,11 +8,11 @@ if (NABTO_DEVICE_LIBEVENT_PROVIDER STREQUAL "module")
   set(EVENT__DISABLE_OPENSSL ON CACHE BOOL "disable libevent openssl")
   set(EVENT__LIBRARY_TYPE STATIC CACHE STRING "libevent library type")
 
-  if (WIN32)
-    set(libevent_patch_command ${CMAKE_CURRENT_LIST_DIR}/apply_patch.bat ${CMAKE_CURRENT_LIST_DIR}/patches/libevent.patch)
-  else()
-    set(libevent_patch_command git apply ${CMAKE_CURRENT_LIST_DIR}/patches/libevent.patch || exit 0)
-  endif()
+  #if (WIN32)
+  #  set(libevent_patch_command ${CMAKE_CURRENT_LIST_DIR}/apply_patch.bat ${CMAKE_CURRENT_LIST_DIR}/patches/libevent.patch)
+  #else()
+    set(libevent_patch_command git apply --index -3 ${CMAKE_CURRENT_LIST_DIR}/patches/libevent.patch)
+  #endif()
 
   FetchContent_Declare(
     Libevent
