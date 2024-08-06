@@ -29,7 +29,7 @@ jobs:
           submodules: recursive
           fetch-depth: 0
       - name: Configure cmake
-        run: mkdir build-dir && cd build-dir && cmake -DCMAKE_INSTALL_PREFIX=${{ github.workspace }}/artifacts -DDEVICE_BUILD_TESTS=ON -DNABTO_DEVICE_USE_VCPKG=ON -DNABTO_DEVICE_DTLS_CLIENT_ONLY=${{ matrix.cli-only }} ..
+        run: mkdir build-dir && cd build-dir && cmake -DCMAKE_INSTALL_PREFIX=${{ github.workspace }}/artifacts -DDEVICE_BUILD_TESTS=ON -DNABTO_DEVICE_DTLS_CLIENT_ONLY=${{ matrix.cli-only }} ..
 
       - name: Build
         run: ${{matrix.build_command}}
