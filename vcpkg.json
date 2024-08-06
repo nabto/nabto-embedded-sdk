@@ -6,6 +6,7 @@
       "libevent",
       "mbedtls",
       "boost-test",
-      "boost-asio"
+      "boost-asio",
+      "cjson"
     ]
   }

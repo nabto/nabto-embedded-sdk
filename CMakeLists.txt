@@ -69,13 +69,16 @@ set_property(CACHE NABTO_DEVICE_LIBEVENT_PROVIDER PROPERTY STRINGS "module" "pac
 set(NABTO_DEVICE_BOOST_PROVIDER ${NABTO_DEVICE_DEFAULT_PROVIDER} CACHE STRING "Provider of boost library")
 set_property(CACHE NABTO_DEVICE_BOOST_PROVIDER PROPERTY STRINGS "module" "package")
 
+set(NABTO_DEVICE_CJSON_PROVIDER ${NABTO_DEVICE_DEFAULT_PROVIDER} CACHE STRING "Provider of cjson library")
+set_property(CACHE NABTO_DEVICE_CJSON_PROVIDER PROPERTY STRINGS "module" "package")
+
 if (DEVICE_STATIC_LINK_VCRUNTIME)
   cmake_policy(SET CMP0091 NEW)
   set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>")
 endif()
 
 #add_subdirectory(3rdparty/mbedtls)
-add_subdirectory(3rdparty/cjson)
+#add_subdirectory(3rdparty/cjson)
 add_subdirectory(3rdparty/gopt)
 
 if (NABTO_DEVICE_TINYCBOR_PROVIDER STREQUAL "module")
@@ -137,6 +140,16 @@ if (DEVICE_BUILD_TESTS)
     )
     FetchContent_MakeAvailable(Boost)
   endif()
+endif()
+
+if (NABTO_DEVICE_CJSON_PROVIDER STREQUAL "module")
+  FetchContent_Declare(
+    cJSON
+    GIT_REPOSITORY https://github.com/DaveGamble/cJSON.git
+    GIT_TAG v1.7.18
+    OVERRIDE_FIND_PACKAGE
+  )
+  FetchContent_MakeAvailable(cJSON)
 endif()
 
 
