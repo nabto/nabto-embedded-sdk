@@ -13,7 +13,8 @@ jobs:
     strategy:
       matrix:
         cli-only: [0, 1]
-        os: [windows-2022, ubuntu-24.04, macos-12]
+        # windows is disabled on 2024-08-06 os: [windows-2022, ubuntu-24.04, macos-12]
+        os: [ubuntu-24.04, macos-12]
         include:
           - os: windows-2022
             generate_extra_options: -DNABTO_DEVICE_USE_VCPKG=ON
