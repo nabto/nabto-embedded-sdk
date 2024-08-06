@@ -3,8 +3,10 @@ cmake_minimum_required(VERSION 3.24)
 option(NABTO_DEVICE_USE_VCPKG "Use vcpkg for providing dependencies" OFF)
 if (NABTO_DEVICE_USE_VCPKG)
   set(CMAKE_TOOLCHAIN_FILE "${CMAKE_CURRENT_SOURCE_DIR}/3rdparty/vcpkg/scripts/buildsystems/vcpkg.cmake" CACHE STRING "Vcpkg toolchain file")
+  # vcpkg is missing find package scripts for a few libraries
+  set(CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake/vcpkg;${CMAKE_MODULE_PATH}")
 endif()
-set(CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake;${CMAKE_MODULE_PATH}")
+
 
 project(NabtoEmbeddedSDK VERSION 0.0.1)
 
@@ -58,7 +60,7 @@ set_property(CACHE NABTO_DEVICE_MBEDTLS_PROVIDER PROPERTY STRINGS "module" "pack
 set(NABTO_DEVICE_TINYCBOR_PROVIDER ${NABTO_DEVICE_DEFAULT_PROVIDER} CACHE STRING "Provider of TinyCBOR library")
 set_property(CACHE NABTO_DEVICE_TINYCBOR_PROVIDER PROPERTY STRINGS "module" "package")
 
-set(NABTO_DEVICE_NABTOCOMMON_PROVIDER ${NABTO_DEVICE_DEFAULT_PROVIDER} CACHE STRING "Provider of NabtoCommon library")
+set(NABTO_DEVICE_NABTOCOMMON_PROVIDER "module" CACHE STRING "Provider of NabtoCommon library")
 set_property(CACHE NABTO_DEVICE_NABTOCOMMON_PROVIDER PROPERTY STRINGS "module" "package")
 
 set(NABTO_DEVICE_LIBEVENT_PROVIDER ${NABTO_DEVICE_DEFAULT_PROVIDER} CACHE STRING "Provider of Libevent library")
