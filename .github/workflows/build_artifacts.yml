@@ -60,7 +60,7 @@ jobs:
 
       - name: Upload artifacts to github actions workspace artifacts
         if: ${{ success() }}
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v3
         with:
           # omit name and upload to defaults artifacts archive called artifact.
           path: |
@@ -124,7 +124,7 @@ jobs:
 
     - name: Upload artifacts
       if: ${{ success() }}
-      uses: actions/upload-artifact@v4
+      uses: actions/upload-artifact@v3
       with:
         path: |
           ${{ github.workspace }}/artifacts/bin/tcp_tunnel_device_linux_${{matrix.arch}}
@@ -147,7 +147,7 @@ jobs:
 
     if: github.event_name == 'release'
     steps:
-      - name:  download artifacts
+      - name: download artifacts
         uses: actions/download-artifact@v3
         with:
           path: ./

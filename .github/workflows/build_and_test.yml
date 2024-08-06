@@ -47,7 +47,7 @@ jobs:
         run: ${{ github.workspace }}/artifacts/bin/embedded_unit_test -l test_suite --detect_memory_leaks=0
 
       - name: Upload artifacts
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v3
         with:
           name: artifacts_${{matrix.os}}_cli_only_${{ matrix.cli-only }}
           path: ${{ github.workspace }}/artifacts
