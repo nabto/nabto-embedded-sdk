@@ -145,8 +145,7 @@ endif()
 if (NABTO_DEVICE_CJSON_PROVIDER STREQUAL "module")
   FetchContent_Declare(
     cJSON
-    GIT_REPOSITORY https://github.com/DaveGamble/cJSON.git
-    GIT_TAG v1.7.18
+    SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/3rdparty/cjson
     OVERRIDE_FIND_PACKAGE
   )
   FetchContent_MakeAvailable(cJSON)
