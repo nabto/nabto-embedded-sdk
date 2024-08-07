@@ -57,3 +57,11 @@ target_link_libraries(nm_iam PRIVATE nabto_device NabtoCommon::nn )
 
 target_link_libraries(nm_iam PUBLIC cjson)
 target_link_libraries(nm_iam PUBLIC TinyCBOR::tinycbor)
+
+target_sources(nm_iam PUBLIC
+    FILE_SET public_headers
+    TYPE HEADERS
+    BASE_DIRS ../../
+    FILES
+        nm_iam.h
+)

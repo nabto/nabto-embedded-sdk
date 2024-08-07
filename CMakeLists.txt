@@ -383,7 +383,7 @@ set(namespace "${PROJECT_NAME}::")
 include(CMakePackageConfigHelpers)
 
 install(
-    TARGETS nabto_device
+    TARGETS nabto_device nm_iam
     EXPORT "${TARGETS_EXPORT_NAME}"
     LIBRARY DESTINATION "${CMAKE_INSTALL_LIBDIR}"
     ARCHIVE DESTINATION "${CMAKE_INSTALL_LIBDIR}"
