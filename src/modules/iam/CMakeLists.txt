@@ -53,10 +53,17 @@ set(src
   )
 
 add_library(nm_iam ${src})
-target_link_libraries(nm_iam PRIVATE nabto_device NabtoCommon::nn )
+target_link_libraries(nm_iam PRIVATE nabto_device)
+target_link_libraries(nm_iam PUBLIC NabtoCommon::nn)
 
 target_link_libraries(nm_iam PUBLIC cjson)
 target_link_libraries(nm_iam PUBLIC TinyCBOR::tinycbor)
+
+target_include_directories(nm_iam
+  PUBLIC
+    "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/../..>"
+    "$<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>"
+)
 
 target_sources(nm_iam PUBLIC
     FILE_SET public_headers

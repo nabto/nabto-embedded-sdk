@@ -16,4 +16,4 @@ FetchContent_MakeAvailable(NabtoEmbeddedSDK)
 find_package(NabtoEmbeddedSDK REQUIRED)
 
 add_executable(test test.c)
-target_link_libraries(test NabtoEmbeddedSDK::nabto_device)
+target_link_libraries(test NabtoEmbeddedSDK::nabto_device NabtoEmbeddedSDK::nm_iam)

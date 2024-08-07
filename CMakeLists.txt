@@ -382,6 +382,8 @@ set(namespace "${PROJECT_NAME}::")
 
 include(CMakePackageConfigHelpers)
 
+add_library(NabtoEmbeddedSDK::nabto_device ALIAS nabto_device)
+add_library(NabtoEmbeddedSDK::nm_iam ALIAS nm_iam)
 install(
     TARGETS nabto_device nm_iam
     EXPORT "${TARGETS_EXPORT_NAME}"

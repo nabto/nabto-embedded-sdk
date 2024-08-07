@@ -56,7 +56,6 @@ if(NABTO_DEVICE_WOLFSSL)
 endif()
 
 add_library( nabto_device "${src}" "${ne_api_src}" "${ne_api_future_queue_src}" "${ne_api_test_src}" "${nabto_device_dependencies}")
-add_library(NabtoEmbeddedSDK::nabto_device ALIAS nabto_device)
 
 if (BUILD_SHARED_LIBS)
   target_compile_definitions(nabto_device PRIVATE NABTO_DEVICE_API_EXPORTS)
