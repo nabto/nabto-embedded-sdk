@@ -70,5 +70,20 @@ target_sources(nm_iam PUBLIC
     TYPE HEADERS
     BASE_DIRS ../../
     FILES
-        nm_iam.h
+      nm_iam_allocator.h
+      nm_iam_auth_handler.h
+      nm_iam_configuration.h
+      nm_iam_connection_events.h
+      nm_iam_from_json.h
+      nm_iam.h
+      nm_iam_internal.h
+      nm_iam_pairing.h
+      nm_iam_pake_handler.h
+      nm_iam_role.h
+      nm_iam_serializer.h
+      nm_iam_state.h
+      nm_iam_to_json.h
+      nm_iam_user.h
+      coap_handler/nm_iam_coap_handler.h
+
 )
