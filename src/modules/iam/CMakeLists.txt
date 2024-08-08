@@ -1,5 +1,6 @@
 find_package(TinyCBOR REQUIRED)
 find_package(cJSON REQUIRED)
+find_package(NabtoCommon REQUIRED)
 
 set(src
 

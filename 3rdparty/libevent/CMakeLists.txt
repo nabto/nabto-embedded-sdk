@@ -1,4 +1,4 @@
-if (NABTO_DEVICE_LIBEVENT_PROVIDER STREQUAL "module")
+
   set(EVENT__DISABLE_OPENSSL ON CACHE BOOL "disable libevent openssl")
   set(EVENT__DISABLE_BENCHMARK ON CACHE BOOL "disable libevent benchmarks")
   set(EVENT__DISABLE_TESTS ON CACHE BOOL "disable libevent tests")
@@ -22,4 +22,3 @@ if (NABTO_DEVICE_LIBEVENT_PROVIDER STREQUAL "module")
     OVERRIDE_FIND_PACKAGE
   )
   FetchContent_MakeAvailable(Libevent)
-endif()

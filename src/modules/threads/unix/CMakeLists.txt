@@ -1,4 +1,5 @@
 find_package( Threads )
+find_package( NabtoCommon REQUIRED )
 
 if (UNIX)
 

@@ -1,3 +1,4 @@
+find_package(NabtoCommon)
 set(src_dir ${CMAKE_CURRENT_SOURCE_DIR})
 
 set(unix_src

@@ -1,3 +1,4 @@
+find_package(NabtoCommon REQUIRED)
 set(src
   nm_mdns_server.c
   )

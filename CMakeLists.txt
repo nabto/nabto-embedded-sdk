@@ -1,5 +1,7 @@
 cmake_minimum_required(VERSION 3.24)
 
+option(NABTO_DEVICE_BUILD_WITH_VCPKG_DEPENDENCIES "Build the source with vcpkg dependencies" OFF)
+
 option(NABTO_DEVICE_USE_VCPKG "Use vcpkg for providing dependencies" OFF)
 if (NABTO_DEVICE_USE_VCPKG)
   set(CMAKE_TOOLCHAIN_FILE "${CMAKE_CURRENT_SOURCE_DIR}/3rdparty/vcpkg/scripts/buildsystems/vcpkg.cmake" CACHE STRING "Vcpkg toolchain file")
@@ -9,6 +11,11 @@ endif()
 
 
 project(NabtoEmbeddedSDK VERSION 0.0.1)
+
+if (NABTO_DEVICE_BUILD_WITH_VCPKG_DEPENDENCIES)
+  # vcpkg dependencies for mbedtls 2 and tinycbor does not provide find_package scripts for these libraries
+  set(CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake/vcpkg;${CMAKE_MODULE_PATH}")
+endif()
 
 set(CMAKE_POLICY_DEFAULT_CMP0063 NEW)
 cmake_policy(SET CMP0063 NEW)
@@ -38,9 +45,11 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_OSX_ARCHITECTURES "arm64;x86_64" CACHE STRING "" FORCE)
 add_definitions(-DNODEFAULTLIB)
 add_definitions(-DBOOST_ALL_NO_LIB)
+message("c++ compiler was LOADED. ${CMAKE_CXX_COMPILER_ID}")
+
 
 option(DEVICE_BUILD_EXAMPLES "build device examples" ON)
-message("c++ compiler was LOADED. ${CMAKE_CXX_COMPILER_ID}")
+
 option(DEVICE_BUILD_TESTS "build device tests" OFF)
 
 option(DEVICE_BUILD_APPS "build applications" ON)
@@ -48,33 +57,15 @@ option(DEVICE_BUILD_APPS "build applications" ON)
 option(DEVICE_STATIC_LINK_VCRUNTIME "Static link visual c runtime" OFF)
 option(DEVICE_MBEDTLS_2 "Set this to true if the device is built against mbedtls version 2" ON)
 
-if(NABTO_DEVICE_USE_VCPKG)
-  set(NABTO_DEVICE_DEFAULT_PROVIDER "package")
-else()
-  set(NABTO_DEVICE_DEFAULT_PROVIDER "module")
-endif()
+option(NABTO_DEVICE_PREFER_SYSTEM_LIB "Prefer system libraries" OFF)
 
-set(NABTO_DEVICE_MBEDTLS_PROVIDER ${NABTO_DEVICE_DEFAULT_PROVIDER} CACHE STRING "Provider of MbedTLS library")
-set_property(CACHE NABTO_DEVICE_MBEDTLS_PROVIDER PROPERTY STRINGS "module" "package")
-
-set(NABTO_DEVICE_TINYCBOR_PROVIDER ${NABTO_DEVICE_DEFAULT_PROVIDER} CACHE STRING "Provider of TinyCBOR library")
-set_property(CACHE NABTO_DEVICE_TINYCBOR_PROVIDER PROPERTY STRINGS "module" "package")
-
-set(NABTO_DEVICE_NABTOCOMMON_PROVIDER "module" CACHE STRING "Provider of NabtoCommon library")
-set_property(CACHE NABTO_DEVICE_NABTOCOMMON_PROVIDER PROPERTY STRINGS "module" "package")
-
-set(NABTO_DEVICE_LIBEVENT_PROVIDER ${NABTO_DEVICE_DEFAULT_PROVIDER} CACHE STRING "Provider of Libevent library")
-set_property(CACHE NABTO_DEVICE_LIBEVENT_PROVIDER PROPERTY STRINGS "module" "package")
-
-set(NABTO_DEVICE_BOOST_PROVIDER ${NABTO_DEVICE_DEFAULT_PROVIDER} CACHE STRING "Provider of boost library")
-set_property(CACHE NABTO_DEVICE_BOOST_PROVIDER PROPERTY STRINGS "module" "package")
-
-set(NABTO_DEVICE_CJSON_PROVIDER ${NABTO_DEVICE_DEFAULT_PROVIDER} CACHE STRING "Provider of cjson library")
-set_property(CACHE NABTO_DEVICE_CJSON_PROVIDER PROPERTY STRINGS "module" "package")
-
-set(NABTO_DEVICE_NLOHMANNJSON_PROVIDER ${NABTO_DEVICE_DEFAULT_PROVIDER} CACHE STRING "Provider of nlohmann_json library")
-set_property(CACHE NABTO_DEVICE_NLOHMANNJSON_PROVIDER PROPERTY STRINGS "module" "package")
-
+option(NABTO_DEVICE_USE_SYSTEM_MEDTLS "use mbedtls from the system" ${NABTO_DEVICE_PREFER_SYSTEM_LIB})
+option(NABTO_DEVICE_USE_SYSTEM_TINYCBOR "use tinycbor from the system" ${NABTO_DEVICE_PREFER_SYSTEM_LIB})
+option(NABTO_DEVICE_USE_SYSTEM_NABTOCOMMON "use nabtocommon from the system" ${NABTO_DEVICE_PREFER_SYSTEM_LIB})
+option(NABTO_DEVICE_USE_SYSTEM_CJSON "use cjson from the system" ${NABTO_DEVICE_PREFER_SYSTEM_LIB})
+option(NABTO_DEVICE_USE_SYSTEM_BOOST "use boost from the system" ${NABTO_DEVICE_PREFER_SYSTEM_LIB})
+option(NABTO_DEVICE_USE_SYSTEM_NLOHMANNJSON "use nlohmann_json from the system" ${NABTO_DEVICE_PREFER_SYSTEM_LIB})
+option(NABTO_DEVICE_USE_SYSTEM_LIBEVENT "use libevent from the system" ${NABTO_DEVICE_PREFER_SYSTEM_LIB})
 
 if (DEVICE_STATIC_LINK_VCRUNTIME)
   cmake_policy(SET CMP0091 NEW)
@@ -83,7 +74,7 @@ endif()
 
 add_subdirectory(3rdparty/gopt)
 
-if (NABTO_DEVICE_TINYCBOR_PROVIDER STREQUAL "module")
+if (NOT NABTO_DEVICE_USE_SYSTEM_TINYCBOR)
   FetchContent_Declare(
     TinyCBOR
     SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/3rdparty/tinycbor
@@ -92,12 +83,11 @@ if (NABTO_DEVICE_TINYCBOR_PROVIDER STREQUAL "module")
   FetchContent_MakeAvailable(TinyCBOR)
 endif()
 
-
 set(ENABLE_TESTING OFF CACHE BOOL "disable MbedTLS testing")
 set(ENABLE_PROGRAMS OFF CACHE BOOL "disable MbedTLS programs")
 set(DISABLE_PACKAGE_CONFIG_AND_INSTALL OFF CACHE BOOL "disable mbedtls package config and install")
 
-if (NABTO_DEVICE_MBEDTLS_PROVIDER STREQUAL "module")
+if (NOT NABTO_DEVICE_USE_SYSTEM_MBEDTLS)
   FetchContent_Declare(
     MbedTLS
     SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/3rdparty/mbedtls/mbedtls
@@ -106,13 +96,13 @@ if (NABTO_DEVICE_MBEDTLS_PROVIDER STREQUAL "module")
   FetchContent_MakeAvailable(MbedTLS)
 endif()
 
-add_subdirectory(3rdparty/libevent)
-
-find_package(Libevent COMPONENTS core extra)
+if (NOT NABTO_DEVICE_USE_SYSTEM_LIBEVENT)
+  add_subdirectory(3rdparty/libevent)
+endif()
 
 set(NN_BUILD_TESTS OFF CACHE BOOL "enable nn tests")
 
-if (NABTO_DEVICE_NABTOCOMMON_PROVIDER STREQUAL "module")
+if (NOT NABTO_DEVICE_USE_SYSTEM_NABTOCOMMON)
   FetchContent_Declare(
     NabtoCommon
     SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/nabto-common
@@ -127,7 +117,7 @@ if (${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
 endif()
 
 if (DEVICE_BUILD_TESTS)
-  if (NABTO_DEVICE_BOOST_PROVIDER STREQUAL "module")
+  if (NOT NABTO_DEVICE_USE_SYSTEM_BOOST)
     message("Downloading boost libraries this can take some time")
     set(BOOST_INCLUDE_LIBRARIES asio system test)
     FetchContent_Declare(
@@ -141,7 +131,7 @@ if (DEVICE_BUILD_TESTS)
   endif()
 endif()
 
-if (NABTO_DEVICE_CJSON_PROVIDER STREQUAL "module")
+if (NOT NABTO_DEVICE_USE_SYSTEM_CJSON)
   FetchContent_Declare(
     cJSON
     SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/3rdparty/cjson
@@ -150,7 +140,7 @@ if (NABTO_DEVICE_CJSON_PROVIDER STREQUAL "module")
   FetchContent_MakeAvailable(cJSON)
 endif()
 
-if (NABTO_DEVICE_NLOHMANNJSON_PROVIDER STREQUAL "module")
+if (NOT NABTO_DEVICE_USE_SYSTEM_NLOHMANNJSON)
   FetchContent_Declare(
     nlohmann_json
     URL https://github.com/nlohmann/json/releases/download/v3.11.3/json.tar.xz

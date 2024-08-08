@@ -1,7 +1,7 @@
 find_package( Threads )
 find_package(MbedTLS REQUIRED COMPONENTS mbedtls mbedcrypto mbedx509)
 find_package(TinyCBOR REQUIRED)
-find_package(NabtoCommon REQUIRED COMPONENTS nn nabto_stream mdns_server coap nabto_stun_client)
+find_package(NabtoCommon REQUIRED COMPONENTS nn nabto_stream nabto_mdns nabto_coap nabto_stun)
 find_package(Libevent COMPONENTS core extra)
 
 

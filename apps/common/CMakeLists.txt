@@ -1,5 +1,6 @@
 find_package(MbedTLS COMPONENTS mbedtls mbedcrypto mbedx509)
 find_package(cJSON REQUIRED)
+find_package(NabtoCommon REQUIRED)
 set(src
   json_config.c
   device_config.c
