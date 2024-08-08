@@ -9,7 +9,6 @@ if (NABTO_DEVICE_USE_VCPKG)
   set(CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake/vcpkg;${CMAKE_MODULE_PATH}")
 endif()
 
-
 project(NabtoEmbeddedSDK VERSION 0.0.1)
 
 if (NABTO_DEVICE_BUILD_WITH_VCPKG_DEPENDENCIES)
@@ -66,6 +65,8 @@ option(NABTO_DEVICE_USE_SYSTEM_CJSON "use cjson from the system" ${NABTO_DEVICE_
 option(NABTO_DEVICE_USE_SYSTEM_BOOST "use boost from the system" ${NABTO_DEVICE_PREFER_SYSTEM_LIB})
 option(NABTO_DEVICE_USE_SYSTEM_NLOHMANNJSON "use nlohmann_json from the system" ${NABTO_DEVICE_PREFER_SYSTEM_LIB})
 option(NABTO_DEVICE_USE_SYSTEM_LIBEVENT "use libevent from the system" ${NABTO_DEVICE_PREFER_SYSTEM_LIB})
+
+set(NABTO_DEVICE_VERSION "" CACHE STRING "use this version instead of getting the version from the git tag")
 
 if (DEVICE_STATIC_LINK_VCRUNTIME)
   cmake_policy(SET CMP0091 NEW)
