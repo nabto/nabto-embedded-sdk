@@ -11,6 +11,8 @@
 
 #include <array>
 
+#include <stdio.h>
+
 namespace nabto {
 namespace test {
 
@@ -29,6 +31,30 @@ static uint8_t Ndata[] = {
     0x07, 0xd6, 0x0a, 0xa6, 0xbf, 0xad, 0xe4, 0x50, 0x08, 0xa6, 0x36,
     0x33, 0x7f, 0x51, 0x68, 0xc6, 0x4d, 0x9b, 0xd3, 0x60, 0x34, 0x80,
     0x8c, 0xd5, 0x64, 0x49, 0x0b, 0x1e, 0x65, 0x6e, 0xdb, 0xe7};
+
+
+static uint32_t entropy_seed = 0xDEADBEEF;
+
+// PRNG that we can seed with a deterministic value.
+static uint32_t xorshift32(uint32_t* seed)
+{
+    uint32_t x = *seed;
+    x ^= x << 13;
+    x ^= x >> 17;
+    x ^= x << 5;
+    *seed = x;
+    return x;
+}
+
+static int xorshift_entropy_func(void *data, unsigned char *output, size_t len)
+{
+    for (size_t i = 0; i < len; i++)
+    {
+        uint32_t x = xorshift32(&entropy_seed);
+        output[i] = *(unsigned char*)&x;
+    }
+    return 0;
+}
 
 
 class Spake2Client {
@@ -84,6 +110,11 @@ class Spake2Client {
 
     int calculateT(std::vector<uint8_t>& out)
     {
+        return calculateTWithCustomEntropy(out, mbedtls_entropy_func);
+    }
+
+    int calculateTWithCustomEntropy(std::vector<uint8_t>& out, int entropy_func(void*, unsigned char*, size_t))
+    {
         mbedtls_ecp_point X;
         mbedtls_ecp_point_init(&X);
 
@@ -93,7 +124,7 @@ class Spake2Client {
 
         mbedtls_entropy_init(&entropy);
         int status = 0;
-        status |= mbedtls_ctr_drbg_seed(&ctr_drbg, mbedtls_entropy_func,
+        status |= mbedtls_ctr_drbg_seed(&ctr_drbg, entropy_func,
                                         &entropy, NULL, 0);
         status |= mbedtls_ecp_gen_keypair(&grp_, &x_, &X,
                                           mbedtls_ctr_drbg_random, &ctr_drbg);
