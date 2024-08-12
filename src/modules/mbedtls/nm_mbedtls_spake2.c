@@ -82,7 +82,8 @@ static void mbedtls_spake2_destroy(struct np_spake2_context* spake)
 np_error_code nm_mbedtls_spake2_calculate_key(
     struct np_spake2_context* spake,
     struct nc_spake2_password_request* req,
-    int entropy_func(void*, unsigned char*, size_t),
+    int (*f_rng)(void *, unsigned char *, size_t),
+    void *p_rng,
     const char* password,
     uint8_t* resp,
     size_t* respLen,
@@ -130,25 +131,17 @@ np_error_code nm_mbedtls_spake2_calculate_key(
     uint8_t passwordHash[32];
 
     {
-        mbedtls_entropy_context entropy;
-        mbedtls_ctr_drbg_context ctr_drbg;
-        mbedtls_ctr_drbg_init( &ctr_drbg );
-        mbedtls_entropy_init( &entropy );
-        status |= mbedtls_ctr_drbg_seed( &ctr_drbg, entropy_func, &entropy, NULL, 0);
         // Generate random value for y and create Y
-        status |= mbedtls_ecp_gen_keypair( &grp, &y, &Y, mbedtls_ctr_drbg_random, &ctr_drbg);
+        status |= mbedtls_ecp_gen_keypair( &grp, &y, &Y, f_rng, p_rng);
 
         // Use dummy pwd if a real one don't exist to mask invalid username
         if (password == NULL) {
-            status |= mbedtls_ctr_drbg_random(&ctr_drbg, passwordHash, 32);
+            status |= f_rng(p_rng, passwordHash, 32);
         } else {
             status |= nm_mbedtls_sha256((const uint8_t*)password, strlen(password), passwordHash);
         }
         // create password hash from binary
         status |= mbedtls_mpi_read_binary(&w, passwordHash, sizeof(passwordHash));
-
-        mbedtls_entropy_free(&entropy);
-        mbedtls_ctr_drbg_free(&ctr_drbg);
     }
 
     {
@@ -222,7 +215,20 @@ static np_error_code mbedtls_spake2_calculate_key(
     struct np_spake2_context* spake, struct nc_spake2_password_request* req, const char* password,
     uint8_t* resp, size_t* respLen, uint8_t* spake2Key)
 {
-    return nm_mbedtls_spake2_calculate_key(spake, req, mbedtls_entropy_func, password, resp, respLen, spake2Key);
+    mbedtls_entropy_context entropy;
+    mbedtls_ctr_drbg_context ctr_drbg;
+    mbedtls_ctr_drbg_init( &ctr_drbg );
+    mbedtls_entropy_init( &entropy );
+    int status = mbedtls_ctr_drbg_seed( &ctr_drbg, mbedtls_entropy_func, &entropy, NULL, 0);
+    if (status != 0) {
+        return NABTO_EC_FAILED;
+    }
+
+    np_error_code ec =  nm_mbedtls_spake2_calculate_key(spake, req, mbedtls_ctr_drbg_random, &ctr_drbg, password, resp, respLen, spake2Key);
+
+    mbedtls_entropy_free(&entropy);
+    mbedtls_ctr_drbg_free(&ctr_drbg);
+    return ec;
 }
 
 static np_error_code mbedtls_spake2_key_confirmation(struct np_spake2_context* spake, uint8_t* payload, size_t payloadLen, uint8_t* key, size_t keyLen, uint8_t* hash1, size_t hash1Len)

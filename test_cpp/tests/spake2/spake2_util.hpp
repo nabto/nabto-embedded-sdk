@@ -110,24 +110,27 @@ class Spake2Client {
 
     int calculateT(std::vector<uint8_t>& out)
     {
-        return calculateTWithCustomEntropy(out, mbedtls_entropy_func);
-    }
-
-    int calculateTWithCustomEntropy(std::vector<uint8_t>& out, int entropy_func(void*, unsigned char*, size_t))
-    {
-        mbedtls_ecp_point X;
-        mbedtls_ecp_point_init(&X);
-
         mbedtls_entropy_context entropy;
         mbedtls_ctr_drbg_context ctr_drbg;
         mbedtls_ctr_drbg_init(&ctr_drbg);
 
         mbedtls_entropy_init(&entropy);
+
+        int status = calculateTWithCustomRandom(out, mbedtls_ctr_drbg_random, &ctr_drbg);
+
+        mbedtls_ctr_drbg_free(&ctr_drbg);
+        mbedtls_entropy_free(&entropy);
+        return status;
+    }
+
+    int calculateTWithCustomRandom(std::vector<uint8_t>& out, int (*f_rng)(void *, unsigned char *, size_t), void *p_rng)
+    {
+        mbedtls_ecp_point X;
+        mbedtls_ecp_point_init(&X);
+
         int status = 0;
-        status |= mbedtls_ctr_drbg_seed(&ctr_drbg, entropy_func,
-                                        &entropy, NULL, 0);
         status |= mbedtls_ecp_gen_keypair(&grp_, &x_, &X,
-                                          mbedtls_ctr_drbg_random, &ctr_drbg);
+                                          f_rng, p_rng);
 
         mbedtls_mpi tmp;
         mbedtls_mpi_init(&tmp);

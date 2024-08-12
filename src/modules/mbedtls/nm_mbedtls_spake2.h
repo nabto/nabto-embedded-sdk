@@ -14,7 +14,8 @@ void nm_mbedtls_spake2_deinit(struct np_platform* pl);
 np_error_code nm_mbedtls_spake2_calculate_key(
     struct np_spake2_context* spake,
     struct nc_spake2_password_request* req,
-    int entropy_func(void*, unsigned char*, size_t),
+    int (*f_rng)(void *, unsigned char *, size_t),
+    void *p_rng,
     const char* password,
     uint8_t* resp,
     size_t* respLen,
