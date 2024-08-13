@@ -69,7 +69,7 @@ bool nm_condition_from_json_parse(const cJSON* kv, struct nm_iam_condition* cond
 struct nm_iam_statement* nm_statement_from_json(const cJSON* json, struct nn_log* logger)
 {
     if (!cJSON_IsObject(json)) {
-        return false;
+        return NULL;
     }
 
     cJSON* effect = cJSON_GetObjectItem(json, "Effect");
