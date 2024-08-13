@@ -1,0 +1,65 @@
+{
+    "version": 6,
+    "configurePresets": [
+        {
+            "name": "debug",
+            "displayName": "Debug",
+            "generator": "Ninja",
+            "binaryDir": "build/debug",
+            "cacheVariables": {
+                "CMAKE_BUILD_TYPE": "Debug",
+                "DEVICE_BUILD_TESTS": "ON"
+            }
+        },
+        {
+            "name": "release",
+            "displayName": "Release",
+            "generator": "Ninja",
+            "binaryDir": "build/release",
+            "cacheVariables": {
+                "CMAKE_BUILD_TYPE": "Release"
+            }
+        },
+        {
+            "name": "vcpkg_base",
+            "toolchainFile": "3rdparty/vcpkg/scripts/buildsystems/vcpkg.cmake",
+            "cacheVariables": {
+                "NABTO_DEVICE_PREFER_SYSTEM_LIBS": "ON"
+            }
+        },
+        {
+            "name": "release_vcpkg",
+            "inherits": "vcpkg_base",
+            "displayName": "Release vcpkg",
+            "generator": "Ninja",
+            "binaryDir": "build/release_vcpkg",
+            "cacheVariables": {
+                "CMAKE_BUILD_TYPE": "Release"
+            }
+        },
+        {
+            "inherits": "vcpkg_base",
+            "name": "debug_vcpkg",
+            "displayName": "Debug vcpkg",
+            "generator": "Ninja",
+            "binaryDir": "build/debug_vcpkg",
+            "cacheVariables": {
+                "CMAKE_BUILD_TYPE": "Debug"
+            }
+        }
+    ],
+    "buildPresets": [
+        {
+            "name": "debug",
+            "configurePreset": "debug"
+        },
+        {
+            "name": "release",
+            "configurePreset": "release"
+        },
+        {
+            "name": "release_vcpkg",
+            "configurePreset": "release_vcpkg"
+        }
+    ]
+}

@@ -3,11 +3,7 @@ cmake_minimum_required(VERSION 3.24)
 option(NABTO_DEVICE_BUILD_WITH_VCPKG_DEPENDENCIES "Build the source with vcpkg dependencies" OFF)
 
 option(NABTO_DEVICE_USE_VCPKG "Use vcpkg for providing dependencies" OFF)
-if (NABTO_DEVICE_USE_VCPKG)
-  set(CMAKE_TOOLCHAIN_FILE "${CMAKE_CURRENT_SOURCE_DIR}/3rdparty/vcpkg/scripts/buildsystems/vcpkg.cmake" CACHE STRING "Vcpkg toolchain file")
-  # vcpkg is missing find package scripts for a few libraries
-  set(CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake/vcpkg;${CMAKE_MODULE_PATH}")
-endif()
+set(CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake/vcpkg;${CMAKE_MODULE_PATH}")
 
 project(NabtoEmbeddedSDK VERSION 0.0.1)
 
@@ -20,6 +16,7 @@ set(CMAKE_POLICY_DEFAULT_CMP0063 NEW)
 cmake_policy(SET CMP0063 NEW)
 cmake_policy(SET CMP0090 NEW)
 set(CMAKE_FIND_USE_SYSTEM_PACKAGE_REGISTRY OFF)
+set(CMAKE_FIND_PACKAGE_PREFER_CONFIG ON)
 
 set(CMAKE_VISIBILITY_INLINES_HIDDEN ON)
 set(CMAKE_C_VISIBILITY_PRESET hidden)
@@ -56,15 +53,15 @@ option(DEVICE_BUILD_APPS "build applications" ON)
 option(DEVICE_STATIC_LINK_VCRUNTIME "Static link visual c runtime" OFF)
 option(DEVICE_MBEDTLS_2 "Set this to true if the device is built against mbedtls version 2" ON)
 
-option(NABTO_DEVICE_PREFER_SYSTEM_LIB "Prefer system libraries" OFF)
+option(NABTO_DEVICE_PREFER_SYSTEM_LIBS "Prefer system libraries" OFF)
 
-option(NABTO_DEVICE_USE_SYSTEM_MEDTLS "use mbedtls from the system" ${NABTO_DEVICE_PREFER_SYSTEM_LIB})
-option(NABTO_DEVICE_USE_SYSTEM_TINYCBOR "use tinycbor from the system" ${NABTO_DEVICE_PREFER_SYSTEM_LIB})
-option(NABTO_DEVICE_USE_SYSTEM_NABTOCOMMON "use nabtocommon from the system" ${NABTO_DEVICE_PREFER_SYSTEM_LIB})
-option(NABTO_DEVICE_USE_SYSTEM_CJSON "use cjson from the system" ${NABTO_DEVICE_PREFER_SYSTEM_LIB})
-option(NABTO_DEVICE_USE_SYSTEM_BOOST "use boost from the system" ${NABTO_DEVICE_PREFER_SYSTEM_LIB})
-option(NABTO_DEVICE_USE_SYSTEM_NLOHMANNJSON "use nlohmann_json from the system" ${NABTO_DEVICE_PREFER_SYSTEM_LIB})
-option(NABTO_DEVICE_USE_SYSTEM_LIBEVENT "use libevent from the system" ${NABTO_DEVICE_PREFER_SYSTEM_LIB})
+option(NABTO_DEVICE_USE_SYSTEM_MEDTLS "use mbedtls from the system" ${NABTO_DEVICE_PREFER_SYSTEM_LIBS})
+option(NABTO_DEVICE_USE_SYSTEM_TINYCBOR "use tinycbor from the system" ${NABTO_DEVICE_PREFER_SYSTEM_LIBS})
+option(NABTO_DEVICE_USE_SYSTEM_NABTOCOMMON "use nabtocommon from the system" ${NABTO_DEVICE_PREFER_SYSTEM_LIBS})
+option(NABTO_DEVICE_USE_SYSTEM_CJSON "use cjson from the system" ${NABTO_DEVICE_PREFER_SYSTEM_LIBS})
+option(NABTO_DEVICE_USE_SYSTEM_BOOST "use boost from the system" ${NABTO_DEVICE_PREFER_SYSTEM_LIBS})
+option(NABTO_DEVICE_USE_SYSTEM_NLOHMANNJSON "use nlohmann_json from the system" ${NABTO_DEVICE_PREFER_SYSTEM_LIBS})
+option(NABTO_DEVICE_USE_SYSTEM_LIBEVENT "use libevent from the system" ${NABTO_DEVICE_PREFER_SYSTEM_LIBS})
 
 set(NABTO_DEVICE_VERSION "" CACHE STRING "use this version instead of getting the version from the git tag")
 
