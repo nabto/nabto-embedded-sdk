@@ -39,7 +39,10 @@ np_error_code nc_connections_async_close(struct nc_connections_context* ctx, nc_
     bool hasActive = false;
     ctx->closing = true;
     struct nc_connection* connection;
-    NN_LLIST_FOREACH(connection, &ctx->connections) {
+    struct nn_llist_iterator iter = nn_llist_begin(&ctx->connections);
+    while(!nn_llist_is_end(&iter)) {
+        connection = nn_llist_get_item(&iter);
+        nn_llist_next(&iter);
         if (!connection->isVirtual) {
             nc_client_connection_close_connection(connection->connectionImplCtx);
             hasActive = true;
