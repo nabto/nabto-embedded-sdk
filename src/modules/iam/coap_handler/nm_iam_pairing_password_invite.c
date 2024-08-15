@@ -54,23 +54,35 @@ void handle_request(struct nm_iam_coap_handler* handler, NabtoDeviceCoapRequest*
                 CborParser parser;
                 CborValue value;
 
-                char* fpName = NULL;
-                if (nm_iam_cbor_init_parser(request, &parser, &value)) {
-                    nm_iam_cbor_decode_kv_string(&value, "FingerprintName", &fpName);
-
-                }
-
-                if (!nm_iam_user_add_fingerprint(user, fp, fpName)) {
-                    nabto_device_coap_error_response(request, 500, "Insufficient resources");
+                struct nm_iam_user* fpUsr = nm_iam_internal_find_user_by_fingerprint(iam, fp);
+                if (fpUsr != NULL) {
+                    if (fpUsr == user) {
+                        // Already paired
+                        nabto_device_coap_response_set_code(request, 201);
+                        nabto_device_coap_response_ready(request);
+                    } else {
+                        // Fingerprint in use
+                        nabto_device_coap_response_set_code(request, 409);
+                        nabto_device_coap_response_ready(request);
+                    }
                 } else {
-                    nm_iam_user_set_password(user, NULL);
-                    nm_iam_internal_state_has_changed(iam);
-                    nabto_device_coap_response_set_code(request, 201);
-                    nabto_device_coap_response_ready(request);
+                    char* fpName = NULL;
+                    if (nm_iam_cbor_init_parser(request, &parser, &value)) {
+                        nm_iam_cbor_decode_kv_string(&value, "FingerprintName", &fpName);
+
+                    }
+
+                    if (!nm_iam_user_add_fingerprint(user, fp, fpName)) {
+                        nabto_device_coap_error_response(request, 500, "Insufficient resources");
+                    } else {
+                        nm_iam_user_set_password(user, NULL);
+                        nm_iam_internal_state_has_changed(iam);
+                        nabto_device_coap_response_set_code(request, 201);
+                        nabto_device_coap_response_ready(request);
+                    }
+                    nm_iam_free(fpName);
                 }
                 nabto_device_string_free(fp);
-                nm_iam_free(fpName);
-
             }
         }
         nabto_device_string_free(username);
