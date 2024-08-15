@@ -856,7 +856,12 @@ int nm_dtls_mbedtls_recv(void* data, unsigned char* buffer, size_t bufferSize)
     } else {
         size_t maxCp = bufferSize > conn->recvBufferSize ? conn->recvBufferSize : bufferSize;
         memcpy(buffer, conn->recvBuffer, maxCp);
-        conn->recvBufferSize = 0;
+        if (maxCp < conn->recvBufferSize) {
+            conn->recvBuffer += maxCp;
+            conn->recvBufferSize -= maxCp;
+        } else {
+            conn->recvBufferSize = 0;
+        }
         return (int)maxCp;
     }
 }
