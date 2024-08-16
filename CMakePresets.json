@@ -63,9 +63,11 @@
         },
 
         {
-            "name": "windows_vcpkg",
+            "name": "windows_vcpkg_static",
             "inherits": [ "base", "vcpkg_base"],
             "cacheVariables": {
+                "VCPKG_TARGET_TRIPLET": "x64-windows-static",
+                "DEVICE_STATIC_LINK_VCRUNTIME": "ON",
                 "CMAKE_BUILD_TYPE": "Release",
                 "DEVICE_BUILD_TESTS": "ON"
             }
@@ -104,8 +106,9 @@
         },
 
         {
-            "name": "windows_vcpkg",
-            "configurePreset": "windows_vcpkg"
+            "name": "windows_vcpkg_static",
+            "configurePreset": "windows_vcpkg_static",
+            "targets": ["install"]
         },
         {
             "name": "test_ansi_c99",
@@ -193,15 +196,15 @@
             ]
         },
         {
-            "name": "windows_vcpkg",
+            "name": "windows_vcpkg_static",
             "steps": [
                 {
                     "type": "configure",
-                    "name": "windows_vcpkg"
+                    "name": "windows_vcpkg_static"
                 },
                 {
                     "type": "build",
-                    "name": "windows_vcpkg"
+                    "name": "windows_vcpkg_static"
                 }
             ]
         }
