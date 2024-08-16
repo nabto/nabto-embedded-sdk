@@ -12,7 +12,6 @@ jobs:
     runs-on: ${{matrix.os}}
     strategy:
       matrix:
-        workflow: []
         os:
           - ubuntu-24.04:
             workflow: "linux_fetchcontent"
