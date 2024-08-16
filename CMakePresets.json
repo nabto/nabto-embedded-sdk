@@ -48,7 +48,7 @@
             "inherits": [ "base", "vcpkg_base", "unix_base" ],
             "cacheVariables": {
                 "CMAKE_OSX_ARCHITECTURES": "arm64",
-                "VCPKG_TARGET_TRIPLET": "arm64",
+                "VCPKG_TARGET_TRIPLET": "arm64-osx",
                 "CMAKE_BUILD_TYPE": "Release",
                 "DEVICE_BUILD_TESTS": "ON"
             }
@@ -94,15 +94,18 @@
 
         {
             "name": "mac_vcpkg_x86_64",
-            "configurePreset": "mac_vcpkg_x86_64"
+            "configurePreset": "mac_vcpkg_x86_64",
+            "targets": ["install"]
         },
         {
             "name": "mac_vcpkg_arm64",
-            "configurePreset": "mac_vcpkg_arm64"
+            "configurePreset": "mac_vcpkg_arm64",
+            "targets": ["install"]
         },
         {
             "name": "mac_fetchcontent_universal",
-            "configurePreset": "mac_fetchcontent_universal"
+            "configurePreset": "mac_fetchcontent_universal",
+            "targets": ["install"]
         },
 
         {
