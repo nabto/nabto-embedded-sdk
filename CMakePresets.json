@@ -14,7 +14,8 @@
             "name": "vcpkg_base",
             "toolchainFile": "3rdparty/vcpkg/scripts/buildsystems/vcpkg.cmake",
             "cacheVariables": {
-                "NABTO_DEVICE_PREFER_SYSTEM_LIBS": "ON"
+                "NABTO_DEVICE_PREFER_SYSTEM_LIBS": "ON",
+                "CMAKE_MODULE_PATH": "${sourceDir}/cmake/vcpkg"
             }
         },
         {

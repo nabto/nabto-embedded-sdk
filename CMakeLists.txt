@@ -4,7 +4,7 @@ cmake_minimum_required(VERSION 3.24)
 # a <package_name>Config.cmake file, these Find<Package>.cmake files will be
 # used. This happens because we sets CMAKE_FIND_PACKAGE_PREFER_CONFIG ushc that
 # config mode packages is preferred over the Find<package>.cmake scripts.
-set(CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake/vcpkg;${CMAKE_MODULE_PATH}")
+#set(CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake/vcpkg;${CMAKE_MODULE_PATH}")
 
 project(NabtoEmbeddedSDK VERSION 0.0.1)
 

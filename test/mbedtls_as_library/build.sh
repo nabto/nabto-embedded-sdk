@@ -2,20 +2,20 @@
 
 SCRIPT_DIR=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
 
-DIR=`pwd`
+SOURCE_DIR=${SCRIPT_DIR}/../..
+BUILD_DIR=${SOURCE_DIR}/build/mbedtls_as_library
 
-MBEDTLS_DIR=${DIR}/mbedtls
-MBEDTLS_BUILD_DIR=${DIR}/mbedtls_build
-MBEDTLS_INSTALL_DIR=${DIR}/mbedtls_install
 
-NABTO_BUILD_DIR=${DIR}/nabto
+MBEDTLS_DIR=${BUILD_DIR}/mbedtls
+MBEDTLS_BUILD_DIR=${BUILD_DIR}/mbedtls_build
+MBEDTLS_INSTALL_DIR=${BUILD_DIR}/mbedtls_install
+
+NABTO_BUILD_DIR=${BUILD_DIR}/nabto
 
 
 mkdir -p ${MBEDTLS_DIR}
 cd ${MBEDTLS_DIR}
 curl -sSL https://github.com/Mbed-TLS/mbedtls/releases/download/v3.6.0/mbedtls-3.6.0.tar.bz2 | tar -xjf - --strip-components=1
-
-MBEDTLS_BUILD_DIR=${DIR}/mbedtls_build
 
 mkdir -p ${MBEDTLS_BUILD_DIR}
 cd ${MBEDTLS_BUILD_DIR}
