@@ -9,26 +9,26 @@ jobs:
   build-and-test:
     timeout-minutes: 20
     name: Build
-    runs-on: ${{matrix.os}}
+    runs-on: ${{matrix.workflow.os}}
     strategy:
       matrix:
-        os:
-          - ubuntu-24.04:
-            workflow: "linux_fetchcontent"
-          - ubuntu-24.04:
-            workflow: "linux_vcpkg"
-          - ubuntu-24.04:
-            workflow: "linux_vcpkg_dtls_client_only"
+        workflow:
+          - os: ubuntu-24.04
+            name: "linux_fetchcontent"
+          - os: ubuntu-24.04
+            name: "linux_vcpkg"
+          - os: ubuntu-24.04
+            name: "linux_vcpkg_dtls_client_only"
 
-          - windows-2022:
-            workflow: "windows_vcpkg_static"
+          - os: windows-2022
+            name: "windows_vcpkg_static"
 
-          - macos-12:
-            workflow: mac_vcpkg_x86_64
-          - macos-12:
-            workflow: mac_vcpkg_arm64
-          - macos-12:
-            workflow: mac_fetchcontent_universal
+          - os: macos-12
+            name: mac_vcpkg_x86_64
+          - os: macos-12
+            name: mac_vcpkg_arm64
+          - os: macos-12
+            name: mac_fetchcontent_universal
 
     steps:
       - uses: actions/checkout@v4
@@ -36,21 +36,21 @@ jobs:
           submodules: recursive
           fetch-depth: 0
       - name: Build
-        run: cmake --workflow --preset ${{ matrix.workflow }}
+        run: cmake --workflow --preset ${{ matrix.workflow.name }}
 
-      - if: matrix.os == 'windows-2022'
+      - if: matrix.workflow.os == 'windows-2022'
         name: Test run
         run: |
-          netsh advfirewall firewall add rule name="embedded_unit_test" dir=in action=allow program="${{ github.workspace }}\build\${{ matrix.workflow }}\install\bin\embedded_unit_test.exe" enable=yes
-          ${{ github.workspace }}\build\${{ matrix.workflow }}\install\bin\embedded_unit_test.exe -l test_suite --detect_memory_leaks=0
+          netsh advfirewall firewall add rule name="embedded_unit_test" dir=in action=allow program="${{ github.workspace }}\build\${{ matrix.workflow.name }}\install\bin\embedded_unit_test.exe" enable=yes
+          ${{ github.workspace }}\build\${{ matrix.workflow.name }}\install\bin\embedded_unit_test.exe -l test_suite --detect_memory_leaks=0
 
-      - if: matrix.os != 'windows-2022'
+      - if: matrix.workflow.os != 'windows-2022'
         name: Test run
-        run: ${{ github.workspace }}/build/${{ matrix.workflow }}/install/bin/embedded_unit_test -l test_suite --detect_memory_leaks=0
+        run: ${{ github.workspace }}/build/${{ matrix.workflow.name }}/install/bin/embedded_unit_test -l test_suite --detect_memory_leaks=0
 
       - name: Upload artifacts
         uses: actions/upload-artifact@v3
         with:
-          name: artifacts_${{ matrix.workflow }}
+          name: artifacts_${{ matrix.workflow.name }}
           path: ${{ github.workspace }}/artifacts
           if-no-files-found: warn
