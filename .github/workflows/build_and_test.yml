@@ -35,6 +35,14 @@ jobs:
         with:
           submodules: recursive
           fetch-depth: 0
+      - if: matrix.workflow.os == 'ubuntu-24.04'
+        name: Install Ninja
+        run: sudo apt-get update && apt-get install -y ninja-build
+
+      - if: matrix.workflow.os == 'macos-12'
+        name: Install Ninja
+        run: brew install ninja
+
       - name: Build
         run: cmake --workflow --preset ${{ matrix.workflow.name }}
 
