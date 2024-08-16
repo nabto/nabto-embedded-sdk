@@ -41,6 +41,11 @@ To do a cross build, set the `CC` environment variable to point to the cross com
 export CC=/opt/hisi-linux-nptl/arm-hisiv100-linux/target/bin/arm-hisiv100-gcc
 ```
 
+#### Windows
+
+On windows we do not support building the software with FetchContent, so a
+package manager such as vcpkg needs to be used.
+
 ### Building with externally supplied packages
 
 The nabto embedded SDK, apps, examples and tests each relies on a subset of the following libraries/packages

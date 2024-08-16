@@ -25,6 +25,6 @@ make install
 
 mkdir ${NABTO_BUILD_DIR}
 cd ${NABTO_BUILD_DIR}
-cmake -DNABTO_DEVICE_MBEDTLS_PROVIDER=package -DMbedTLS_DIR=${MBEDTLS_INSTALL_DIR}/lib/cmake/MbedTLS ${SCRIPT_DIR}/../..
+cmake -DNABTO_DEVICE_USE_SYSTEM_MBEDTLS=ON -DMbedTLS_DIR=${MBEDTLS_INSTALL_DIR}/lib/cmake/MbedTLS ${SCRIPT_DIR}/../..
 
 make -j 8

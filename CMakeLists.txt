@@ -1,16 +1,12 @@
 cmake_minimum_required(VERSION 3.24)
 
-option(NABTO_DEVICE_BUILD_WITH_VCPKG_DEPENDENCIES "Build the source with vcpkg dependencies" OFF)
-
-option(NABTO_DEVICE_USE_VCPKG "Use vcpkg for providing dependencies" OFF)
+# If a package is not found based on FetchContent OVERRIDE_FIND_PACKAGE or using
+# a <package_name>Config.cmake file, these Find<Package>.cmake files will be
+# used. This happens because we sets CMAKE_FIND_PACKAGE_PREFER_CONFIG ushc that
+# config mode packages is preferred over the Find<package>.cmake scripts.
 set(CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake/vcpkg;${CMAKE_MODULE_PATH}")
 
 project(NabtoEmbeddedSDK VERSION 0.0.1)
-
-if (NABTO_DEVICE_BUILD_WITH_VCPKG_DEPENDENCIES)
-  # vcpkg dependencies for mbedtls 2 and tinycbor does not provide find_package scripts for these libraries
-  set(CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake/vcpkg;${CMAKE_MODULE_PATH}")
-endif()
 
 set(CMAKE_POLICY_DEFAULT_CMP0063 NEW)
 cmake_policy(SET CMP0063 NEW)

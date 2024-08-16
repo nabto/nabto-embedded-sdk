@@ -3,7 +3,6 @@
     "configurePresets": [
         {
             "name": "debug",
-            "displayName": "Debug",
             "generator": "Ninja",
             "binaryDir": "build/debug",
             "cacheVariables": {
@@ -13,7 +12,6 @@
         },
         {
             "name": "release",
-            "displayName": "Release",
             "generator": "Ninja",
             "binaryDir": "build/release",
             "cacheVariables": {
@@ -28,23 +26,73 @@
             }
         },
         {
-            "name": "release_vcpkg",
+            "name": "linux_vcpkg",
             "inherits": "vcpkg_base",
-            "displayName": "Release vcpkg",
             "generator": "Ninja",
-            "binaryDir": "build/release_vcpkg",
+            "binaryDir": "build/linux_vcpkg",
             "cacheVariables": {
-                "CMAKE_BUILD_TYPE": "Release"
+                "CMAKE_BUILD_TYPE": "Release",
+                "DEVICE_BUILD_TESTS": "ON"
             }
         },
         {
-            "inherits": "vcpkg_base",
             "name": "debug_vcpkg",
-            "displayName": "Debug vcpkg",
+            "inherits": "vcpkg_base",
             "generator": "Ninja",
             "binaryDir": "build/debug_vcpkg",
             "cacheVariables": {
                 "CMAKE_BUILD_TYPE": "Debug",
+                "DEVICE_BUILD_TESTS": "ON"
+            }
+        },
+        {
+            "name": "mac_vcpkg_x86_64",
+            "inherits": "vcpkg_base",
+            "generator": "Ninja",
+            "binaryDir": "build/mac_vcpkg_x86_64",
+            "cacheVariables": {
+                "CMAKE_OSX_ARCHITECTURES": "x86_64",
+                "VCPKG_TARGET_TRIPLET": "x64-osx",
+                "CMAKE_BUILD_TYPE": "Release",
+                "DEVICE_BUILD_TESTS": "ON"
+            }
+        },
+        {
+            "name": "mac_vcpkg_arm64",
+            "inherits": "vcpkg_base",
+            "generator": "Ninja",
+            "binaryDir": "build/mac_vcpkg_arm64",
+            "cacheVariables": {
+                "CMAKE_OSX_ARCHITECTURES": "arm64",
+                "VCPKG_TARGET_TRIPLET": "arm64",
+                "CMAKE_BUILD_TYPE": "Release",
+                "DEVICE_BUILD_TESTS": "ON"
+            }
+        },
+        {
+            "name": "mac_fetchcontent_universal",
+            "generator": "Ninja",
+            "binaryDir": "build/mac_fetchcontent_universal",
+            "cacheVariables": {
+                "CMAKE_BUILD_TYPE": "Release",
+                "DEVICE_BUILD_TESTS": "ON"
+            }
+        },
+        {
+            "name": "linux_fetchcontent",
+            "generator": "Ninja",
+            "binaryDir": "build/linux_fetchcontent",
+            "cacheVariables": {
+                "CMAKE_BUILD_TYPE": "Release",
+                "DEVICE_BUILD_TESTS": "ON"
+            }
+        },
+        {
+            "name": "windows_vcpkg",
+            "inherits": "vcpkg_base",
+            "binaryDir": "build/windows_vcpkg",
+            "cacheVariables": {
+                "CMAKE_BUILD_TYPE": "Release",
                 "DEVICE_BUILD_TESTS": "ON"
             }
         },
@@ -66,12 +114,32 @@
             "configurePreset": "release"
         },
         {
-            "name": "release_vcpkg",
-            "configurePreset": "release_vcpkg"
+            "name": "linux_vcpkg",
+            "configurePreset": "linux_vcpkg"
         },
         {
             "name": "debug_vcpkg",
             "configurePreset": "debug_vcpkg"
+        },
+        {
+            "name": "mac_vcpkg_x86_64",
+            "configurePreset": "mac_vcpkg_x86_64"
+        },
+        {
+            "name": "mac_vcpkg_arm64",
+            "configurePreset": "mac_vcpkg_arm64"
+        },
+        {
+            "name": "mac_fetchcontent_universal",
+            "configurePreset": "mac_fetchcontent_universal"
+        },
+        {
+            "name": "linux_fetchcontent",
+            "configurePreset": "linux_fetchcontent"
+        },
+        {
+            "name": "windows_vcpkg",
+            "configurePreset": "windows_vcpkg"
         },
         {
             "name": "test_ansi_c99",
@@ -81,6 +149,7 @@
     "workflowPresets": [
         {
             "name": "test_ansi_c99",
+            "description": "Test that the software can be built in ansi c99 mode",
             "steps": [
                  {
                     "type": "configure",
@@ -91,6 +160,85 @@
                     "name": "test_ansi_c99"
                  }
             ]
+        },
+        {
+            "name": "mac_vcpkg_x86_64",
+            "steps": [
+                {
+                    "type": "configure",
+                    "name": "mac_vcpkg_x86_64"
+                },
+                {
+                    "type": "build",
+                    "name": "mac_vcpkg_x86_64"
+                }
+            ]
+        },
+        {
+            "name": "mac_vcpkg_arm64",
+            "steps": [
+                {
+                    "type": "configure",
+                    "name": "mac_vcpkg_arm64"
+                },
+                {
+                    "type": "build",
+                    "name": "mac_vcpkg_arm64"
+                }
+            ]
+        },
+        {
+            "name": "mac_fetchcontent_universal",
+            "steps": [
+                {
+                    "type": "configure",
+                    "name": "mac_fetchcontent_universal"
+                },
+                {
+                    "type": "build",
+                    "name": "mac_fetchcontent_universal"
+                }
+            ]
+        },
+        {
+            "name": "linux_fetchcontent",
+            "steps": [
+                {
+                    "type": "configure",
+                    "name": "linux_fetchcontent"
+                },
+                {
+                    "type": "build",
+                    "name": "linux_fetchcontent"
+                }
+            ]
+        },
+        {
+            "name": "linux_vcpkg",
+            "steps": [
+                {
+                    "type": "configure",
+                    "name": "linux_vcpkg"
+                },
+                {
+                    "type": "build",
+                    "name": "linux_vcpkg"
+                }
+            ]
+        },
+        {
+            "name": "windows_vcpkg",
+            "steps": [
+                {
+                    "type": "configure",
+                    "name": "windows_vcpkg"
+                },
+                {
+                    "type": "build",
+                    "name": "windows_vcpkg"
+                }
+            ]
         }
+
     ]
 }

@@ -14,3 +14,4 @@ perf.data*
 device.key
 simple_push_state.json
 /build-scripts/mallocfail/test-client/node_modules
+build-scripts/vcpkg/ports/nabto-common/timestamp.txt
