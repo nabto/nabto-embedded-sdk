@@ -44,8 +44,16 @@
             "generator": "Ninja",
             "binaryDir": "build/debug_vcpkg",
             "cacheVariables": {
-                "CMAKE_BUILD_TYPE": "Debug"
+                "CMAKE_BUILD_TYPE": "Debug",
+                "DEVICE_BUILD_TESTS": "ON"
             }
+        },
+        {
+            "name": "test_ansi_c99",
+            "environment": {
+                "CFLAGS": "-ansi -std=gnu99"
+            },
+            "binaryDir": "build/test_ansi_c99"
         }
     ],
     "buildPresets": [
@@ -60,6 +68,29 @@
         {
             "name": "release_vcpkg",
             "configurePreset": "release_vcpkg"
+        },
+        {
+            "name": "debug_vcpkg",
+            "configurePreset": "debug_vcpkg"
+        },
+        {
+            "name": "test_ansi_c99",
+            "configurePreset": "test_ansi_c99"
+        }
+    ],
+    "workflowPresets": [
+        {
+            "name": "test_ansi_c99",
+            "steps": [
+                 {
+                    "type": "configure",
+                    "name": "test_ansi_c99"
+                 },
+                 {
+                    "type": "build",
+                    "name": "test_ansi_c99"
+                 }
+            ]
         }
     ]
 }

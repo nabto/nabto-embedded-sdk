@@ -1,5 +1,6 @@
 find_package(MbedTLS COMPONENTS mbedtls mbedcrypto mbedx509)
 find_package(Boost COMPONENTS asio)
+find_package(NabtoCommon REQUIRED)
 
 set(src
   dtls_server.cpp

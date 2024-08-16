@@ -1,5 +1,6 @@
 find_package(Boost COMPONENTS asio unit_test_framework)
 find_package(nlohmann_json REQUIRED)
+find_package(NabtoCommon REQUIRED)
 
 set(CMAKE_CXX_STANDARD 14)
 

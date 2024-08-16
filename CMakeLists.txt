@@ -55,7 +55,7 @@ option(DEVICE_MBEDTLS_2 "Set this to true if the device is built against mbedtls
 
 option(NABTO_DEVICE_PREFER_SYSTEM_LIBS "Prefer system libraries" OFF)
 
-option(NABTO_DEVICE_USE_SYSTEM_MEDTLS "use mbedtls from the system" ${NABTO_DEVICE_PREFER_SYSTEM_LIBS})
+option(NABTO_DEVICE_USE_SYSTEM_MBEDTLS "use mbedtls from the system" ${NABTO_DEVICE_PREFER_SYSTEM_LIBS})
 option(NABTO_DEVICE_USE_SYSTEM_TINYCBOR "use tinycbor from the system" ${NABTO_DEVICE_PREFER_SYSTEM_LIBS})
 option(NABTO_DEVICE_USE_SYSTEM_NABTOCOMMON "use nabtocommon from the system" ${NABTO_DEVICE_PREFER_SYSTEM_LIBS})
 option(NABTO_DEVICE_USE_SYSTEM_CJSON "use cjson from the system" ${NABTO_DEVICE_PREFER_SYSTEM_LIBS})
