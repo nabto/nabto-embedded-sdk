@@ -34,6 +34,16 @@
             }
         },
         {
+            "name": "linux_vcpkg_dtls_client_only",
+            "inherits": ["base", "unix_base", "vcpkg_base"],
+            "cacheVariables": {
+                "CMAKE_BUILD_TYPE": "Release",
+                "DEVICE_BUILD_TESTS": "ON",
+                "NABTO_DEVICE_DTLS_CLIENT_ONLY": "ON"
+
+            }
+        },
+        {
             "name": "mac_vcpkg_x86_64",
             "inherits": [ "base", "vcpkg_base", "unix_base" ],
             "cacheVariables": {
@@ -91,7 +101,11 @@
             "configurePreset": "linux_vcpkg",
             "targets": ["install"]
         },
-
+        {
+            "name": "linux_vcpkg_dtls_client_only",
+            "configurePreset": "linux_vcpkg_dtls_client_only",
+            "targets": ["install"]
+        },
         {
             "name": "mac_vcpkg_x86_64",
             "configurePreset": "mac_vcpkg_x86_64",
@@ -195,6 +209,19 @@
                 {
                     "type": "build",
                     "name": "linux_vcpkg"
+                }
+            ]
+        },
+        {
+            "name": "linux_vcpkg_dtls_client_only",
+            "steps": [
+                {
+                    "type": "configure",
+                    "name": "linux_vcpkg_dtls_client_only"
+                },
+                {
+                    "type": "build",
+                    "name": "linux_vcpkg_dtls_client_only"
                 }
             ]
         },

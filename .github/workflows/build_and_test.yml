@@ -12,43 +12,45 @@ jobs:
     runs-on: ${{matrix.os}}
     strategy:
       matrix:
-        cli-only: [0, 1]
-        # windows is disabled on 2024-08-06 os: [windows-2022, ubuntu-24.04, macos-12]
-        os: [ubuntu-24.04, macos-12]
-        include:
-          - os: windows-2022
-            generate_extra_options: -DNABTO_DEVICE_USE_VCPKG=ON -DNABTO_DEVICE_PREFER_SYSTEM_LIBS=ON
-            build_command: cmake --build build-dir --parallel --target install --config Release
-          - os: ubuntu-24.04
-            build_command: cmake --build build-dir --parallel --target install
-          - os: macos-12
-            # 2024-01-05: Sometimes mac fails on github actions when doing builds so we use make without parallellism directly, since we hope that fixes the unknown problem.
-            build_command: cd build-dir && make -j 1 install
+        os:
+          - ubuntu-24.04
+            workflow: "linux_fetchcontent"
+          - ubuntu-24.04
+            workflow: "linux_vcpkg"
+          - ubuntu-24.04
+            workflow: "linux_vcpkg_dtls_client_only"
+
+          - windows-2022
+            workflow: "windows_vcpkg_static"
+
+          - macos-12
+            workflow: mac_vcpkg_x86_64
+          - macos-12
+            workflow: mac_vcpkg_arm64
+          - macos-12
+            workflow: mac_fetchcontent_universal
 
     steps:
       - uses: actions/checkout@v4
         with:
           submodules: recursive
           fetch-depth: 0
-      - name: Configure cmake
-        run: mkdir build-dir && cd build-dir && cmake -DCMAKE_INSTALL_PREFIX=${{ github.workspace }}/artifacts -DDEVICE_BUILD_TESTS=ON -DNABTO_DEVICE_DTLS_CLIENT_ONLY=${{ matrix.cli-only }} ${{ matrix.generate_extra_options }} ..
-
       - name: Build
-        run: ${{matrix.build_command}}
+        run: cmake --workflow --preset ${{ matrix.workflow }}
 
       - if: matrix.os == 'windows-2022'
         name: Test run
         run: |
-          netsh advfirewall firewall add rule name="embedded_unit_test" dir=in action=allow program="${{ github.workspace }}\artifacts\bin\embedded_unit_test.exe" enable=yes
-          ${{ github.workspace }}/artifacts/bin/embedded_unit_test -l test_suite --detect_memory_leaks=0
+          netsh advfirewall firewall add rule name="embedded_unit_test" dir=in action=allow program="${{ github.workspace }}\build\${{ matrix.workflow }}\install\bin\embedded_unit_test.exe" enable=yes
+          ${{ github.workspace }}\build\${{ matrix.workflow }}\install\bin\embedded_unit_test.exe -l test_suite --detect_memory_leaks=0
 
       - if: matrix.os != 'windows-2022'
         name: Test run
-        run: ${{ github.workspace }}/artifacts/bin/embedded_unit_test -l test_suite --detect_memory_leaks=0
+        run: ${{ github.workspace }}/build/${{ matrix.workflow }}/install/bin/embedded_unit_test -l test_suite --detect_memory_leaks=0
 
       - name: Upload artifacts
         uses: actions/upload-artifact@v3
         with:
-          name: artifacts_${{matrix.os}}_cli_only_${{ matrix.cli-only }}
+          name: artifacts_${{ matrix.workflow }}
           path: ${{ github.workspace }}/artifacts
           if-no-files-found: warn
