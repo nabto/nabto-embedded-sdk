@@ -26,8 +26,6 @@ jobs:
           - os: macos-12
             name: mac_vcpkg_x86_64
           - os: macos-12
-            name: mac_vcpkg_arm64
-          - os: macos-12
             name: mac_fetchcontent_universal
 
     steps:
