@@ -12,22 +12,23 @@ jobs:
     runs-on: ${{matrix.os}}
     strategy:
       matrix:
+        workflow: []
         os:
-          - ubuntu-24.04
+          - ubuntu-24.04:
             workflow: "linux_fetchcontent"
-          - ubuntu-24.04
+          - ubuntu-24.04:
             workflow: "linux_vcpkg"
-          - ubuntu-24.04
+          - ubuntu-24.04:
             workflow: "linux_vcpkg_dtls_client_only"
 
-          - windows-2022
+          - windows-2022:
             workflow: "windows_vcpkg_static"
 
-          - macos-12
+          - macos-12:
             workflow: mac_vcpkg_x86_64
-          - macos-12
+          - macos-12:
             workflow: mac_vcpkg_arm64
-          - macos-12
+          - macos-12:
             workflow: mac_fetchcontent_universal
 
     steps:
