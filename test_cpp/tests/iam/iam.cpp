@@ -49,6 +49,14 @@ std::string s2 = R"(
       "Password":"password2",
       "Username":"testuser",
       "OauthSubject":"oauth_subject"
+    },
+    {
+      "DisplayName":"Second Name",
+      "Fingerprints": [],
+      "Role":"Admin",
+      "Password":"password3",
+      "Username":"otheruser",
+      "OauthSubject":"other_subject"
     }
   ],
   "Version":2
@@ -536,8 +544,11 @@ BOOST_AUTO_TEST_CASE(pair_new_user, *boost::unit_test::timeout(180))
     e = nm_iam_internal_pair_new_client(&iam, "myname", NULL, "myphone");
     BOOST_TEST(e == NM_IAM_ERROR_INVALID_ARGUMENT);
 
-    e = nm_iam_internal_pair_new_client(&iam, "testuser", nabto::test::aFp.c_str(), "myphone");
+    e = nm_iam_internal_pair_new_client(&iam, "testuser3", nabto::test::aFp.c_str(), "myphone");
     BOOST_TEST(e == NM_IAM_ERROR_USER_EXISTS);
+
+    e = nm_iam_internal_pair_new_client(&iam, "testuser", nabto::test::aFp.c_str(), "myphone");
+    BOOST_TEST(e == NM_IAM_ERROR_OK);
 
     e = nm_iam_internal_pair_new_client(&iam, "newuser", nabto::test::aFp.c_str(), "myphone");
     BOOST_TEST(e == NM_IAM_ERROR_USER_EXISTS);
@@ -735,6 +746,60 @@ BOOST_AUTO_TEST_CASE(pwd_invite_pairing_no_fpname, *boost::unit_test::timeout(18
         }
         BOOST_CHECK(found);
         BOOST_CHECK(usr->password == NULL);
+        nm_iam_user_free(usr);
+    }
+}
+
+BOOST_AUTO_TEST_CASE(pwd_invite_pairing_conflict, *boost::unit_test::timeout(180))
+{
+    nabto::test::IamVirtualConnTester ctx(nabto::test::c2, nabto::test::s2);
+    const std::string username = "testuser";
+    const std::string username2 = "otheruser";
+    const std::string clientFp = "1234567890123456789012345678901212345678901234567890123456789012";
+    std::string pwd = "password2";
+    std::string pwd2 = "password3";
+
+    ctx.doPwdAuth(username, clientFp, pwd);
+
+    ctx.createCoapRequest(NABTO_DEVICE_COAP_POST, "/iam/pairing/password-invite");
+    nlohmann::json root;
+    root["FingerprintName"] = "newphone";
+    ctx.setCborPayload(root);
+    ctx.executeCoap(201);
+
+    ctx.doPwdAuth(username2, clientFp, pwd2);
+    ctx.setCborPayload(root);
+    ctx.executeCoap(409);
+
+    {
+        auto usr = ctx.findStateUser("testuser");
+        BOOST_TEST((usr != NULL));
+        bool found = false;
+        void* f;
+        NN_LLIST_FOREACH(f, &usr->fingerprints) {
+            struct nm_iam_user_fingerprint* fp = (struct nm_iam_user_fingerprint*)f;
+            BOOST_CHECK(fp->name != NULL);
+            BOOST_CHECK(fp->fingerprint != NULL);
+            if (strcmp(fp->name, "myphone") == 0) {
+                BOOST_CHECK(strcmp(fp->fingerprint, "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa") == 0);
+            }
+            else if (strcmp(fp->name, "yourphone") == 0) {
+                BOOST_CHECK(strcmp(fp->fingerprint, "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb") == 0);
+            }
+            else {
+                BOOST_TEST(strcmp(fp->name, "newphone") == 0);
+                BOOST_TEST(strcmp(fp->fingerprint, clientFp.c_str()) == 0);
+                found = true;
+            }
+        }
+        BOOST_CHECK(found);
+        BOOST_CHECK(usr->password == NULL);
+        nm_iam_user_free(usr);
+    }
+    {
+        auto usr = ctx.findStateUser("otheruser");
+        BOOST_TEST((usr != NULL));
+        BOOST_TEST((nn_llist_empty(&usr->fingerprints) == true));
         nm_iam_user_free(usr);
     }
 }
