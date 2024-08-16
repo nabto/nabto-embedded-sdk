@@ -2,21 +2,13 @@
     "version": 6,
     "configurePresets": [
         {
-            "name": "debug",
-            "generator": "Ninja",
-            "binaryDir": "build/debug",
-            "cacheVariables": {
-                "CMAKE_BUILD_TYPE": "Debug",
-                "DEVICE_BUILD_TESTS": "ON"
-            }
+            "name": "base",
+            "binaryDir": "build/${presetName}",
+            "installDir": "build/${presetName}/install"
         },
         {
-            "name": "release",
-            "generator": "Ninja",
-            "binaryDir": "build/release",
-            "cacheVariables": {
-                "CMAKE_BUILD_TYPE": "Release"
-            }
+            "name": "unix_base",
+            "generator": "Ninja"
         },
         {
             "name": "vcpkg_base",
@@ -26,30 +18,24 @@
             }
         },
         {
-            "name": "linux_vcpkg",
-            "inherits": "vcpkg_base",
-            "generator": "Ninja",
-            "binaryDir": "build/linux_vcpkg",
+            "name": "linux_fetchcontent",
+            "inherits": ["base", "unix_base"],
             "cacheVariables": {
                 "CMAKE_BUILD_TYPE": "Release",
                 "DEVICE_BUILD_TESTS": "ON"
             }
         },
         {
-            "name": "debug_vcpkg",
-            "inherits": "vcpkg_base",
-            "generator": "Ninja",
-            "binaryDir": "build/debug_vcpkg",
+            "name": "linux_vcpkg",
+            "inherits": ["base", "unix_base", "vcpkg_base"],
             "cacheVariables": {
-                "CMAKE_BUILD_TYPE": "Debug",
+                "CMAKE_BUILD_TYPE": "Release",
                 "DEVICE_BUILD_TESTS": "ON"
             }
         },
         {
             "name": "mac_vcpkg_x86_64",
-            "inherits": "vcpkg_base",
-            "generator": "Ninja",
-            "binaryDir": "build/mac_vcpkg_x86_64",
+            "inherits": [ "base", "vcpkg_base", "unix_base" ],
             "cacheVariables": {
                 "CMAKE_OSX_ARCHITECTURES": "x86_64",
                 "VCPKG_TARGET_TRIPLET": "x64-osx",
@@ -59,9 +45,7 @@
         },
         {
             "name": "mac_vcpkg_arm64",
-            "inherits": "vcpkg_base",
-            "generator": "Ninja",
-            "binaryDir": "build/mac_vcpkg_arm64",
+            "inherits": [ "base", "vcpkg_base", "unix_base" ],
             "cacheVariables": {
                 "CMAKE_OSX_ARCHITECTURES": "arm64",
                 "VCPKG_TARGET_TRIPLET": "arm64",
@@ -71,26 +55,16 @@
         },
         {
             "name": "mac_fetchcontent_universal",
-            "generator": "Ninja",
-            "binaryDir": "build/mac_fetchcontent_universal",
+            "inherits": ["base", "unix_base"],
             "cacheVariables": {
                 "CMAKE_BUILD_TYPE": "Release",
                 "DEVICE_BUILD_TESTS": "ON"
             }
         },
-        {
-            "name": "linux_fetchcontent",
-            "generator": "Ninja",
-            "binaryDir": "build/linux_fetchcontent",
-            "cacheVariables": {
-                "CMAKE_BUILD_TYPE": "Release",
-                "DEVICE_BUILD_TESTS": "ON"
-            }
-        },
+
         {
             "name": "windows_vcpkg",
-            "inherits": "vcpkg_base",
-            "binaryDir": "build/windows_vcpkg",
+            "inherits": [ "base", "vcpkg_base"],
             "cacheVariables": {
                 "CMAKE_BUILD_TYPE": "Release",
                 "DEVICE_BUILD_TESTS": "ON"
@@ -98,29 +72,24 @@
         },
         {
             "name": "test_ansi_c99",
+            "inherits": ["base", "unix_base"],
             "environment": {
                 "CFLAGS": "-ansi -std=gnu99"
-            },
-            "binaryDir": "build/test_ansi_c99"
+            }
         }
     ],
     "buildPresets": [
         {
-            "name": "debug",
-            "configurePreset": "debug"
-        },
-        {
-            "name": "release",
-            "configurePreset": "release"
+            "name": "linux_fetchcontent",
+            "configurePreset": "linux_fetchcontent",
+            "targets": ["install"]
         },
         {
             "name": "linux_vcpkg",
-            "configurePreset": "linux_vcpkg"
+            "configurePreset": "linux_vcpkg",
+            "targets": ["install"]
         },
-        {
-            "name": "debug_vcpkg",
-            "configurePreset": "debug_vcpkg"
-        },
+
         {
             "name": "mac_vcpkg_x86_64",
             "configurePreset": "mac_vcpkg_x86_64"
@@ -133,10 +102,7 @@
             "name": "mac_fetchcontent_universal",
             "configurePreset": "mac_fetchcontent_universal"
         },
-        {
-            "name": "linux_fetchcontent",
-            "configurePreset": "linux_fetchcontent"
-        },
+
         {
             "name": "windows_vcpkg",
             "configurePreset": "windows_vcpkg"
