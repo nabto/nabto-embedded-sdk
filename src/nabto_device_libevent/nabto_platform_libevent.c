@@ -12,7 +12,6 @@
 #include <modules/communication_buffer/nm_communication_buffer.h>
 #include <api/nabto_device_threads.h>
 
-#include <event.h>
 #include <event2/event.h>
 #include <event2/thread.h>
 

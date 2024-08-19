@@ -1,0 +1,24 @@
+diff --git a/cmake/AddEventLibrary.cmake b/cmake/AddEventLibrary.cmake
+index c295b3b0..71b86b33 100644
+--- a/cmake/AddEventLibrary.cmake
++++ b/cmake/AddEventLibrary.cmake
+@@ -67,6 +67,7 @@ macro(export_install_target TYPE LIB_NAME)
+             RUNTIME DESTINATION "${CMAKE_INSTALL_LIBDIR}" COMPONENT lib
+             COMPONENT dev
+         )
++        add_library("${PROJECT_NAME}::${PURE_NAME}" ALIAS "${LIB_NAME}_${TYPE}")
+     endif()
+ endmacro()
+ 
+diff --git a/cmake/LibeventConfig.cmake.in b/cmake/LibeventConfig.cmake.in
+index a2bba87e..8eec178a 100644
+--- a/cmake/LibeventConfig.cmake.in
++++ b/cmake/LibeventConfig.cmake.in
+@@ -40,6 +40,7 @@ set(LIBEVENT_VERSION @EVENT_PACKAGE_VERSION@)
+ # by component.
+ include(CMakeFindDependencyMacro)
+ find_dependency(Threads)
++find_dependency(OpenSSL)
+ @LIBEVENT_MBEDTLS_DEPENDENCY@
+ @LIBEVENT_OPENSSL_DEPENDENCY@
+ 

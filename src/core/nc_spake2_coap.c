@@ -8,7 +8,7 @@
 #include <core/nc_coap_server.h>
 #include "nc_connection.h"
 
-#include <cbor.h>
+#include <tinycbor/cbor.h>
 
 void nc_spake2_handle_coap_1(struct nc_coap_server_request* request, void* data);
 void nc_spake2_handle_coap_2(struct nc_coap_server_request* request, void* data);

@@ -35,7 +35,7 @@ char* privateKey =
     "-----END EC PRIVATE KEY-----\n";
 
 // CoAP endpoint data
-const char* coapPath[] = { "hello-world", NULL };
+static const char* coapPath[] = { "hello-world", NULL };
 const char* helloWorld = "Hello world";
 
 // State variable

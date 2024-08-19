@@ -1,3 +1,7 @@
+find_package(TinyCBOR REQUIRED)
+find_package(cJSON REQUIRED)
+find_package(NabtoCommon REQUIRED)
+
 set(src
 
   nm_iam.c
@@ -50,4 +54,37 @@ set(src
   )
 
 add_library(nm_iam ${src})
-target_link_libraries(nm_iam nabto_device_static 3rdparty_cjson 3rdparty_tinycbor nn)
+target_link_libraries(nm_iam PRIVATE nabto_device)
+target_link_libraries(nm_iam PUBLIC NabtoCommon::nn)
+
+target_link_libraries(nm_iam PUBLIC cjson)
+target_link_libraries(nm_iam PUBLIC TinyCBOR::tinycbor)
+
+target_include_directories(nm_iam
+  PUBLIC
+    "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/../..>"
+    "$<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>"
+)
+
+target_sources(nm_iam PUBLIC
+    FILE_SET public_headers
+    TYPE HEADERS
+    BASE_DIRS ../../
+    FILES
+      nm_iam_allocator.h
+      nm_iam_auth_handler.h
+      nm_iam_configuration.h
+      nm_iam_connection_events.h
+      nm_iam_from_json.h
+      nm_iam.h
+      nm_iam_internal.h
+      nm_iam_pairing.h
+      nm_iam_pake_handler.h
+      nm_iam_role.h
+      nm_iam_serializer.h
+      nm_iam_state.h
+      nm_iam_to_json.h
+      nm_iam_user.h
+      coap_handler/nm_iam_coap_handler.h
+
+)

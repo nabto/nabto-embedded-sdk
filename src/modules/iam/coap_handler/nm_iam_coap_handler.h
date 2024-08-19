@@ -3,7 +3,7 @@
 
 #include <nabto/nabto_device.h>
 
-#include <cbor.h>
+#include <tinycbor/cbor.h>
 
 struct nm_iam_coap_handler;
 struct nn_string_set;

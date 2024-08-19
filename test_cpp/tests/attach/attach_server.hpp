@@ -5,7 +5,7 @@
 
 #include "certificates.hpp"
 //#include <util/test_future.hpp>
-#include <cbor.h>
+#include <tinycbor/cbor.h>
 
 #include <fixtures/dtls_server/mbedtls_util.hpp>
 #include <future>

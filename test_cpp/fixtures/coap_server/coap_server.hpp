@@ -1,6 +1,6 @@
 #pragma once
 
-#include <coap/nabto_coap_server.h>
+#include <nabto_coap/nabto_coap_server.h>
 #include "coap_connection.hpp"
 
 #include <util/span.hpp>

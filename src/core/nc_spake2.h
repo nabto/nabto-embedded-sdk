@@ -9,7 +9,7 @@
 #include <platform/np_event_queue_wrapper.h>
 #include <platform/np_spake2.h>
 #include <platform/np_platform.h>
-#include <coap/nabto_coap.h>
+#include <nabto_coap/nabto_coap.h>
 
 #ifdef __cplusplus
 extern "C" {

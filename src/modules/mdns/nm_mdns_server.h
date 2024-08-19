@@ -12,7 +12,7 @@
 #include <platform/interfaces/np_mdns.h>
 #include <platform/np_platform.h>
 
-#include <mdns/mdns_server.h>
+#include <nabto_mdns/nabto_mdns_server.h>
 
 #define MDNS_MAX_LOCAL_IPS 2
 #define NM_MDNS_SEND_BUFFER_SIZE 1500

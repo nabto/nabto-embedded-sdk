@@ -1,3 +1,4 @@
+find_package(NabtoCommon)
 set(src_dir ${CMAKE_CURRENT_SOURCE_DIR})
 
 set(unix_src
@@ -6,4 +7,4 @@ set(unix_src
 
 
 add_library( nm_unix_dns STATIC ${unix_src})
-target_link_libraries( nm_unix_dns pthread nn)
+target_link_libraries( nm_unix_dns pthread NabtoCommon::nn)

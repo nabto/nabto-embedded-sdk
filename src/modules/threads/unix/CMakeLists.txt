@@ -1,4 +1,5 @@
 find_package( Threads )
+find_package( NabtoCommon REQUIRED )
 
 if (UNIX)
 
@@ -8,5 +9,5 @@ if (UNIX)
 
   add_library(nm_threads_unix "${src}")
 
-  target_link_libraries( nm_threads_unix nn ${CMAKE_THREAD_LIBS_INIT} )
+  target_link_libraries( nm_threads_unix np_platform NabtoCommon::nn ${CMAKE_THREAD_LIBS_INIT} )
 endif()

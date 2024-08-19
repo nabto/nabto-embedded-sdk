@@ -1,0 +1,244 @@
+{
+    "version": 6,
+    "configurePresets": [
+        {
+            "name": "base",
+            "binaryDir": "build/${presetName}",
+            "installDir": "build/${presetName}/install"
+        },
+        {
+            "name": "unix_base",
+            "generator": "Ninja"
+        },
+        {
+            "name": "vcpkg_base",
+            "toolchainFile": "3rdparty/vcpkg/scripts/buildsystems/vcpkg.cmake",
+            "cacheVariables": {
+                "NABTO_DEVICE_PREFER_SYSTEM_LIBS": "ON",
+                "CMAKE_MODULE_PATH": "${sourceDir}/cmake/vcpkg"
+            }
+        },
+        {
+            "name": "linux_fetchcontent",
+            "inherits": ["base", "unix_base"],
+            "cacheVariables": {
+                "CMAKE_BUILD_TYPE": "Release",
+                "DEVICE_BUILD_TESTS": "ON"
+            }
+        },
+        {
+            "name": "linux_vcpkg",
+            "inherits": ["base", "unix_base", "vcpkg_base"],
+            "cacheVariables": {
+                "CMAKE_BUILD_TYPE": "Release",
+                "DEVICE_BUILD_TESTS": "ON"
+            }
+        },
+        {
+            "name": "linux_vcpkg_dtls_client_only",
+            "inherits": ["base", "unix_base", "vcpkg_base"],
+            "cacheVariables": {
+                "CMAKE_BUILD_TYPE": "Release",
+                "DEVICE_BUILD_TESTS": "ON",
+                "NABTO_DEVICE_DTLS_CLIENT_ONLY": "ON"
+
+            }
+        },
+        {
+            "name": "mac_vcpkg_x86_64",
+            "inherits": [ "base", "vcpkg_base", "unix_base" ],
+            "cacheVariables": {
+                "CMAKE_OSX_ARCHITECTURES": "x86_64",
+                "VCPKG_TARGET_TRIPLET": "x64-osx",
+                "CMAKE_BUILD_TYPE": "Release",
+                "DEVICE_BUILD_TESTS": "ON"
+            }
+        },
+        {
+            "name": "mac_vcpkg_arm64",
+            "inherits": [ "base", "vcpkg_base", "unix_base" ],
+            "cacheVariables": {
+                "CMAKE_OSX_ARCHITECTURES": "arm64",
+                "VCPKG_TARGET_TRIPLET": "arm64-osx",
+                "CMAKE_BUILD_TYPE": "Release",
+                "DEVICE_BUILD_TESTS": "ON"
+            }
+        },
+        {
+            "name": "mac_fetchcontent_universal",
+            "inherits": ["base", "unix_base"],
+            "cacheVariables": {
+                "CMAKE_BUILD_TYPE": "Release",
+                "DEVICE_BUILD_TESTS": "ON"
+            }
+        },
+
+        {
+            "name": "windows_vcpkg_static",
+            "inherits": [ "base", "vcpkg_base"],
+            "cacheVariables": {
+                "VCPKG_TARGET_TRIPLET": "x64-windows-static",
+                "DEVICE_STATIC_LINK_VCRUNTIME": "ON",
+                "CMAKE_BUILD_TYPE": "Release",
+                "DEVICE_BUILD_TESTS": "ON"
+            }
+        },
+        {
+            "name": "test_ansi_c99",
+            "inherits": ["base", "unix_base"],
+            "environment": {
+                "CFLAGS": "-ansi -std=gnu99"
+            }
+        }
+    ],
+    "buildPresets": [
+        {
+            "name": "linux_fetchcontent",
+            "configurePreset": "linux_fetchcontent",
+            "targets": ["install"]
+        },
+        {
+            "name": "linux_vcpkg",
+            "configurePreset": "linux_vcpkg",
+            "targets": ["install"]
+        },
+        {
+            "name": "linux_vcpkg_dtls_client_only",
+            "configurePreset": "linux_vcpkg_dtls_client_only",
+            "targets": ["install"]
+        },
+        {
+            "name": "mac_vcpkg_x86_64",
+            "configurePreset": "mac_vcpkg_x86_64",
+            "targets": ["install"]
+        },
+        {
+            "name": "mac_vcpkg_arm64",
+            "configurePreset": "mac_vcpkg_arm64",
+            "targets": ["install"]
+        },
+        {
+            "name": "mac_fetchcontent_universal",
+            "configurePreset": "mac_fetchcontent_universal",
+            "targets": ["install"]
+        },
+
+        {
+            "name": "windows_vcpkg_static",
+            "configurePreset": "windows_vcpkg_static",
+            "targets": ["install"]
+        },
+        {
+            "name": "test_ansi_c99",
+            "configurePreset": "test_ansi_c99"
+        }
+    ],
+    "workflowPresets": [
+        {
+            "name": "test_ansi_c99",
+            "description": "Test that the software can be built in ansi c99 mode",
+            "steps": [
+                 {
+                    "type": "configure",
+                    "name": "test_ansi_c99"
+                 },
+                 {
+                    "type": "build",
+                    "name": "test_ansi_c99"
+                 }
+            ]
+        },
+        {
+            "name": "mac_vcpkg_x86_64",
+            "steps": [
+                {
+                    "type": "configure",
+                    "name": "mac_vcpkg_x86_64"
+                },
+                {
+                    "type": "build",
+                    "name": "mac_vcpkg_x86_64"
+                }
+            ]
+        },
+        {
+            "name": "mac_vcpkg_arm64",
+            "steps": [
+                {
+                    "type": "configure",
+                    "name": "mac_vcpkg_arm64"
+                },
+                {
+                    "type": "build",
+                    "name": "mac_vcpkg_arm64"
+                }
+            ]
+        },
+        {
+            "name": "mac_fetchcontent_universal",
+            "steps": [
+                {
+                    "type": "configure",
+                    "name": "mac_fetchcontent_universal"
+                },
+                {
+                    "type": "build",
+                    "name": "mac_fetchcontent_universal"
+                }
+            ]
+        },
+        {
+            "name": "linux_fetchcontent",
+            "steps": [
+                {
+                    "type": "configure",
+                    "name": "linux_fetchcontent"
+                },
+                {
+                    "type": "build",
+                    "name": "linux_fetchcontent"
+                }
+            ]
+        },
+        {
+            "name": "linux_vcpkg",
+            "steps": [
+                {
+                    "type": "configure",
+                    "name": "linux_vcpkg"
+                },
+                {
+                    "type": "build",
+                    "name": "linux_vcpkg"
+                }
+            ]
+        },
+        {
+            "name": "linux_vcpkg_dtls_client_only",
+            "steps": [
+                {
+                    "type": "configure",
+                    "name": "linux_vcpkg_dtls_client_only"
+                },
+                {
+                    "type": "build",
+                    "name": "linux_vcpkg_dtls_client_only"
+                }
+            ]
+        },
+        {
+            "name": "windows_vcpkg_static",
+            "steps": [
+                {
+                    "type": "configure",
+                    "name": "windows_vcpkg_static"
+                },
+                {
+                    "type": "build",
+                    "name": "windows_vcpkg_static"
+                }
+            ]
+        }
+
+    ]
+}

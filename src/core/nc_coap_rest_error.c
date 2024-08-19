@@ -4,7 +4,7 @@
 #include <platform/np_logging.h>
 #include <platform/np_allocator.h>
 
-#include <cbor.h>
+#include <tinycbor/cbor.h>
 #include "nc_cbor.h"
 
 #include <nn/string.h>

@@ -14,12 +14,16 @@ jobs:
           - os: windows-2022
             exe_postfix: .zip
             friendly_name: windows
+            workflow: windows_vcpkg_static
+            generate_extra_options: -DNABTO_DEVICE_USE_VCPKG=ON -DNABTO_DEVICE_PREFER_SYSTEM_LIBS=ON
             build_command: cmake --build build-dir --parallel --target install --config Release
           - os: ubuntu-20.04
+            workflow: linux_vcpkg
             exe_postfix:
             friendly_name: linux_x86_64
             build_command: cmake --build build-dir --parallel --target install
           - os: macos-12
+            workflow: mac_fetchcontent_universal
             exe_postfix:
             friendly_name: macos
             # 2024-01-05: Sometimes mac fails on github actions when doing builds so we use make without parallellism directly, since we hope that fixes the unknown problem.
@@ -33,28 +37,35 @@ jobs:
         with:
           submodules: recursive
           fetch-depth: 0
-      - name: Configure cmake
-        run: mkdir build-dir && cd build-dir && cmake -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=${{ github.workspace }}/artifacts -DDEVICE_STATIC_LINK_VCRUNTIME=ON ..
+      - if: matrix.os == 'ubuntu-20.04'
+        name: Install Ninja
+        run: sudo apt-get update && sudo apt-get install -y ninja-build
+
+      - if: matrix.os == 'macos-12'
+        name: Install Ninja
+        run: brew install ninja
 
       - name: Build
-        run: ${{matrix.build_command}}
+        run: cmake --workflow --preset ${{matrix.workflow}}
 
       - if: matrix.os != 'windows-2022'
         name: Prepare assets
         run: |
-          mv ${{ github.workspace }}/artifacts/bin/tcp_tunnel_device ${{ github.workspace }}/artifacts/bin/tcp_tunnel_device_${{matrix.friendly_name}}
-          mv ${{ github.workspace }}/artifacts/bin/thermostat_device ${{ github.workspace }}/artifacts/bin/thermostat_device_${{matrix.friendly_name}}
+          mkdir -p ${{ github.workspace }}/artifacts/bin
+          mv ${{ github.workspace }}/build/${{ matrix.workflow }}/install/bin/tcp_tunnel_device ${{ github.workspace }}/artifacts/bin/tcp_tunnel_device_${{matrix.friendly_name}}
+          mv ${{ github.workspace }}/build/${{matrix.workflow}}/install/bin/thermostat_device ${{ github.workspace }}/artifacts/bin/thermostat_device_${{matrix.friendly_name}}
 
       - if: matrix.os == 'windows-2022'
         name: Prepare assets windows
         run: |
           mkdir -p ${{ github.workspace }}/release-tunnel
-          mv ${{ github.workspace }}/artifacts/bin/tcp_tunnel_device.exe ${{ github.workspace }}/release-tunnel/tcp_tunnel_device_windows.exe
-          cp ${{ github.workspace }}/artifacts/bin/*.dll ${{ github.workspace }}/release-tunnel/
+          mkdir -p ${{ github.workspace }}/artifacts/bin
+          mv ${{ github.workspace }}/build/${{ matrix.workflow }}/install/bin/tcp_tunnel_device.exe ${{ github.workspace }}/release-tunnel/tcp_tunnel_device_windows.exe
+          cp ${{ github.workspace }}/build/${{ matrix.workflow }}/install/bin/*.dll ${{ github.workspace }}/release-tunnel/
           Compress-Archive -Path ${{ github.workspace }}/release-tunnel/* -Destination ${{ github.workspace }}/artifacts/bin/tcp_tunnel_device_windows.zip
           mkdir -p ${{ github.workspace }}/release-thermostat
-          mv ${{ github.workspace }}/artifacts/bin/thermostat_device.exe ${{ github.workspace }}/release-thermostat/thermostat_device_${{matrix.friendly_name}}.exe
-          cp ${{ github.workspace }}/artifacts/bin/*.dll ${{ github.workspace }}/release-thermostat/
+          mv ${{ github.workspace }}/build/${{ matrix.workflow }}/install/bin/thermostat_device.exe ${{ github.workspace }}/release-thermostat/thermostat_device_${{matrix.friendly_name}}.exe
+          cp ${{ github.workspace }}/build/${{ matrix.workflow }}/install/bin/*.dll ${{ github.workspace }}/release-thermostat/
           Compress-Archive -Path ${{ github.workspace }}/release-thermostat/* -Destination ${{ github.workspace }}/artifacts/bin/thermostat_device_windows.zip
 
       - name: Upload artifacts to github actions workspace artifacts
@@ -146,7 +157,7 @@ jobs:
 
     if: github.event_name == 'release'
     steps:
-      - name:  download artifacts
+      - name: download artifacts
         uses: actions/download-artifact@v3
         with:
           path: ./

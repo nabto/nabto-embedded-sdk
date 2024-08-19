@@ -6,7 +6,7 @@
 
 #include <core/nc_client_connection.h>
 
-#include <coap/nabto_coap_client.h>
+#include <nabto_coap/nabto_coap_client.h>
 
 #ifdef __cplusplus
 extern "C" {

@@ -6,7 +6,7 @@
 
 #include <core/nc_client_connection.h>
 
-#include <coap/nabto_coap_server.h>
+#include <nabto_coap/nabto_coap_server.h>
 #include <nn/string_map.h>
 
 struct nc_coap_server_context {

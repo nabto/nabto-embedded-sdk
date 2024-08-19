@@ -4,7 +4,7 @@
 #include <string.h>
 #include <stdbool.h>
 
-#include <cbor.h>
+#include <tinycbor/cbor.h>
 
 /**
  * copy a text string from the cbor value to the out variable, the memory needed

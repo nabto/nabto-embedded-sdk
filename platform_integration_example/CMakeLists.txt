@@ -1,5 +1,5 @@
 
-cmake_minimum_required(VERSION 3.2)
+cmake_minimum_required(VERSION 3.24)
 
 project(select_unix_platform)
 
@@ -41,7 +41,6 @@ else()
     nm_mbedtls_srv
     nm_mbedtls_random
     nm_mbedtls_spake2
-    3rdparty_mbedtls
     )
 endif()
 

@@ -3,7 +3,7 @@
 
 #include <nabto/nabto_device.h>
 
-#include <cbor.h>
+#include <tinycbor/cbor.h>
 
 struct thermostat;
 struct thermostat_coap_handler;
