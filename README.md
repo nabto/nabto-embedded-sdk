@@ -43,8 +43,14 @@ export CC=/opt/hisi-linux-nptl/arm-hisiv100-linux/target/bin/arm-hisiv100-gcc
 
 #### Windows
 
-On windows we do not support building the software with FetchContent, so a
-package manager such as vcpkg needs to be used.
+The easiest way is to just use a cmake workflow:
+
+```
+cmake --workflow --preset windows_vcpkg_static
+```
+
+Then run the desired executables which is in the
+`build\windows_vcpkg_static\install` folder.
 
 ### Building with externally supplied packages
 
