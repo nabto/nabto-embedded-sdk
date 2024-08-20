@@ -905,12 +905,12 @@ bool printStartupInfo(struct nm_iam* iam, struct tcp_tunnel* tunnel, struct devi
         if (state->passwordInvitePairing)
         {
             printf("# " NEWLINE);
-            printf("# The device provides Password Invite Pairing, contact the administrator to access." NEWLINE);
+            printf("# The device has Password Invite Pairing enabled, contact the administrator to access." NEWLINE);
         }
 
         if (state->localOpenPairing) {
             printf("# " NEWLINE);
-            printf("# The device offers Local Open Pairing" NEWLINE);
+            printf("# The device has Local Open Pairing enabled" NEWLINE);
         }
     }
 
