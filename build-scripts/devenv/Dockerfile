@@ -1,6 +1,6 @@
 FROM ubuntu:22.04
 
-RUN apt update && apt install -y git build-essential autoconf libtool pkg-config wget bash-completion vim gdb clang gcc curl ninja-build valgrind python3-pip sudo unzip cmake
+RUN apt update && apt install -y git build-essential autoconf libtool pkg-config wget bash-completion vim gdb clang gcc curl ninja-build valgrind python3-pip sudo unzip
 
 RUN pip3 install cmakelang
 
@@ -28,6 +28,13 @@ RUN make -j 8
 RUN ./wolfcrypt/benchmark/benchmark -ecc
 RUN make install
 RUN ldconfig
+
+ARG CMAKE_VERSION=3.30.2
+
+WORKDIR /tmp
+RUN wget https://github.com/Kitware/CMake/releases/download/v${CMAKE_VERSION}/cmake-${CMAKE_VERSION}-Linux-x86_64.tar.gz
+RUN tar xf cmake-${CMAKE_VERSION}-Linux-x86_64.tar.gz  -C /usr --strip-components=1
+
 
 ARG USERNAME=vscode
 ARG USER_UID=1000
