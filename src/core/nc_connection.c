@@ -105,6 +105,7 @@ void nc_connections_free_connection(struct nc_connections_context* ctx, struct n
 {
     nn_llist_erase_node(&connection->connectionsNode);
     np_free(connection->connectionImplCtx);
+    np_free(connection->username);
     np_free(connection);
     ctx->currentConnections--;
     if (ctx->closing && ctx->currentConnections <= 0) {

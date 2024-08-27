@@ -19,7 +19,6 @@ struct nc_coap_server_request;
 struct nc_coap_server_resource;
 struct nc_coap_server_context;
 
-#define NC_SPAKE2_USERNAME_MAX_LENGTH 32
 #define NC_SPAKE2_MAX_TOKENS 10
 #define NC_SPAKE2_TOKEN_INTERVAL 1000 // ms
 typedef np_error_code (*nc_spake2_password_request_handler)(struct nc_spake2_password_request* req, void* data);

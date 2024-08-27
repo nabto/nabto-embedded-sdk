@@ -89,7 +89,10 @@ void nc_spake2_password_ready(struct nc_spake2_password_request* req, const char
         if (req->pl->spake2.calculate_key(NULL, req, password, buffer, &olen,
                                       connection->spake2Key) == NABTO_EC_OK) {
             connection->hasSpake2Key = true;
+            np_free(connection->username);
+            connection->username = np_calloc(1, strlen(req->username)+1);
             strcpy(connection->username, req->username);
+
             // respond with S
             nc_coap_server_response_set_payload(coap, buffer, olen);
             nc_coap_server_response_set_code_human(coap, 201);

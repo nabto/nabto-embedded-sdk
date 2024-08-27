@@ -108,6 +108,8 @@ class Spake2Client {
         writePoint(out, &grp_, &T_);
 
         mbedtls_mpi_free(&tmp);
+        mbedtls_entropy_free(&entropy);
+        mbedtls_ctr_drbg_free(&ctr_drbg);
         mbedtls_ecp_point_free(&X);
         return status;
     }

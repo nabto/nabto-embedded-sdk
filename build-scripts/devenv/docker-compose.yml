@@ -1,4 +1,3 @@
-version: "3"
 name: nabto-embedded-sdk
 services:
   device:
