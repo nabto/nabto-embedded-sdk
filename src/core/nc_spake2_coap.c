@@ -61,7 +61,7 @@ static bool read_username_and_password(struct nc_spake2_password_request* passwo
     cbor_value_map_find_value(&map, "T", &T);
 
     if (!nc_cbor_copy_text_string(&username, &passwordRequest->username,
-                                  NC_SPAKE2_USERNAME_MAX_LENGTH) ||
+                                  4096) ||
         !nc_cbor_copy_byte_string(&T, &passwordRequest->T, &passwordRequest->Tlen, 256)) {
         return false;
     }

@@ -768,6 +768,7 @@ BOOST_AUTO_TEST_CASE(pwd_invite_pairing_conflict, *boost::unit_test::timeout(180
     ctx.executeCoap(201);
 
     ctx.doPwdAuth(username2, clientFp, pwd2);
+    ctx.createCoapRequest(NABTO_DEVICE_COAP_POST, "/iam/pairing/password-invite");
     ctx.setCborPayload(root);
     ctx.executeCoap(409);
 
@@ -804,6 +805,53 @@ BOOST_AUTO_TEST_CASE(pwd_invite_pairing_conflict, *boost::unit_test::timeout(180
     }
 }
 
+BOOST_AUTO_TEST_CASE(pwd_invite_pairing_long_username, *boost::unit_test::timeout(180))
+{
+    nabto::test::IamVirtualConnTester ctx(nabto::test::c2, nabto::test::s2);
+    const std::string username = "testingusr-testingusr-testingusr-";
+    const std::string clientFp = "1234567890123456789012345678901212345678901234567890123456789012";
+    std::string pwd = "password2";
+
+    BOOST_CHECK(nm_iam_create_user(&ctx.iam_, username.c_str()) == NM_IAM_ERROR_OK);
+    BOOST_CHECK(nm_iam_set_user_password(&ctx.iam_, username.c_str(), pwd.c_str()) == NM_IAM_ERROR_OK);
+    BOOST_CHECK(nm_iam_set_user_role(&ctx.iam_, username.c_str(), "Admin") == NM_IAM_ERROR_OK);
+    BOOST_CHECK(nm_iam_set_user_display_name(&ctx.iam_, username.c_str(), "New Display Name") == NM_IAM_ERROR_OK);
+
+
+    ctx.doPwdAuth(username, clientFp, pwd);
+
+    ctx.createCoapRequest(NABTO_DEVICE_COAP_POST, "/iam/pairing/password-invite");
+    nlohmann::json root;
+    root["FingerprintName"] = "newphone";
+    ctx.setCborPayload(root);
+    ctx.executeCoap(201);
+
+    {
+        auto usr = ctx.findStateUser(username);
+        BOOST_TEST((usr != NULL));
+        bool found = false;
+        void* f;
+        NN_LLIST_FOREACH(f, &usr->fingerprints) {
+            struct nm_iam_user_fingerprint* fp = (struct nm_iam_user_fingerprint*)f;
+            BOOST_CHECK(fp->name != NULL);
+            BOOST_CHECK(fp->fingerprint != NULL);
+            if (strcmp(fp->name, "myphone") == 0) {
+                BOOST_CHECK(strcmp(fp->fingerprint, "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa") == 0);
+            }
+            else if (strcmp(fp->name, "yourphone") == 0) {
+                BOOST_CHECK(strcmp(fp->fingerprint, "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb") == 0);
+            }
+            else {
+                BOOST_TEST(strcmp(fp->name, "newphone") == 0);
+                BOOST_TEST(strcmp(fp->fingerprint, clientFp.c_str()) == 0);
+                found = true;
+            }
+        }
+        BOOST_CHECK(found);
+        BOOST_CHECK(usr->password == NULL);
+        nm_iam_user_free(usr);
+    }
+}
 
 
 BOOST_AUTO_TEST_SUITE_END()
