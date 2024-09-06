@@ -146,13 +146,10 @@ set(ne_api_test_src
   )
 
 set(ne_tinycbor_src
-  ${root_dir}/3rdparty/tinycbor/tinycbor/src/cborparser_dup_string.c
-  #${root_dir}/3rdparty/tinycbor/tinycbor/src/cbortojson.c
-  ${root_dir}/3rdparty/tinycbor/tinycbor/src/cborencoder.c
-  ${root_dir}/3rdparty/tinycbor/tinycbor/src/cborparser.c
-  ${root_dir}/3rdparty/tinycbor/tinycbor/src/cborvalidation.c
-  ${root_dir}/3rdparty/tinycbor/extra/cbor_extra.c
-  ${root_dir}/3rdparty/tinycbor/extra/cbor_encode_encoded_cbor.c
+  ${root_dir}/3rdparty/tinycbor/tinycbor_src/src/cborparser_dup_string.c
+  ${root_dir}/3rdparty/tinycbor/tinycbor_src/src/cborencoder.c
+  ${root_dir}/3rdparty/tinycbor/tinycbor_src/src/cborparser.c
+  ${root_dir}/3rdparty/tinycbor/tinycbor_src/src/cborvalidation.c
 )
 
 set(ne_cjson_dir ${CMAKE_CURRENT_LIST_DIR}/3rdparty/cjson)
@@ -313,6 +310,27 @@ set(ne_required_src_no_tls
   ${ne_communication_buffer_src}
 )
 
+set(ne_coap_include_dirs
+  ${root_dir}/nabto-common/components/coap/include
+)
+set(ne_stun_include_dirs
+  ${root_dir}/nabto-common/components/stun/include
+)
+set(ne_streaming_include_dirs
+  ${root_dir}/nabto-common/components/streaming/include
+)
+set(ne_nn_include_dirs
+  ${root_dir}/nabto-common/components/nn/include
+)
+set(ne_mdns_include_dirs
+  ${root_dir}/nabto-common/components/mdns/include
+)
+
+set(ne_include_dirs
+  ${root_dir}/src
+  ${root_dir}/include
+)
+
 set(ne_priv_include_dirs_no_tls
 #  ${root_dir}/
   ${root_dir}/src
@@ -322,8 +340,8 @@ set(ne_priv_include_dirs_no_tls
   ${root_dir}/nabto-common/components/stun/include
   ${root_dir}/nabto-common/components/nn/include
   ${root_dir}/nabto-common/components/mdns/include
-  ${root_dir}/3rdparty/tinycbor/extra
-  ${root_dir}/3rdparty/tinycbor/tinycbor/src
+  ${root_dir}/3rdparty/tinycbor/tinycbor_src/include/tinycbor
+  ${root_dir}/3rdparty/tinycbor/tinycbor_src/include
 )
 
 set(ne_nn_include_dirs
@@ -339,8 +357,8 @@ set(ne_priv_include_dirs
   ${root_dir}/nabto-common/components/stun/include
   ${root_dir}/nabto-common/components/nn/include
   ${root_dir}/nabto-common/components/mdns/include
-  ${root_dir}/3rdparty/tinycbor/extra
-  ${root_dir}/3rdparty/tinycbor/tinycbor/src
+  ${root_dir}/3rdparty/tinycbor/tinycbor_src/include/tinycbor
+  ${root_dir}/3rdparty/tinycbor/tinycbor_src/include
   ${root_dir}/3rdparty/mbedtls/mbedtls/include
   ${root_dir}/3rdparty/mbedtls/config
 )
