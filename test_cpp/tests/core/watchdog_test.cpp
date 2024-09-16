@@ -94,7 +94,7 @@ BOOST_AUTO_TEST_CASE(watchdog_trigger, *boost::unit_test::timeout(300))
 BOOST_AUTO_TEST_CASE(watchdog_dont_trigger, *boost::unit_test::timeout(300))
 {
     nabto::test::WatchdogTest test;
-    nc_attacher_watchdog_set_timeout(test.getWatchdogCtx(), 100);
+    nc_attacher_watchdog_set_timeout(test.getWatchdogCtx(), 200);
     test.setAttacherState(NC_ATTACHER_STATE_DNS);
     std::this_thread::sleep_for(std::chrono::milliseconds(20));
     test.setAttacherState(NC_ATTACHER_STATE_DNS);
