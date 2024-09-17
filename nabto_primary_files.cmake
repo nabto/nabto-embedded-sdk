@@ -83,6 +83,7 @@ set(ne_core_src
   ${root_dir}/src/core/nc_packet.c
   ${root_dir}/src/core/nc_keep_alive.c
   ${root_dir}/src/core/nc_attacher.c
+  ${root_dir}/src/core/nc_attacher_watchdog.c
   ${root_dir}/src/core/nc_version.c
   ${root_dir}/src/core/nc_stream.c
   ${root_dir}/src/core/nc_virtual_stream.c
