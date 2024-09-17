@@ -1,6 +1,7 @@
 #include <boost/test/unit_test.hpp>
 
 #include <test_platform.hpp>
+#include <test_platform_libevent.hpp>
 
 #include <core/nc_attacher_watchdog.h>
 #include <core/nc_attacher.h>
@@ -13,10 +14,24 @@
 namespace nabto {
 namespace test {
 
+static uint32_t ts_now_ms(struct np_timestamp* obj)
+{
+    uint32_t* time = (uint32_t*)obj->data;
+    return *time;
+}
+
+static const struct np_timestamp_functions module = {
+    .now_ms = &ts_now_ms
+};
+
+
 class WatchdogTest {
   public:
     WatchdogTest() {
-        tp_ = nabto::test::TestPlatform::create();
+        struct np_timestamp obj;
+        obj.mptr = &module;
+        obj.data = &time_;
+        tp_ = std::unique_ptr<nabto::test::TestPlatform>(new nabto::test::TestPlatformLibevent(obj));
         struct np_platform* pl = tp_->getPlatform();
 
         nc_coap_client_init(tp_->getPlatform(), &coapClient_);
@@ -65,6 +80,10 @@ class WatchdogTest {
         return wasWatchdogCalled_;
     }
 
+    void addTime(uint32_t time) {
+        time_ += time;
+    }
+
   private:
     struct nc_attach_context attach_;
     struct nc_device_context device_;
@@ -74,6 +93,7 @@ class WatchdogTest {
     bool wasWatchdogCalled_ = false;
     enum nc_device_event lastEvent_ = NC_DEVICE_EVENT_ATTACHED;
     std::promise<void> watchdogCalled_;
+    uint32_t time_ = 0;
 
 };
 }
@@ -81,11 +101,14 @@ class WatchdogTest {
 
 BOOST_AUTO_TEST_SUITE(watchdog)
 
+#if defined(HAVE_LIBEVENT)
+
 BOOST_AUTO_TEST_CASE(watchdog_trigger, *boost::unit_test::timeout(300))
 {
     nabto::test::WatchdogTest test;
     nc_attacher_watchdog_set_timeout(test.getWatchdogCtx(), 50);
     test.setAttacherState(NC_ATTACHER_STATE_DNS);
+    test.addTime(51);
     test.waitForCallback();
     BOOST_TEST(test.getLastEvent() == NC_DEVICE_EVENT_WATCHDOG_FAILURE);
 
@@ -94,16 +117,17 @@ BOOST_AUTO_TEST_CASE(watchdog_trigger, *boost::unit_test::timeout(300))
 BOOST_AUTO_TEST_CASE(watchdog_dont_trigger, *boost::unit_test::timeout(300))
 {
     nabto::test::WatchdogTest test;
-    nc_attacher_watchdog_set_timeout(test.getWatchdogCtx(), 200);
+    nc_attacher_watchdog_set_timeout(test.getWatchdogCtx(), 50);
     test.setAttacherState(NC_ATTACHER_STATE_DNS);
-    std::this_thread::sleep_for(std::chrono::milliseconds(20));
+    test.addTime(40);
     test.setAttacherState(NC_ATTACHER_STATE_DNS);
-    std::this_thread::sleep_for(std::chrono::milliseconds(20));
+    test.addTime(40);
     test.setAttacherState(NC_ATTACHER_STATE_DNS);
-    std::this_thread::sleep_for(std::chrono::milliseconds(20));
+    test.addTime(40);
     test.setAttacherState(NC_ATTACHER_STATE_DNS);
 
     BOOST_TEST(!test.wasWatchdogCalled());
 }
+#endif
 
 BOOST_AUTO_TEST_SUITE_END()
