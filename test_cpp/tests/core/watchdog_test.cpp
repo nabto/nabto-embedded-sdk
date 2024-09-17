@@ -14,16 +14,17 @@
 namespace nabto {
 namespace test {
 
-static uint32_t ts_now_ms(struct np_timestamp* obj)
-{
-    uint32_t* time = (uint32_t*)obj->data;
-    return *time;
-}
+static uint32_t ts_now_ms(struct np_timestamp* obj);
 
 static const struct np_timestamp_functions module = {
     .now_ms = &ts_now_ms
 };
 
+uint32_t ts_now_ms(struct np_timestamp* obj)
+{
+    uint32_t* time = (uint32_t*)obj->data;
+    return *time;
+}
 
 class WatchdogTest {
   public:
