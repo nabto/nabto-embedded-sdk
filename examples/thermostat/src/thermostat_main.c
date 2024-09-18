@@ -294,6 +294,8 @@ bool run_thermostat_device(NabtoDevice* dev, struct thermostat* thermostat, stru
                     printf("The provided Product ID did not match the fingerprint" NEWLINE);
                 } else if (event == NABTO_DEVICE_EVENT_WRONG_DEVICE_ID) {
                     printf("The provided Device ID did not match the fingerprint" NEWLINE);
+                } else if (event == NABTO_DEVICE_EVENT_WATCHDOG_FAILURE) {
+                    printf("Watchdog failure event!" NEWLINE);
                 }
             }
             nabto_device_future_free(future);
