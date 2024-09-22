@@ -146,7 +146,12 @@ np_error_code nm_mbedtls_spake2_calculate_key(
 
     {
         mbedtls_mpi tmp;
+        // The ESP32 bignum MPI implementation does not support overlapping
+        // arguments. So we are using two variables instead of one such that tmp
+        // = tmp * y becomes tmp2 = tmp * y etc.
+        mbedtls_mpi tmp2;
         mbedtls_mpi_init(&tmp);
+        mbedtls_mpi_init(&tmp2);
         status |= mbedtls_mpi_lset(&tmp, 1);
 
         // S = N*w + Y*1
@@ -156,14 +161,15 @@ np_error_code nm_mbedtls_spake2_calculate_key(
 
         // tmp = -w*y mod n
         status |= mbedtls_mpi_lset(&tmp, -1);
-        status |= mbedtls_mpi_mul_mpi(&tmp, &tmp, &y);
-        status |= mbedtls_mpi_mul_mpi(&tmp, &tmp, &w);
-        status |= mbedtls_mpi_mod_mpi(&tmp, &tmp, &grp.N);
+        status |= mbedtls_mpi_mul_mpi(&tmp2, &tmp, &y);
+        status |= mbedtls_mpi_mul_mpi(&tmp, &tmp2, &w);
+        status |= mbedtls_mpi_mod_mpi(&tmp2, &tmp, &grp.N);
 
         // K = y*T+((-y*w)*M) = y*T+(tmp*M)
-        status |= mbedtls_ecp_muladd(&grp, &K, &y, &T, &tmp, &M);
+        status |= mbedtls_ecp_muladd(&grp, &K, &y, &T, &tmp2, &M);
 
         mbedtls_mpi_free(&tmp);
+        mbedtls_mpi_free(&tmp2);
     }
 
     {

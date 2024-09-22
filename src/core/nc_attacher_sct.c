@@ -5,7 +5,7 @@
 #include <platform/np_logging.h>
 #include <platform/np_allocator.h>
 
-#include <cbor.h>
+#include <tinycbor/cbor.h>
 
 #define LOG NABTO_LOG_MODULE_ATTACHER
 

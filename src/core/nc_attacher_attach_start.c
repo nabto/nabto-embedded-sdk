@@ -1,4 +1,5 @@
-#include <cbor.h>
+
+#include <tinycbor/cbor.h>
 #include <core/nc_coap.h>
 #include <core/nc_coap_rest_error.h>
 #include <core/nc_version.h>

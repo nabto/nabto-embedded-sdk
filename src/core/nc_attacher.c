@@ -13,7 +13,7 @@
 
 #include <nn/string.h>
 
-#include <cbor.h>
+#include <tinycbor/cbor.h>
 
 
 #define LOG NABTO_LOG_MODULE_ATTACHER

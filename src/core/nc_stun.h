@@ -3,7 +3,7 @@
 
 #include <platform/np_platform.h>
 #include <platform/np_completion_event.h>
-#include <stun/nabto_stun_client.h>
+#include <nabto_stun/nabto_stun_client.h>
 
 #include <core/nc_udp_dispatch.h>
 #include <core/nc_dns_multi_resolver.h>

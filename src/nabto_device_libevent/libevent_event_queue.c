@@ -6,8 +6,6 @@
 #include <platform/np_logging.h>
 #include <platform/np_allocator.h>
 
-
-
 #include <event.h>
 #include <event2/event.h>
 

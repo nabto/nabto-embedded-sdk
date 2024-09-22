@@ -1,0 +1,21 @@
+name: Distribution tests
+
+on:
+  push:
+
+jobs:
+  build-and-test:
+    timeout-minutes: 20
+    name: Build
+    runs-on: ubuntu-24.04
+    strategy:
+      matrix:
+        distribution_test: [cmake_fetchcontent, cmake_find_package, direct_link_gcc]
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+          fetch-depth: 0
+      - name: build
+        run: ./test/distribution/${{ matrix.distribution_test }}/build.sh

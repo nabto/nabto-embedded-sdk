@@ -6,7 +6,7 @@
 #include <core/nc_rendezvous.h>
 #include <platform/np_logging.h>
 
-#include <cbor.h>
+#include <tinycbor/cbor.h>
 
 #define LOG NABTO_LOG_MODULE_COAP
 

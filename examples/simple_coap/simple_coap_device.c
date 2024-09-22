@@ -18,7 +18,7 @@
 
 const char* keyFile = "device.key";
 
-const char* coapPath[] = { "hello-world", NULL };
+static const char* coapPath[] = { "hello-world", NULL };
 const char* defaultString = "Hello world";
 const char* sct = "demosct";
 char helloWorld[128];
@@ -180,6 +180,8 @@ void wait_for_device_events(struct context* ctx) {
             printf("The provided Product ID did not match the fingerprint\n");
         } else if (event == NABTO_DEVICE_EVENT_WRONG_DEVICE_ID) {
             printf("The provided Device ID did not match the fingerprint\n");
+        } else if (event == NABTO_DEVICE_EVENT_WATCHDOG_FAILURE) {
+            printf("Watchdog failure event!\n");
         }
     }
     nabto_device_stop(ctx->device);

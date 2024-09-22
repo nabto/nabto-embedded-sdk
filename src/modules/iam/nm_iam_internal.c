@@ -176,9 +176,15 @@ enum nm_iam_error nm_iam_internal_pair_new_client(struct nm_iam* iam, const char
         return NM_IAM_ERROR_INVALID_ARGUMENT;
     }
 
-    if (nm_iam_internal_find_user(iam, username) != NULL ||
-        nm_iam_internal_find_user_by_fingerprint(iam, fingerprint) != NULL) {
-        return NM_IAM_ERROR_USER_EXISTS;
+    struct nm_iam_user * namedUsr = nm_iam_internal_find_user(iam, username);
+    struct nm_iam_user * fpUsr = nm_iam_internal_find_user_by_fingerprint(iam, fingerprint);
+    if (namedUsr != NULL || fpUsr != NULL) {
+        if (namedUsr == fpUsr) {
+            // Already paired
+            return NM_IAM_ERROR_OK;
+        } else {
+            return NM_IAM_ERROR_USER_EXISTS;
+        }
     }
 
     const char* role = iam->state->openPairingRole;

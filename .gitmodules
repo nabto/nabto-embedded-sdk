@@ -1,12 +1,9 @@
 [submodule "3rdparty/mbedtls/mbedtls"]
 	path = 3rdparty/mbedtls/mbedtls
 	url = https://github.com/ARMmbed/mbedtls.git
-[submodule "3rdparty/tinycbor/tinycbor"]
-	path = 3rdparty/tinycbor/tinycbor
-	url = https://github.com/intel/tinycbor
-[submodule "3rdparty/libevent/libevent"]
-	path = 3rdparty/libevent/libevent
-	url = https://github.com/libevent/libevent
 [submodule "nabto-common"]
 	path = nabto-common
 	url = https://github.com/nabto/nabto-common
+[submodule "3rdparty/vcpkg"]
+	path = 3rdparty/vcpkg
+	url = https://github.com/microsoft/vcpkg

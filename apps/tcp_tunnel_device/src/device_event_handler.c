@@ -66,5 +66,7 @@ void handle_event(struct device_event_handler* handler, NabtoDeviceEvent event)
         printf("The provided Product ID did not match the fingerprint\n");
     } else if (event == NABTO_DEVICE_EVENT_WRONG_DEVICE_ID) {
         printf("The provided Device ID did not match the fingerprint\n");
+    } else if (event == NABTO_DEVICE_EVENT_WATCHDOG_FAILURE) {
+        printf("Watchdog failure event!\n");
     }
 }

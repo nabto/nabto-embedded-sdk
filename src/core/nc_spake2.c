@@ -89,12 +89,19 @@ void nc_spake2_password_ready(struct nc_spake2_password_request* req, const char
         if (req->pl->spake2.calculate_key(NULL, req, password, buffer, &olen,
                                       connection->spake2Key) == NABTO_EC_OK) {
             connection->hasSpake2Key = true;
-            strcpy(connection->username, req->username);
-            // respond with S
-            nc_coap_server_response_set_payload(coap, buffer, olen);
-            nc_coap_server_response_set_code_human(coap, 201);
-            nc_coap_server_response_set_content_format(coap, NABTO_COAP_CONTENT_FORMAT_APPLICATION_OCTET_STREAM);
-            nc_coap_server_response_ready(coap);
+            np_free(connection->username);
+            connection->username = np_calloc(1, strlen(req->username)+1);
+            if (connection->username == NULL) {
+                nc_coap_server_send_error_response(coap, (nabto_coap_code)NABTO_COAP_CODE(5,00), NULL);
+            } else {
+                strcpy(connection->username, req->username);
+
+                // respond with S
+                nc_coap_server_response_set_payload(coap, buffer, olen);
+                nc_coap_server_response_set_code_human(coap, 201);
+                nc_coap_server_response_set_content_format(coap, NABTO_COAP_CONTENT_FORMAT_APPLICATION_OCTET_STREAM);
+                nc_coap_server_response_ready(coap);
+            }
         } else {
             nc_coap_server_send_error_response(coap, (nabto_coap_code)NABTO_COAP_CODE(5,00), NULL);
         }

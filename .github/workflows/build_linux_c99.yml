@@ -9,24 +9,14 @@ jobs:
   build-and-test:
     timeout-minutes: 20
     name: Build
-    runs-on: "ubuntu-22.04"
+    runs-on: "ubuntu-24.04"
 
     steps:
       - name: Install compiler
         run: sudo apt update && sudo apt install -y build-essential cmake git ninja-build
-
       - uses: actions/checkout@v4
         with:
           submodules: recursive
           fetch-depth: 0
-      - name: Configure cmake
-        env:
-        # if using c99 then certain linux stuff fails to be compiled properly
-          CFLAGS: -ansi -std=gnu99
-        run: mkdir build-dir && cd build-dir && cmake -DCMAKE_INSTALL_PREFIX=${{ github.workspace }}/artifacts ..
-
       - name: Build
-        run: cd build-dir && make VERBOSE=1 -j 4
-
-      - name: Install
-        run: cmake --build build-dir --target install
+        run: cmake --workflow --preset "test_ansi_c99"

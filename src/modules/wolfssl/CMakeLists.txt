@@ -32,6 +32,6 @@ add_library( nm_wolfssl_random STATIC ${wolfssl_random_src})
 add_library( nm_wolfssl_spake2 STATIC ${wolfssl_spake2_src})
 
 
-target_link_libraries(nm_wolfssl_cli nn np_platform wolfssl m)
+target_link_libraries(nm_wolfssl_cli NabtoCommon::nn np_platform wolfssl m)
 target_link_libraries(nm_wolfssl_random np_platform wolfssl m)
 target_link_libraries(nm_wolfssl_spake2 np_platform wolfssl m)

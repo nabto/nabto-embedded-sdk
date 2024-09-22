@@ -41,15 +41,43 @@ To do a cross build, set the `CC` environment variable to point to the cross com
 export CC=/opt/hisi-linux-nptl/arm-hisiv100-linux/target/bin/arm-hisiv100-gcc
 ```
 
-### Building with external MbedTLS library
+#### Windows
 
-It is possible to specify that an external MbedTLS library should be by using
-the variables NABTO_DEVICE_MBEDTLS_PROVIDER and MbedTLS_DIR cmake variables.
+The easiest way is to just use a cmake workflow:
 
-Example:
 ```
-cmake -DNABTO_DEVICE_MBEDTLS_PROVIDER=package -DMbedTLS_DIR=${MBEDTLS_INSTALL_DIR}/lib/cmake/MbedTLS ${SCRIPT_DIR}/../..
+cmake --workflow --preset windows_vcpkg_static
 ```
+
+Then run the desired executables which is in the
+`build\windows_vcpkg_static\install` folder.
+
+### Building with externally supplied packages
+
+The nabto embedded SDK, apps, examples and tests each relies on a subset of the following libraries/packages
+
+ * MbedTLS
+ * TinyCBOR
+ * Libevent
+ * cJSON
+ * nlohmann_json
+ * NabtoCommon
+ * Boost
+
+It is possible to override the default way of using external dependencies from a
+FetchContent approach to a find_package approach by setting the CMAKE variable:
+  * `NABTO_DEVICE_PREFER_SYSTEM_LIBS=ON`
+
+Each individual package can also be configured to either come from cmake
+FetchContent or from a package by configuring the following variables:
+
+  * `NABTO_DEVICE_USE_SYSTEM_MBEDTLS=ON`
+  * `NABTO_DEVICE_USE_SYSTEM_TINYCBOR=ON`
+  * `NABTO_DEVICE_USE_SYSTEM_NABTOCOMMON=ON`
+  * `NABTO_DEVICE_USE_SYSTEM_CJSON=ON`
+  * `NABTO_DEVICE_USE_SYSTEM_BOOST=ON`
+  * `NABTO_DEVICE_USE_SYSTEM_NLOHMANNJSONEFER_SYSTEM_LIBS=ON`
+  * `NABTO_DEVICE_USE_SYSTEM_LIBEVENT=ON`
 
 ### Testing
 

@@ -29,7 +29,7 @@ struct nc_connection {
     bool hasSpake2Key;  // true iff the key has been set
     uint8_t spake2Key[32];
     bool passwordAuthenticated; // true iff some password authentication request has succeeded on the connection.
-    char username[NC_SPAKE2_USERNAME_MAX_LENGTH + 1]; // username used for password authentication if passwordAuthentication was attempted
+    char* username; // username used for password authentication if passwordAuthentication was attempted
 #endif
 };
 
