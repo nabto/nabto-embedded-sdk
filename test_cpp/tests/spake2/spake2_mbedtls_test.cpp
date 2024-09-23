@@ -1,5 +1,6 @@
 #include <nabto/nabto_device_config.h>
 #if defined(NABTO_DEVICE_MBEDTLS)
+#if defined(NABTO_DEVICE_PASSWORD_AUTHENTICATION)
 
 #include <boost/test/unit_test.hpp>
 
@@ -12,8 +13,6 @@
 #include <platform/np_platform.h>
 #include <modules/mbedtls/nm_mbedtls_spake2.h>
 
-BOOST_AUTO_TEST_SUITE(mbedtls_spake2)
-
 static int dummyRandom(void* context, unsigned char* output, size_t outputLen)
 {
     for (size_t i = 0; i < outputLen; i++) {
@@ -21,6 +20,8 @@ static int dummyRandom(void* context, unsigned char* output, size_t outputLen)
     }
     return 0;
 }
+
+BOOST_AUTO_TEST_SUITE(mbedtls_spake2)
 
 BOOST_AUTO_TEST_CASE(calculate_mbedtls_key_deterministically, * boost::unit_test::timeout(120))
 {
@@ -77,4 +78,5 @@ BOOST_AUTO_TEST_CASE(calculate_mbedtls_key_deterministically, * boost::unit_test
 
 BOOST_AUTO_TEST_SUITE_END()
 
+#endif
 #endif

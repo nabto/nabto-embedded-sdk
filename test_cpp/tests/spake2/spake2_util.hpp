@@ -91,7 +91,9 @@ class Spake2Client {
 
         mbedtls_entropy_init(&entropy);
 
-        int status = calculateTWithCustomRandom(out, mbedtls_ctr_drbg_random, &ctr_drbg);
+        int status = 0;
+        status |= mbedtls_ctr_drbg_seed(&ctr_drbg, mbedtls_entropy_func, &entropy, NULL, 0);
+        status |= calculateTWithCustomRandom(out, mbedtls_ctr_drbg_random, &ctr_drbg);
 
         mbedtls_ctr_drbg_free(&ctr_drbg);
         mbedtls_entropy_free(&entropy);
