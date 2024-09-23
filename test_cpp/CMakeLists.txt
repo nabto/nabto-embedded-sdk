@@ -57,6 +57,7 @@ set(test_src
   tests/core/nc_coap_rest_error_test.cpp
   tests/core/watchdog_test.cpp
   tests/spake2/spake2_test.cpp
+  tests/spake2/spake2_mbedtls_test.cpp
   tests/spake2/spake2_wolfssl_test.cpp
   ../src/api_test/nabto_device_test_logging.c
   )

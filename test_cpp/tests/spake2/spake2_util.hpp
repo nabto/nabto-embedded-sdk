@@ -32,31 +32,6 @@ static uint8_t Ndata[] = {
     0x33, 0x7f, 0x51, 0x68, 0xc6, 0x4d, 0x9b, 0xd3, 0x60, 0x34, 0x80,
     0x8c, 0xd5, 0x64, 0x49, 0x0b, 0x1e, 0x65, 0x6e, 0xdb, 0xe7};
 
-
-static uint32_t entropy_seed = 0xDEADBEEF;
-
-// PRNG that we can seed with a deterministic value.
-static uint32_t xorshift32(uint32_t* seed)
-{
-    uint32_t x = *seed;
-    x ^= x << 13;
-    x ^= x >> 17;
-    x ^= x << 5;
-    *seed = x;
-    return x;
-}
-
-static int xorshift_entropy_func(void *data, unsigned char *output, size_t len)
-{
-    for (size_t i = 0; i < len; i++)
-    {
-        uint32_t x = xorshift32(&entropy_seed);
-        output[i] = *(unsigned char*)&x;
-    }
-    return 0;
-}
-
-
 class Spake2Client {
  public:
 
@@ -142,8 +117,6 @@ class Spake2Client {
         writePoint(out, &grp_, &T_);
 
         mbedtls_mpi_free(&tmp);
-        mbedtls_entropy_free(&entropy);
-        mbedtls_ctr_drbg_free(&ctr_drbg);
         mbedtls_ecp_point_free(&X);
         return status;
     }
