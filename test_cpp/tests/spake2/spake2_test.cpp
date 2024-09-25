@@ -10,7 +10,7 @@
 
 #include <core/nc_spake2.h>
 #include <platform/np_platform.h>
-
+#include <modules/mbedtls/nm_mbedtls_spake2.h>
 
 BOOST_AUTO_TEST_SUITE(spake2)
 
