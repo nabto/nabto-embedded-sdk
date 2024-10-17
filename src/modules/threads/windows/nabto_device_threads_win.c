@@ -8,9 +8,11 @@
 #include <windows.h>
 #include <string.h>
 
-
-
 #define LOG NABTO_LOG_MODULE_API
+
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 struct nabto_device_thread {
     HANDLE thread;
@@ -91,7 +93,7 @@ void nabto_device_threads_mutex_unlock(struct nabto_device_mutex* mutex)
     ReleaseSRWLockExclusive(&mutex->mutex);
 }
 
-DWORD WINAPI nabto_device_threads_func(void* data) {
+static DWORD WINAPI nabto_device_threads_func(void* data) {
     struct nabto_device_thread* ctx = (struct nabto_device_thread*)data;
     ctx->run_routine(ctx->data);
     return 0;
@@ -127,3 +129,7 @@ void nabto_device_threads_cond_timed_wait(struct nabto_device_condition* cond,
 {
     SleepConditionVariableSRW(&cond->cond, &mut->mutex, ms, 0);
 }
+
+#ifdef __cplusplus
+} //extern "C"
+#endif

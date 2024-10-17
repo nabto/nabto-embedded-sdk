@@ -47,6 +47,7 @@ option(DEVICE_BUILD_TESTS "build device tests" OFF)
 option(DEVICE_BUILD_APPS "build applications" ON)
 
 option(DEVICE_STATIC_LINK_VCRUNTIME "Static link visual c runtime" OFF)
+option(DEVICE_DYNAMIC_LINK_VCRUNTIME "Dynamically link the Visual C runtime" OFF)
 option(DEVICE_MBEDTLS_2 "Set this to true if the device is built against mbedtls version 2" ON)
 
 option(NABTO_DEVICE_PREFER_SYSTEM_LIBS "Prefer system libraries" OFF)
@@ -62,8 +63,9 @@ option(NABTO_DEVICE_USE_SYSTEM_LIBEVENT "use libevent from the system" ${NABTO_D
 set(NABTO_DEVICE_VERSION "" CACHE STRING "use this version instead of getting the version from the git tag")
 
 if (DEVICE_STATIC_LINK_VCRUNTIME)
-  cmake_policy(SET CMP0091 NEW)
   set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>")
+elseif(DEVICE_DYNAMIC_LINK_VCRUNTIME)
+  set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>DLL")
 endif()
 
 add_subdirectory(3rdparty/gopt)
@@ -329,11 +331,14 @@ if (DEVICE_BUILD_EXAMPLES OR DEVICE_BUILD_APPS)
   #add_subdirectory(apps/common)
 endif()
 add_subdirectory(src/modules/event_queue)
+target_link_libraries(nm_threads_windows PRIVATE np_platform)
+target_link_libraries(nm_event_queue PUBLIC np_platform nabto_device_threads)
+target_link_libraries(nm_libevent PUBLIC nabto_device_threads)
+#target_link_libraries(nm_mbedtls_common PRIVATE np_platform)
 
 if (DEVICE_BUILD_EXAMPLES)
   if (NOT WIN32)
-
-  add_subdirectory(platform_integration_example)
+    add_subdirectory(platform_integration_example)
   endif()
   add_subdirectory(examples/thermostat)
   add_subdirectory(examples/simple_stream)

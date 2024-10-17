@@ -84,6 +84,17 @@
             }
         },
         {
+            "name": "windows_vcpkg_dynamic",
+            "inherits": ["base", "vcpkg_base"],
+            "cacheVariables": {
+                "VCPKG_TARGET_TRIPLET": "x64-windows",
+                "DEVICE_DYNAMIC_LINK_VCRUNTIME": "ON",
+                "BUILD_SHARED_LIBS": "ON",
+                "CMAKE_BUILD_TYPE": "Release",
+                "DEVICE_BUILD_TESTS": "OFF"
+            }
+        },
+        {
             "name": "test_ansi_c99",
             "inherits": ["base", "unix_base"],
             "environment": {
@@ -95,42 +106,56 @@
         {
             "name": "linux_fetchcontent",
             "configurePreset": "linux_fetchcontent",
+            "configuration": "Release",
             "targets": ["install"]
         },
         {
             "name": "linux_vcpkg",
             "configurePreset": "linux_vcpkg",
+            "configuration": "Release",
             "targets": ["install"]
         },
         {
             "name": "linux_vcpkg_dtls_client_only",
             "configurePreset": "linux_vcpkg_dtls_client_only",
+            "configuration": "Release",
             "targets": ["install"]
         },
         {
             "name": "mac_vcpkg_x86_64",
             "configurePreset": "mac_vcpkg_x86_64",
+            "configuration": "Release",
             "targets": ["install"]
         },
         {
             "name": "mac_vcpkg_arm64",
             "configurePreset": "mac_vcpkg_arm64",
+            "configuration": "Release",
             "targets": ["install"]
         },
         {
             "name": "mac_fetchcontent_universal",
             "configurePreset": "mac_fetchcontent_universal",
+            "configuration": "Release",
             "targets": ["install"]
         },
 
         {
             "name": "windows_vcpkg_static",
             "configurePreset": "windows_vcpkg_static",
+            "configuration": "Release",
+            "targets": ["install"]
+        },
+        {
+            "name": "windows_vcpkg_dynamic",
+            "configurePreset": "windows_vcpkg_dynamic",
+            "configuration": "Release",
             "targets": ["install"]
         },
         {
             "name": "test_ansi_c99",
-            "configurePreset": "test_ansi_c99"
+            "configurePreset": "test_ansi_c99",
+            "configuration": "Release"
         }
     ],
     "workflowPresets": [
@@ -238,7 +263,19 @@
                     "name": "windows_vcpkg_static"
                 }
             ]
+        },
+        {
+            "name": "windows_vcpkg_dynamic",
+            "steps": [
+                {
+                    "type": "configure",
+                    "name": "windows_vcpkg_dynamic"
+                },
+                {
+                    "type": "build",
+                    "name": "windows_vcpkg_dynamic"
+                }
+            ]
         }
-
     ]
 }

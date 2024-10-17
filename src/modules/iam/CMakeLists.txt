@@ -54,7 +54,7 @@ set(src
   )
 
 add_library(nm_iam ${src})
-target_link_libraries(nm_iam PRIVATE nabto_device)
+target_link_libraries(nm_iam PRIVATE nabto_device nabto_device_threads np_platform)
 target_link_libraries(nm_iam PUBLIC NabtoCommon::nn)
 
 target_link_libraries(nm_iam PUBLIC cjson)
