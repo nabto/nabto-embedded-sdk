@@ -7,13 +7,14 @@
 
 #include "../nm_iam_allocator.h"
 
-
+static const char* LOGM = "iam";
 
 static void handle_request(struct nm_iam_coap_handler* handler, NabtoDeviceCoapRequest* request);
 
 NabtoDeviceError nm_iam_settings_get_init(struct nm_iam_coap_handler* handler, NabtoDevice* device, struct nm_iam* iam)
 {
     const char* paths[] = { "iam", "settings", NULL };
+    NN_LOG_TRACE(iam->logger, LOGM, "initializing GET /iam/settings; &handle_request=%p", &handle_request);
     return nm_iam_coap_handler_init(handler, device, iam, NABTO_DEVICE_COAP_GET, paths, &handle_request);
 }
 
@@ -52,6 +53,7 @@ static size_t encode_response(struct nm_iam* iam, void* buffer, size_t bufferSiz
 void handle_request(struct nm_iam_coap_handler* handler, NabtoDeviceCoapRequest* request)
 {
     NabtoDeviceConnectionRef conn = nabto_device_coap_request_get_connection_ref(request);
+    NN_LOG_TRACE(handler->iam->logger, LOGM, "in handle_request(); &handle_request=%p", &handle_request);
     if (!nm_iam_internal_check_access(handler->iam, conn , "IAM:GetSettings", NULL)) {
         nabto_device_coap_error_response(request, 403, "Access Denied");
         return;
