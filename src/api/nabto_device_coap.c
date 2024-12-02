@@ -13,11 +13,20 @@
 
 np_error_code nabto_device_coap_listener_callback(const np_error_code ec, struct nabto_device_future* future, void* eventData, void* listenerData);
 
-void print_path(const char** path);
-
 /*******************************************
  * COAP API Start
  *******************************************/
+
+static void print_path(const char** path) {
+    const char* pathSegments = *path;
+    printf("VBOX_DEBUG - path: [");
+    while (pathSegments) {
+        printf("%s/", pathSegments);
+        path++;
+        pathSegments = *path;
+    }
+    printf("]\n");
+}
 
 NabtoDeviceError NABTO_DEVICE_API
 nabto_device_coap_init_listener(NabtoDevice* device, NabtoDeviceListener* deviceListener, NabtoDeviceCoapMethod method, const char** pathSegments)
