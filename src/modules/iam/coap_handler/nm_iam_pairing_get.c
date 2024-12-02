@@ -11,9 +11,22 @@ static const char* LOGM = "iam";
 
 static void handle_request(struct nm_iam_coap_handler* handler, NabtoDeviceCoapRequest* request);
 
+static void print_path3(const char** path) {
+    const char* pathSegments = *path;
+    printf("VBOX_DEBUG_3 - path: [");
+    while (pathSegments) {
+        printf("%s/", pathSegments);
+        path++;
+        pathSegments = *path;
+    }
+    printf("]\n");
+}
+
 NabtoDeviceError nm_iam_pairing_get_init(struct nm_iam_coap_handler* handler, NabtoDevice* device, struct nm_iam* iam)
 {
     const char* paths[] = { "iam", "pairing", NULL };
+    printf("VBOX_DEBUG_3: GET /iam/pairing\n");
+    print_path3(paths);
     NN_LOG_TRACE(iam->logger, LOGM, "initializing GET /iam/pairing; &handle_request=%p", &handle_request);
     return nm_iam_coap_handler_init(handler, device, iam, NABTO_DEVICE_COAP_GET, paths, &handle_request);
 }
