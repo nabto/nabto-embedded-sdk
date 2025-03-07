@@ -46,8 +46,13 @@ void handle_request(struct nm_iam_coap_handler* handler, NabtoDeviceCoapRequest*
 
             char* fpName = NULL;
             if (nm_iam_cbor_init_parser(request, &parser, &value)) {
-                nm_iam_cbor_decode_kv_string(&value, "FingerprintName", &fpName);
-
+                if (!nm_iam_cbor_decode_kv_string(&value, "FingerprintName", &fpName)) {
+                    nabto_device_coap_error_response(request, 400, "Invalid CBOR data");
+                    return;
+                }
+            } else {
+                nabto_device_coap_error_response(request, 400, "Invalid CBOR data");
+                return;
             }
 
             if (nm_iam_pairing_pair_user(iam, initialUser, ref, fpName)) {
