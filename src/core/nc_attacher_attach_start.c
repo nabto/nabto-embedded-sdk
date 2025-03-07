@@ -1,4 +1,3 @@
-
 #include <tinycbor/cbor.h>
 #include <core/nc_coap.h>
 #include <core/nc_coap_rest_error.h>
@@ -41,6 +40,10 @@ np_error_code nc_attacher_attach_start_request(
         CborEncoder encoder;
         cbor_encoder_init(&encoder, NULL, 0, 0);
         bufferSize = encode_cbor_request(&encoder, ctx);
+        if (bufferSize == 0) {
+            NABTO_LOG_ERROR(LOG, "CBOR encoding size calculation failed");
+            return NABTO_EC_UNKNOWN;
+        }
     }
 
     uint8_t* buffer = np_calloc(1, bufferSize);
@@ -61,7 +64,13 @@ np_error_code nc_attacher_attach_start_request(
     {
         CborEncoder encoder;
         cbor_encoder_init(&encoder, buffer, bufferSize, 0);
-        encode_cbor_request(&encoder, ctx);
+        /* If encoding succeeds, cbor_encoder_get_extra_bytes_needed should be 0 */
+        if (encode_cbor_request(&encoder, ctx) != 0) {
+            NABTO_LOG_ERROR(LOG, "CBOR encoding failed");
+            nabto_coap_client_request_free(req);
+            np_free(buffer);
+            return NABTO_EC_UNKNOWN;
+        }
     }
 
     np_error_code ec = NABTO_EC_OPERATION_STARTED;
@@ -146,15 +155,22 @@ enum nc_attacher_status coap_attach_start_handle_response(
     CborParser parser;
     CborValue root;
     CborValue status;
-
-    cbor_parser_init(payload, payloadSize, 0, &parser, &root);
+    CborError err = cbor_parser_init(payload, payloadSize, 0, &parser, &root);
+    if (err != CborNoError) {
+        NABTO_LOG_ERROR(LOG, "cbor_parser_init failed: %d", err);
+        return NC_ATTACHER_STATUS_ERROR;
+    }
 
     if (!cbor_value_is_map(&root)) {
         NABTO_LOG_ERROR(LOG, "Invalid coap response format");
         return NC_ATTACHER_STATUS_ERROR;
     }
 
-    cbor_value_map_find_value(&root, "Status", &status);
+    err = cbor_value_map_find_value(&root, "Status", &status);
+    if (err != CborNoError) {
+        NABTO_LOG_ERROR(LOG, "cbor_value_map_find_value for Status failed: %d", err);
+        return NC_ATTACHER_STATUS_ERROR;
+    }
 
     if (!cbor_value_is_unsigned_integer(&status)) {
         NABTO_LOG_ERROR(LOG, "Status not an integer");
@@ -162,7 +178,11 @@ enum nc_attacher_status coap_attach_start_handle_response(
     }
 
     uint64_t s;
-    cbor_value_get_uint64(&status, &s);
+    err = cbor_value_get_uint64(&status, &s);
+    if (err != CborNoError) {
+        NABTO_LOG_ERROR(LOG, "cbor_value_get_uint64 for Status failed: %d", err);
+        return NC_ATTACHER_STATUS_ERROR;
+    }
 
     if (s == ATTACH_STATUS_ATTACHED) {
         // this will free the request
@@ -178,61 +198,99 @@ enum nc_attacher_status coap_attach_start_handle_response(
 enum nc_attacher_status handle_attached(struct nc_attach_context* ctx,
                                         CborValue* root)
 {
+    CborError err;
     CborValue keepAlive;
-    cbor_value_map_find_value(root, "KeepAlive", &keepAlive);
-    if (cbor_value_is_map(&keepAlive)) {
+    err = cbor_value_map_find_value(root, "KeepAlive", &keepAlive);
+    if (err != CborNoError) {
+        NABTO_LOG_ERROR(LOG, "cbor_value_map_find_value for KeepAlive failed: %d", err);
+    } else if (cbor_value_is_map(&keepAlive)) {
         CborValue interval;
         CborValue retryInterval;
         CborValue maxRetries;
-
-        cbor_value_map_find_value(&keepAlive, "Interval", &interval);
-        cbor_value_map_find_value(&keepAlive, "RetryInterval", &retryInterval);
-        cbor_value_map_find_value(&keepAlive, "MaxRetries", &maxRetries);
-
-        if (cbor_value_is_unsigned_integer(&interval) &&
-            cbor_value_is_unsigned_integer(&retryInterval) &&
-            cbor_value_is_unsigned_integer(&maxRetries)) {
-            uint64_t i;
-            uint64_t ri;
-            uint64_t mr;
-            cbor_value_get_uint64(&interval, &i);
-            cbor_value_get_uint64(&retryInterval, &ri);
-            cbor_value_get_uint64(&maxRetries, &mr);
-
-            NABTO_LOG_TRACE(
-                LOG, "starting ka with int: %u, retryInt: %u, maxRetries: %u",
-                i, ri, mr);
-            nc_keep_alive_set_settings(&ctx->keepAlive, (uint32_t)i, (uint32_t)ri, (uint32_t)mr);
+        err = cbor_value_map_find_value(&keepAlive, "Interval", &interval);
+        if (err != CborNoError) {
+            NABTO_LOG_ERROR(LOG, "cbor_value_map_find_value for Interval failed: %d", err);
+        } else {
+            err = cbor_value_map_find_value(&keepAlive, "RetryInterval", &retryInterval);
+            if (err != CborNoError) {
+                NABTO_LOG_ERROR(LOG, "cbor_value_map_find_value for RetryInterval failed: %d", err);
+            } else {
+                err = cbor_value_map_find_value(&keepAlive, "MaxRetries", &maxRetries);
+                if (err != CborNoError) {
+                    NABTO_LOG_ERROR(LOG, "cbor_value_map_find_value for MaxRetries failed: %d", err);
+                } else {
+                    if (cbor_value_is_unsigned_integer(&interval) &&
+                        cbor_value_is_unsigned_integer(&retryInterval) &&
+                        cbor_value_is_unsigned_integer(&maxRetries))
+                    {
+                        uint64_t i, ri, mr;
+                        err = cbor_value_get_uint64(&interval, &i);
+                        if (err != CborNoError) {
+                            NABTO_LOG_ERROR(LOG, "cbor_value_get_uint64 for Interval failed: %d", err);
+                        } else {
+                            err = cbor_value_get_uint64(&retryInterval, &ri);
+                            if (err != CborNoError) {
+                                NABTO_LOG_ERROR(LOG, "cbor_value_get_uint64 for RetryInterval failed: %d", err);
+                            } else {
+                                err = cbor_value_get_uint64(&maxRetries, &mr);
+                                if (err != CborNoError) {
+                                    NABTO_LOG_ERROR(LOG, "cbor_value_get_uint64 for MaxRetries failed: %d", err);
+                                } else {
+                                    NABTO_LOG_TRACE(
+                                        LOG, "starting ka with int: %u, retryInt: %u, maxRetries: %u",
+                                        i, ri, mr);
+                                    nc_keep_alive_set_settings(&ctx->keepAlive, (uint32_t)i, (uint32_t)ri, (uint32_t)mr);
+                                }
+                            }
+                        }
+                    }
+                }
+            }
         }
     }
 
     CborValue stun;
-    cbor_value_map_find_value(root, "Stun", &stun);
-    if (cbor_value_is_map(&stun)) {
+    err = cbor_value_map_find_value(root, "Stun", &stun);
+    if (err != CborNoError) {
+        NABTO_LOG_ERROR(LOG, "cbor_value_map_find_value for Stun failed: %d", err);
+    } else if (cbor_value_is_map(&stun)) {
         CborValue host;
         CborValue port;
-        cbor_value_map_find_value(&stun, "Host", &host);
-        cbor_value_map_find_value(&stun, "Port", &port);
-
+        err = cbor_value_map_find_value(&stun, "Host", &host);
+        if (err != CborNoError) {
+            NABTO_LOG_ERROR(LOG, "cbor_value_map_find_value for STUN Host failed: %d", err);
+        }
+        err = cbor_value_map_find_value(&stun, "Port", &port);
+        if (err != CborNoError) {
+            NABTO_LOG_ERROR(LOG, "cbor_value_map_find_value for STUN Port failed: %d", err);
+        }
         if (cbor_value_is_text_string(&host) &&
-            cbor_value_is_unsigned_integer(&port)) {
+            cbor_value_is_unsigned_integer(&port))
+        {
             uint64_t p;
             size_t stringLength;
-            if (cbor_value_calculate_string_length(&host, &stringLength) !=
-                    CborNoError ||
-                stringLength > 255) {
+            err = cbor_value_calculate_string_length(&host, &stringLength);
+            if (err != CborNoError || stringLength > 255) {
                 NABTO_LOG_ERROR(LOG,
                                 "Basestation reported invalid STUN host, STUN "
                                 "will be impossible");
             } else {
                 size_t len = stringLength + 1;
-                char* stunHost = np_calloc(1,len);
+                char* stunHost = np_calloc(1, len);
                 if (stunHost == NULL) {
                     NABTO_LOG_ERROR(LOG, "cannot allocate memory for the stun host, stun will be impossible.");
                 } else {
-                    cbor_value_copy_text_string(&host, stunHost, &len, NULL);
-                    cbor_value_get_uint64(&port, &p);
-                    nc_stun_set_host(&ctx->device->stun, stunHost, (uint16_t)p);
+                    err = cbor_value_copy_text_string(&host, stunHost, &len, NULL);
+                    if (err != CborNoError) {
+                        NABTO_LOG_ERROR(LOG, "cbor_value_copy_text_string for STUN host failed: %d", err);
+                    } else {
+                        err = cbor_value_get_uint64(&port, &p);
+                        if (err != CborNoError) {
+                            NABTO_LOG_ERROR(LOG, "cbor_value_get_uint64 for STUN port failed: %d", err);
+                        } else {
+                            nc_stun_set_host(&ctx->device->stun, stunHost, (uint16_t)p);
+                        }
+                    }
                     np_free(stunHost);
                 }
             }
@@ -252,21 +310,43 @@ enum nc_attacher_status handle_attached(struct nc_attach_context* ctx,
 enum nc_attacher_status handle_redirect(struct nc_attach_context* ctx,
                                         CborValue* root)
 {
+    CborError err;
     CborValue host;
     CborValue port;
     CborValue fingerprint;
 
-    cbor_value_map_find_value(root, "Host", &host);
-    cbor_value_map_find_value(root, "Port", &port);
-    cbor_value_map_find_value(root, "Fingerprint", &fingerprint);
+    err = cbor_value_map_find_value(root, "Host", &host);
+    if (err != CborNoError) {
+        NABTO_LOG_ERROR(LOG, "cbor_value_map_find_value for Host failed: %d", err);
+        return NC_ATTACHER_STATUS_ERROR;
+    }
+    err = cbor_value_map_find_value(root, "Port", &port);
+    if (err != CborNoError) {
+        NABTO_LOG_ERROR(LOG, "cbor_value_map_find_value for Port failed: %d", err);
+        return NC_ATTACHER_STATUS_ERROR;
+    }
+    err = cbor_value_map_find_value(root, "Fingerprint", &fingerprint);
+    if (err != CborNoError) {
+        NABTO_LOG_ERROR(LOG, "cbor_value_map_find_value for Fingerprint failed: %d", err);
+        return NC_ATTACHER_STATUS_ERROR;
+    }
 
     if (cbor_value_is_text_string(&host) &&
         cbor_value_is_unsigned_integer(&port) &&
-        cbor_value_is_byte_string(&fingerprint)) {
+        cbor_value_is_byte_string(&fingerprint))
+    {
         uint64_t p;
         size_t hostLength;
-        cbor_value_get_string_length(&host, &hostLength);
-        cbor_value_get_uint64(&port, &p);
+        err = cbor_value_get_string_length(&host, &hostLength);
+        if (err != CborNoError) {
+            NABTO_LOG_ERROR(LOG, "cbor_value_get_string_length for Host failed: %d", err);
+            return NC_ATTACHER_STATUS_ERROR;
+        }
+        err = cbor_value_get_uint64(&port, &p);
+        if (err != CborNoError) {
+            NABTO_LOG_ERROR(LOG, "cbor_value_get_uint64 for Port failed: %d", err);
+            return NC_ATTACHER_STATUS_ERROR;
+        }
 
         if (hostLength < 1 || hostLength > 256) {
             NABTO_LOG_ERROR(LOG,
@@ -277,12 +357,18 @@ enum nc_attacher_status handle_redirect(struct nc_attach_context* ctx,
         if (ctx->dns != NULL) {
             np_free(ctx->dns);
         }
-        ctx->dns = calloc(1,hostLength+1);
+        ctx->dns = calloc(1, hostLength + 1);
         if (ctx->dns == NULL) {
             NABTO_LOG_ERROR(LOG, "Out of memory when handling redirect.");
             return NC_ATTACHER_STATUS_ERROR;
         }
-        cbor_value_copy_text_string(&host, ctx->dns, &hostLength, NULL);
+        err = cbor_value_copy_text_string(&host, ctx->dns, &hostLength, NULL);
+        if (err != CborNoError) {
+            NABTO_LOG_ERROR(LOG, "cbor_value_copy_text_string for redirect host failed: %d", err);
+            free(ctx->dns);
+            ctx->dns = NULL;
+            return NC_ATTACHER_STATUS_ERROR;
+        }
         ctx->currentPort = (uint16_t)p;
 
     } else {
@@ -311,23 +397,71 @@ void coap_attach_start_handler(struct nabto_coap_client_request* request,
 size_t encode_cbor_request(CborEncoder* encoder, struct nc_attach_context* ctx)
 {
     CborEncoder map;
-    cbor_encoder_create_map(encoder, &map, CborIndefiniteLength);
+    CborError err = cbor_encoder_create_map(encoder, &map, CborIndefiniteLength);
+    if (err != CborNoError) {
+        NABTO_LOG_ERROR(LOG, "cbor_encoder_create_map failed: %d", err);
+        return 0;
+    }
 
-    cbor_encode_text_stringz(&map, "NabtoVersion");
-    cbor_encode_text_stringz(&map, nc_version());
+    err = cbor_encode_text_stringz(&map, "NabtoVersion");
+    if (err != CborNoError) {
+        NABTO_LOG_ERROR(LOG, "cbor_encode_text_stringz NabtoVersion failed: %d", err);
+        return 0;
+    }
+    err = cbor_encode_text_stringz(&map, nc_version());
+    if (err != CborNoError) {
+        NABTO_LOG_ERROR(LOG, "cbor_encode_text_stringz nc_version failed: %d", err);
+        return 0;
+    }
 
-    cbor_encode_text_stringz(&map, "AppName");
-    cbor_encode_text_stringz(&map, ctx->appName ? ctx->appName : "");
+    err = cbor_encode_text_stringz(&map, "AppName");
+    if (err != CborNoError) {
+        NABTO_LOG_ERROR(LOG, "cbor_encode_text_stringz AppName failed: %d", err);
+        return 0;
+    }
+    err = cbor_encode_text_stringz(&map, ctx->appName ? ctx->appName : "");
+    if (err != CborNoError) {
+        NABTO_LOG_ERROR(LOG, "cbor_encode_text_stringz appName failed: %d", err);
+        return 0;
+    }
 
-    cbor_encode_text_stringz(&map, "AppVersion");
-    cbor_encode_text_stringz(&map, ctx->appVersion ? ctx->appVersion : "");
+    err = cbor_encode_text_stringz(&map, "AppVersion");
+    if (err != CborNoError) {
+        NABTO_LOG_ERROR(LOG, "cbor_encode_text_stringz AppVersion failed: %d", err);
+        return 0;
+    }
+    err = cbor_encode_text_stringz(&map, ctx->appVersion ? ctx->appVersion : "");
+    if (err != CborNoError) {
+        NABTO_LOG_ERROR(LOG, "cbor_encode_text_stringz appVersion failed: %d", err);
+        return 0;
+    }
 
-    cbor_encode_text_stringz(&map, "ProductId");
-    cbor_encode_text_stringz(&map, ctx->productId);
+    err = cbor_encode_text_stringz(&map, "ProductId");
+    if (err != CborNoError) {
+        NABTO_LOG_ERROR(LOG, "cbor_encode_text_stringz ProductId failed: %d", err);
+        return 0;
+    }
+    err = cbor_encode_text_stringz(&map, ctx->productId);
+    if (err != CborNoError) {
+        NABTO_LOG_ERROR(LOG, "cbor_encode_text_stringz productId failed: %d", err);
+        return 0;
+    }
 
-    cbor_encode_text_stringz(&map, "DeviceId");
-    cbor_encode_text_stringz(&map, ctx->deviceId);
+    err = cbor_encode_text_stringz(&map, "DeviceId");
+    if (err != CborNoError) {
+        NABTO_LOG_ERROR(LOG, "cbor_encode_text_stringz DeviceId failed: %d", err);
+        return 0;
+    }
+    err = cbor_encode_text_stringz(&map, ctx->deviceId);
+    if (err != CborNoError) {
+        NABTO_LOG_ERROR(LOG, "cbor_encode_text_stringz deviceId failed: %d", err);
+        return 0;
+    }
 
-    cbor_encoder_close_container(encoder, &map);
+    err = cbor_encoder_close_container(encoder, &map);
+    if (err != CborNoError) {
+        NABTO_LOG_ERROR(LOG, "cbor_encoder_close_container failed: %d", err);
+        return 0;
+    }
     return cbor_encoder_get_extra_bytes_needed(encoder);
 }
