@@ -50,18 +50,13 @@ static bool handle_rendezvous_payload(struct nc_rendezvous_coap_context* ctx, st
 
     CborParser parser;
     CborValue array;
-    CborError err;
-    err = cbor_parser_init(payload, payloadLength, 0, &parser, &array);
-    if (err != CborNoError) {
+    if (cbor_parser_init(payload, payloadLength, 0, &parser, &array) != CborNoError ||
+        !cbor_value_is_array(&array)) {
         return false;
     }
 
-    if (!cbor_value_is_array(&array)) {
-        return false;
-    }
     CborValue ep;
-    err = cbor_value_enter_container(&array, &ep);
-    if (err != CborNoError) {
+    if (cbor_value_enter_container(&array, &ep) != CborNoError) {
         return false;
     }
 
@@ -70,58 +65,44 @@ static bool handle_rendezvous_payload(struct nc_rendezvous_coap_context* ctx, st
         if (cbor_value_is_map(&ep)) {
             CborValue ip;
             CborValue port;
-            err = cbor_value_map_find_value(&ep, "Ip", &ip);
-            if (err != CborNoError) {
+            uint64_t p;
+
+            if (cbor_value_map_find_value(&ep, "Ip", &ip) != CborNoError ||
+                cbor_value_map_find_value(&ep, "Port", &port) != CborNoError ||
+                !cbor_value_is_byte_string(&ip) ||
+                !cbor_value_is_unsigned_integer(&port) ||
+                cbor_value_get_uint64(&port, &p) != CborNoError) {
                 return false;
             }
-            err = cbor_value_map_find_value(&ep, "Port", &port);
-            if (err != CborNoError) {
+            packet.ep.port = (uint16_t)p;
+
+            size_t ipLength;
+            if (cbor_value_get_string_length(&ip, &ipLength) != CborNoError) {
                 return false;
             }
-
-            if (cbor_value_is_byte_string(&ip) &&
-                cbor_value_is_unsigned_integer(&port))
-            {
-
-                uint64_t p;
-                err = cbor_value_get_uint64(&port, &p);
-                if (err != CborNoError) {
+            if (ipLength == 4) {
+                packet.ep.ip.type = NABTO_IPV4;
+                if (cbor_value_copy_byte_string(&ip, packet.ep.ip.ip.v4, &ipLength, NULL) != CborNoError) {
                     return false;
                 }
-                packet.ep.port = (uint16_t)p;
-
-                size_t ipLength;
-                err = cbor_value_get_string_length(&ip, &ipLength);
-                if (err != CborNoError) {
+                nc_rendezvous_send_rendezvous(ctx->rendezvous, &packet);
+            } else if (ipLength == 16) {
+                packet.ep.ip.type = NABTO_IPV6;
+                if (cbor_value_copy_byte_string(&ip, packet.ep.ip.ip.v6, &ipLength, NULL) != CborNoError) {
                     return false;
                 }
-                if (ipLength == 4) {
-                    packet.ep.ip.type = NABTO_IPV4;
-                    err = cbor_value_copy_byte_string(&ip, packet.ep.ip.ip.v4, &ipLength, NULL);
-                    if (err != CborNoError) {
-                        return false;
-                    }
-                    nc_rendezvous_send_rendezvous(ctx->rendezvous, &packet);
-                } else if (ipLength == 16) {
-                    packet.ep.ip.type = NABTO_IPV6;
-                    err = cbor_value_copy_byte_string(&ip, packet.ep.ip.ip.v6, &ipLength, NULL);
-                    if (err != CborNoError) {
-                        return false;
-                    }
-                    nc_rendezvous_send_rendezvous(ctx->rendezvous, &packet);
-                }
+                nc_rendezvous_send_rendezvous(ctx->rendezvous, &packet);
             }
         } else {
             return false;
         }
-        err = cbor_value_advance(&ep);
-        if (err != CborNoError) {
+
+        if (cbor_value_advance(&ep) != CborNoError) {
             return false;
         }
     }
 
-    err = cbor_value_leave_container(&array, &ep);
-    if (err != CborNoError) {
+    if (cbor_value_leave_container(&array, &ep) != CborNoError) {
         return false;
     }
     return true;

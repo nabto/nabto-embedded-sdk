@@ -39,50 +39,36 @@ void nc_stun_coap_deinit(struct nc_stun_coap_context* context)
         context->resource = NULL;
     }
 }
-static void encode_ep(CborEncoder* encoder, const struct np_udp_endpoint* ep)
+static bool encode_ep(CborEncoder* encoder, const struct np_udp_endpoint* ep)
 {
     CborEncoder map;
     CborError err;
     if (ep->ip.type == NABTO_IPV4 || ep->ip.type == NABTO_IPV6) {
-        err = cbor_encoder_create_map(encoder, &map, CborIndefiniteLength);
-        if (err != CborNoError) {
-            NABTO_LOG_ERROR(LOG, "Failed to create CBOR map: %d", err);
-            return;
-        }
-        err = cbor_encode_text_stringz(&map, "Ip");
-        if (err != CborNoError) {
-            NABTO_LOG_ERROR(LOG, "Failed to encode CBOR text 'Ip': %d", err);
-            cbor_encoder_close_container(encoder, &map);
-            return;
+        if (cbor_encoder_create_map(encoder, &map, CborIndefiniteLength) != CborNoError ||
+            cbor_encode_text_stringz(&map, "Ip") != CborNoError) {
+            NABTO_LOG_ERROR(LOG, "Failed to create endpoint CBOR map");
+            return false;
         }
         if (ep->ip.type == NABTO_IPV4) {
             err = cbor_encode_byte_string(&map, ep->ip.ip.v4, 4);
         } else {
             err = cbor_encode_byte_string(&map, ep->ip.ip.v6, 16);
         }
-        if (err != CborNoError) {
-            NABTO_LOG_ERROR(LOG, "Failed to encode CBOR byte string for IP: %d", err);
-            cbor_encoder_close_container(encoder, &map);
-            return;
-        }
-        err = cbor_encode_text_stringz(&map, "Port");
-        if (err != CborNoError) {
-            NABTO_LOG_ERROR(LOG, "Failed to encode CBOR text 'Port': %d", err);
-            cbor_encoder_close_container(encoder, &map);
-            return;
-        }
-        err = cbor_encode_uint(&map, ep->port);
-        if (err != CborNoError) {
-            NABTO_LOG_ERROR(LOG, "Failed to encode CBOR uint for port: %d", err);
-            cbor_encoder_close_container(encoder, &map);
-            return;
-        }
-        err = cbor_encoder_close_container(encoder, &map);
-        if (err != CborNoError) {
-            NABTO_LOG_ERROR(LOG, "Failed to close CBOR map: %d", err);
-            return;
+        if (err != CborNoError ||
+            cbor_encode_text_stringz(&map, "Port") != CborNoError ||
+            cbor_encode_uint(&map, ep->port) != CborNoError ||
+            cbor_encoder_close_container(encoder, &map) != CborNoError ) {
+            NABTO_LOG_ERROR(LOG, "Failed to encode CBOR endpoint");
+            return false;
         }
     }
+    return true;
+}
+
+static void send_500_response(struct nc_stun_coap_endpoints_request* ctx) {
+    nc_coap_server_send_error_response(ctx->request, (nabto_coap_code)NABTO_COAP_CODE(5,00), NULL);
+    nc_coap_server_request_free(ctx->request);
+    np_free(ctx);
 }
 
 void nc_rendezvous_endpoints_completed(const np_error_code ec, const struct nabto_stun_result* res, void* data)
@@ -102,11 +88,9 @@ void nc_rendezvous_endpoints_completed(const np_error_code ec, const struct nabt
     cbor_encoder_init(&encoder, buffer, 128, 0);
 
     CborEncoder array;
-    CborError err = cbor_encoder_create_array(&encoder, &array, CborIndefiniteLength);
-    if (err != CborNoError) {
-        nc_coap_server_send_error_response(ctx->request, (nabto_coap_code)NABTO_COAP_CODE(5,00), "CBOR array creation failed");
-        nc_coap_server_request_free(ctx->request);
-        np_free(ctx);
+    if (cbor_encoder_create_array(&encoder, &array, CborIndefiniteLength) != CborNoError) {
+        NABTO_LOG_ERROR(LOG, "Failed to create array");
+        send_500_response(ctx);
         return;
     }
 
@@ -120,21 +104,27 @@ void nc_rendezvous_endpoints_completed(const np_error_code ec, const struct nabt
         uint16_t localPort = nc_stun_get_local_port(ctx->stunCoap->stun);
         ep.port = localPort;
 
-        encode_ep(&array, &ep);
+        if (!encode_ep(&array, &ep)) {
+            NABTO_LOG_ERROR(LOG, "Failed to encode ep");
+            send_500_response(ctx);
+            return;
+        }
     }
 
     // encode the global ep if stun succeeded
     if (ec == NABTO_EC_OK) {
         struct np_udp_endpoint ep;
         nc_stun_convert_ep(&res->extEp, &ep);
-        encode_ep(&array, &ep);
+        if (!encode_ep(&array, &ep)) {
+            NABTO_LOG_ERROR(LOG, "Failed to encode ep 2");
+            send_500_response(ctx);
+            return;
+        }
     }
 
-    err = cbor_encoder_close_container(&encoder, &array);
-    if (err != CborNoError) {
-        nc_coap_server_send_error_response(ctx->request, (nabto_coap_code)NABTO_COAP_CODE(5,00), "CBOR array close failed");
-        nc_coap_server_request_free(ctx->request);
-        np_free(ctx);
+    if (cbor_encoder_close_container(&encoder, &array) != CborNoError) {
+        NABTO_LOG_ERROR(LOG, "Failed to close container");
+        send_500_response(ctx);
         return;
     }
 
@@ -146,8 +136,8 @@ void nc_rendezvous_endpoints_completed(const np_error_code ec, const struct nabt
         size_t used = cbor_encoder_get_buffer_size(&encoder, buffer);
         nc_coap_server_response_set_code(request, (nabto_coap_code)NABTO_COAP_CODE(2,05));
         nc_coap_server_response_set_content_format(request, NABTO_COAP_CONTENT_FORMAT_APPLICATION_CBOR);
-        nabto_coap_error err2 = nc_coap_server_response_set_payload(request, buffer, used);
-        if (err2 != NABTO_COAP_ERROR_OK) {
+        nabto_coap_error err = nc_coap_server_response_set_payload(request, buffer, used);
+        if (err != NABTO_COAP_ERROR_OK) {
             // Dont try to add a payload on OOM it would propably fail
             nc_coap_server_send_error_response(request, (nabto_coap_code)NABTO_COAP_CODE(5,00), NULL);
         } else {

@@ -68,7 +68,6 @@ void handle_request(struct nm_iam_coap_handler* handler,
         nabto_device_coap_error_response(
             request, 400, "5.1 clients are not supported for password pairing");
         nm_iam_free(password);
-        nm_iam_free(fingerprint);
         return;
     }
 
@@ -78,9 +77,7 @@ void handle_request(struct nm_iam_coap_handler* handler,
         return;
     }
 
-    if (!nm_iam_cbor_decode_kv_string(&value, "FingerprintName", &fpName)) {
-        fpName = NULL;
-    }
+    nm_iam_cbor_decode_kv_string(&value, "FingerprintName", &fpName);
 
     if (username == NULL) {
         nabto_device_coap_error_response(request, 400, "Username missing");

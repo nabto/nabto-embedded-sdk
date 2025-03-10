@@ -62,10 +62,7 @@ void handle_request(struct nm_iam_coap_handler* handler, NabtoDeviceCoapRequest*
         nm_iam_free(fingerprint);
         return;
     }
-    if (!nm_iam_cbor_decode_kv_string(&value, "FingerprintName", &fpName)) {
-        // FingerprintName is optional; if decoding fails, set it to NULL.
-        fpName = NULL;
-    }
+    nm_iam_cbor_decode_kv_string(&value, "FingerprintName", &fpName); // FingerprintName is optional
 
     enum nm_iam_error e = nm_iam_internal_pair_new_client(handler->iam, username, fingerprint, fpName);
     switch (e) {

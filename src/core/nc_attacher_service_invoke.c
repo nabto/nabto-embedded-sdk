@@ -115,37 +115,13 @@ size_t encode_request(struct nc_attacher_service_invoke_request* request, uint8_
     CborEncoder encoder;
     cbor_encoder_init(&encoder, buffer, bufferSize, 0);
     CborEncoder map;
-    CborError err = cbor_encoder_create_map(&encoder, &map, CborIndefiniteLength);
-    if (err != CborNoError) {
-        NABTO_LOG_ERROR(LOG, "Failed to create CBOR map: %d", err);
-        return 0;
-    }
-
-    err = cbor_encode_text_stringz(&map, "ServiceId");
-    if (err != CborNoError) {
-        NABTO_LOG_ERROR(LOG, "Failed to encode 'ServiceId' key: %d", err);
-        return 0;
-    }
-    err = cbor_encode_text_stringz(&map, request->serviceId);
-    if (err != CborNoError) {
-        NABTO_LOG_ERROR(LOG, "Failed to encode serviceId value: %d", err);
-        return 0;
-    }
-
-    err = cbor_encode_text_stringz(&map, "Message");
-    if (err != CborNoError) {
-        NABTO_LOG_ERROR(LOG, "Failed to encode 'Message' key: %d", err);
-        return 0;
-    }
-    err = cbor_encode_byte_string(&map, request->message, request->messageLength);
-    if (err != CborNoError) {
-        NABTO_LOG_ERROR(LOG, "Failed to encode message byte string: %d", err);
-        return 0;
-    }
-
-    err = cbor_encoder_close_container(&encoder, &map);
-    if (err != CborNoError) {
-        NABTO_LOG_ERROR(LOG, "Failed to close CBOR map: %d", err);
+    if (nc_cbor_err_not_oom(cbor_encoder_create_map(&encoder, &map, CborIndefiniteLength)) ||
+        nc_cbor_err_not_oom(cbor_encode_text_stringz(&map, "ServiceId")) ||
+        nc_cbor_err_not_oom(cbor_encode_text_stringz(&map, request->serviceId)) ||
+        nc_cbor_err_not_oom(cbor_encode_text_stringz(&map, "Message")) ||
+        nc_cbor_err_not_oom(cbor_encode_byte_string(&map, request->message, request->messageLength)) ||
+        nc_cbor_err_not_oom(cbor_encoder_close_container(&encoder, &map))) {
+            NABTO_LOG_ERROR(LOG, "Failed to encode SCT Cbor request");
         return 0;
     }
 
@@ -155,44 +131,25 @@ size_t encode_request(struct nc_attacher_service_invoke_request* request, uint8_
 bool parse_response(const uint8_t* buffer, size_t bufferSize, struct nc_attacher_service_invoke_response* response) {
     CborParser parser;
     CborValue map;
-    CborError err = cbor_parser_init(buffer, bufferSize, 0, &parser, &map);
-    if (err != CborNoError) {
-        NABTO_LOG_ERROR(LOG, "cbor_parser_init failed: %d", err);
-        return false;
-    }
-    if (!cbor_value_is_map(&map)) {
-        NABTO_LOG_ERROR(LOG, "Response is not a map");
+    CborError err;
+    if (cbor_parser_init(buffer, bufferSize, 0, &parser, &map) != CborNoError ||
+        !cbor_value_is_map(&map)) {
+        NABTO_LOG_ERROR(LOG, "Invalid Cbor response");
         return false;
     }
     CborValue statusCode;
     CborValue message;
     CborValue messageFormat;
-    err = cbor_value_map_find_value(&map, "StatusCode", &statusCode);
-    if (err != CborNoError) {
-        NABTO_LOG_ERROR(LOG, "Failed to find 'StatusCode': %d", err);
-        return false;
-    }
-    err = cbor_value_map_find_value(&map, "Message", &message);
-    if (err != CborNoError) {
-        NABTO_LOG_ERROR(LOG, "Failed to find 'Message': %d", err);
-        return false;
-    }
-    err = cbor_value_map_find_value(&map, "MessageFormat", &messageFormat);
-    if (err != CborNoError) {
-        NABTO_LOG_ERROR(LOG, "Failed to find 'MessageFormat': %d", err);
+    int tmp;
+    if (cbor_value_map_find_value(&map, "StatusCode", &statusCode) != CborNoError ||
+        cbor_value_map_find_value(&map, "Message", &message) != CborNoError ||
+        cbor_value_map_find_value(&map, "MessageFormat", &messageFormat) != CborNoError ||
+        !cbor_value_is_integer(&statusCode) != CborNoError ||
+        cbor_value_get_int(&statusCode, &tmp) != CborNoError) {
+        NABTO_LOG_ERROR(LOG, "Parse Cbor response");
         return false;
     }
 
-    if (!cbor_value_is_integer(&statusCode)) {
-        NABTO_LOG_ERROR(LOG, "'StatusCode' is not an integer");
-        return false;
-    }
-    int tmp;
-    err = cbor_value_get_int(&statusCode, &tmp);
-    if (err != CborNoError) {
-        NABTO_LOG_ERROR(LOG, "Failed to get integer from 'StatusCode': %d", err);
-        return false;
-    }
     response->statusCode = (uint16_t)tmp;
 
     // if messageFormat exists, use as intended. If not we assume the

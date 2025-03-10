@@ -22,64 +22,34 @@ static size_t encode_response(struct nm_iam* iam, void* buffer, size_t bufferSiz
     CborEncoder encoder;
     cbor_encoder_init(&encoder, buffer, bufferSize, 0);
     CborEncoder map;
-    CborError ec = cbor_encoder_create_map(&encoder, &map, CborIndefiniteLength);
-    if (ec != CborNoError) {
-        return 0;
-    }
 
-    ec = cbor_encode_text_stringz(&map, "PasswordOpenPairing");
-    if (ec != CborNoError) {
-        return 0;
-    }
-    ec = cbor_encode_boolean(&map, iam->state->passwordOpenPairing);
-    if (ec != CborNoError) {
-        return 0;
-    }
-
-    ec = cbor_encode_text_stringz(&map, "PasswordInvitePairing");
-    if (ec != CborNoError) {
-        return 0;
-    }
-    ec = cbor_encode_boolean(&map, iam->state->passwordInvitePairing);
-    if (ec != CborNoError) {
-        return 0;
-    }
-
-    ec = cbor_encode_text_stringz(&map, "LocalOpenPairing");
-    if (ec != CborNoError) {
-        return 0;
-    }
-    ec = cbor_encode_boolean(&map, iam->state->localOpenPairing);
-    if (ec != CborNoError) {
+    if (nm_iam_cbor_err_not_oom(cbor_encoder_create_map(&encoder, &map, CborIndefiniteLength)) ||
+        nm_iam_cbor_err_not_oom(cbor_encode_text_stringz(&map, "PasswordOpenPairing")) ||
+        nm_iam_cbor_err_not_oom(cbor_encode_boolean(&map, iam->state->passwordOpenPairing)) ||
+        nm_iam_cbor_err_not_oom(cbor_encode_text_stringz(&map, "PasswordInvitePairing")) ||
+        nm_iam_cbor_err_not_oom(cbor_encode_boolean(&map, iam->state->passwordInvitePairing)) ||
+        nm_iam_cbor_err_not_oom(cbor_encode_text_stringz(&map, "LocalOpenPairing")) ||
+        nm_iam_cbor_err_not_oom(cbor_encode_boolean(&map, iam->state->localOpenPairing))) {
         return 0;
     }
 
     const char* sct = iam->state->passwordOpenSct;
     if (sct) {
-        ec = cbor_encode_text_stringz(&map, "PasswordOpenSct");
-        if (ec != CborNoError) {
-            return 0;
-        }
-        ec = cbor_encode_text_stringz(&map, sct);
-        if (ec != CborNoError) {
+        if (nm_iam_cbor_err_not_oom(cbor_encode_text_stringz(&map, "PasswordOpenSct")) ||
+            nm_iam_cbor_err_not_oom(cbor_encode_text_stringz(&map, sct))) {
             return 0;
         }
     }
 
     const char* pwd = iam->state->passwordOpenPassword;
     if (pwd) {
-        ec = cbor_encode_text_stringz(&map, "PasswordOpenPassword");
-        if (ec != CborNoError) {
-            return 0;
-        }
-        ec = cbor_encode_text_stringz(&map, pwd);
-        if (ec != CborNoError) {
+        if (nm_iam_cbor_err_not_oom(cbor_encode_text_stringz(&map, "PasswordOpenPassword")) ||
+            nm_iam_cbor_err_not_oom(cbor_encode_text_stringz(&map, pwd))) {
             return 0;
         }
     }
 
-    ec = cbor_encoder_close_container(&encoder, &map);
-    if (ec != CborNoError) {
+    if (nm_iam_cbor_err_not_oom(cbor_encoder_close_container(&encoder, &map))) {
         return 0;
     }
 

@@ -19,6 +19,12 @@ static void get_service_iam(bool allow, void* userData1, void* userData2, void* 
 
 static void get_service_action(struct nc_coap_server_request* request, struct nm_tcp_tunnels* tunnels, const char* action);
 
+static bool cbor_err_not_oom(CborError e) {
+    // Cbor errors can be bitwise or'ed with other errors
+    return (e & ~CborErrorOutOfMemory) != CborNoError;
+}
+
+
 np_error_code nm_tcp_tunnel_coap_init(struct nm_tcp_tunnels* tunnels, struct nc_coap_server_context* server)
 {
     nabto_coap_error err;
@@ -92,24 +98,21 @@ static size_t encode_services_list(struct nm_tcp_tunnels* tunnels, uint8_t* buff
     CborEncoder encoder;
     cbor_encoder_init(&encoder, buffer, bufferSize, 0);
     CborEncoder array;
-    CborError err = cbor_encoder_create_array(&encoder, &array, CborIndefiniteLength);
-    if (err != CborNoError) {
-        NABTO_LOG_ERROR(LOG, "Failed to create CBOR array: %d", err);
+    if (cbor_err_not_oom(cbor_encoder_create_array(&encoder, &array, CborIndefiniteLength))) {
+        NABTO_LOG_ERROR(LOG, "Failed to create CBOR array");
         return 0;
     }
 
     struct nm_tcp_tunnel_service* service;
     NN_LLIST_FOREACH(service, &tunnels->services)
     {
-        err = cbor_encode_text_stringz(&array, service->id);
-        if (err != CborNoError) {
-            NABTO_LOG_ERROR(LOG, "Failed to encode service id '%s': %d", service->id, err);
+        if (cbor_err_not_oom(cbor_encode_text_stringz(&array, service->id))) {
+            NABTO_LOG_ERROR(LOG, "Failed to encode service id '%s'", service->id);
             return 0;
         }
     }
-    err = cbor_encoder_close_container(&encoder, &array);
-    if (err != CborNoError) {
-        NABTO_LOG_ERROR(LOG, "Failed to close CBOR array: %d", err);
+    if (cbor_err_not_oom(cbor_encoder_close_container(&encoder, &array))) {
+        NABTO_LOG_ERROR(LOG, "Failed to close CBOR array");
         return 0;
     }
 
@@ -121,102 +124,46 @@ static size_t encode_service(struct nm_tcp_tunnel_service* service, uint8_t* buf
     CborEncoder encoder;
     cbor_encoder_init(&encoder, buffer, bufferSize, 0);
     CborEncoder map, metadata_map;
-    CborError err = cbor_encoder_create_map(&encoder, &map, CborIndefiniteLength);
-    if (err != CborNoError) {
-        NABTO_LOG_ERROR(LOG, "Failed to create CBOR map: %d", err);
+    if (cbor_err_not_oom(cbor_encoder_create_map(&encoder, &map, CborIndefiniteLength))) {
+        NABTO_LOG_ERROR(LOG, "Failed to create CBOR map");
         return 0;
     }
     {
-        err = cbor_encode_text_stringz(&map, "Id");
-        if (err != CborNoError) {
-            NABTO_LOG_ERROR(LOG, "Failed to encode 'Id' key: %d", err);
-            return 0;
-        }
-        err = cbor_encode_text_stringz(&map, service->id);
-        if (err != CborNoError) {
-            NABTO_LOG_ERROR(LOG, "Failed to encode service id '%s': %d", service->id, err);
-            return 0;
-        }
-
-        err = cbor_encode_text_stringz(&map, "Type");
-        if (err != CborNoError) {
-            NABTO_LOG_ERROR(LOG, "Failed to encode 'Type' key: %d", err);
-            return 0;
-        }
-        err = cbor_encode_text_stringz(&map, service->type);
-        if (err != CborNoError) {
-            NABTO_LOG_ERROR(LOG, "Failed to encode service type '%s': %d", service->type, err);
-            return 0;
-        }
-
-        err = cbor_encode_text_stringz(&map, "Host");
-        if (err != CborNoError) {
-            NABTO_LOG_ERROR(LOG, "Failed to encode 'Host' key: %d", err);
-            return 0;
-        }
-        err = cbor_encode_text_stringz(&map, np_ip_address_to_string(&service->address));
-        if (err != CborNoError) {
-            NABTO_LOG_ERROR(LOG, "Failed to encode host address: %d", err);
-            return 0;
-        }
-
-        err = cbor_encode_text_stringz(&map, "Port");
-        if (err != CborNoError) {
-            NABTO_LOG_ERROR(LOG, "Failed to encode 'Port' key: %d", err);
-            return 0;
-        }
-        err = cbor_encode_uint(&map, service->port);
-        if (err != CborNoError) {
-            NABTO_LOG_ERROR(LOG, "Failed to encode port: %d", err);
-            return 0;
-        }
-
-        err = cbor_encode_text_stringz(&map, "StreamPort");
-        if (err != CborNoError) {
-            NABTO_LOG_ERROR(LOG, "Failed to encode 'StreamPort' key: %d", err);
-            return 0;
-        }
-        err = cbor_encode_uint(&map, service->streamPort);
-        if (err != CborNoError) {
-            NABTO_LOG_ERROR(LOG, "Failed to encode stream port: %d", err);
-            return 0;
-        }
-
-        err = cbor_encode_text_stringz(&map, "Metadata");
-        if (err != CborNoError) {
-            NABTO_LOG_ERROR(LOG, "Failed to encode 'Metadata' key: %d", err);
-            return 0;
-        }
-        err = cbor_encoder_create_map(&map, &metadata_map, CborIndefiniteLength);
-        if (err != CborNoError) {
-            NABTO_LOG_ERROR(LOG, "Failed to create CBOR metadata map: %d", err);
+        if (cbor_err_not_oom(cbor_encode_text_stringz(&map, "Id")) ||
+            cbor_err_not_oom(cbor_encode_text_stringz(&map, service->id)) ||
+            cbor_err_not_oom(cbor_encode_text_stringz(&map, "Type")) ||
+            cbor_err_not_oom(cbor_encode_text_stringz(&map, service->type)) ||
+            cbor_err_not_oom(cbor_encode_text_stringz(&map, "Host")) ||
+            cbor_err_not_oom(cbor_encode_text_stringz(&map, np_ip_address_to_string(&service->address))) ||
+            cbor_err_not_oom(cbor_encode_text_stringz(&map, "Port")) ||
+            cbor_err_not_oom(cbor_encode_uint(&map, service->port)) ||
+            cbor_err_not_oom(cbor_encode_text_stringz(&map, "StreamPort")) ||
+            cbor_err_not_oom(cbor_encode_uint(&map, service->streamPort)) ||
+            cbor_err_not_oom(cbor_encode_text_stringz(&map, "Metadata")) ||
+            cbor_err_not_oom(cbor_encoder_create_map(&map, &metadata_map, CborIndefiniteLength))) {
+            NABTO_LOG_ERROR(LOG, "Failed to encode service to Cbor");
             return 0;
         }
         {
             struct nn_string_map_iterator it;
             NN_STRING_MAP_FOREACH(it, &service->metadata)
             {
-                err = cbor_encode_text_stringz(&metadata_map, nn_string_map_key(&it));
-                if (err != CborNoError) {
-                    NABTO_LOG_ERROR(LOG, "Failed to encode metadata key: %d", err);
-                    return 0;
-                }
-                err = cbor_encode_text_stringz(&metadata_map, nn_string_map_value(&it));
-                if (err != CborNoError) {
-                    NABTO_LOG_ERROR(LOG, "Failed to encode metadata value: %d", err);
+                if (cbor_err_not_oom(cbor_encode_text_stringz(&metadata_map, nn_string_map_key(&it))) ||
+                    cbor_err_not_oom(cbor_encode_text_stringz(&metadata_map, nn_string_map_value(&it)))) {
+                    NABTO_LOG_ERROR(LOG, "Failed to Cbor encode metadata");
                     return 0;
                 }
             }
         }
-        err = cbor_encoder_close_container(&map, &metadata_map);
-        if (err != CborNoError) {
-            NABTO_LOG_ERROR(LOG, "Failed to close metadata map: %d", err);
+
+        if (cbor_err_not_oom(cbor_encoder_close_container(&map, &metadata_map))) {
+            NABTO_LOG_ERROR(LOG, "Failed to close metadata map");
             return 0;
         }
     }
-    err = cbor_encoder_close_container(&encoder, &map);
-    if (err != CborNoError) {
-        NABTO_LOG_ERROR(LOG, "Failed to close service map: %d", err);
+
+    if (cbor_err_not_oom(cbor_encoder_close_container(&encoder, &map))) {
+        NABTO_LOG_ERROR(LOG, "Failed to close service map");
         return 0;
     }
     return cbor_encoder_get_extra_bytes_needed(&encoder);

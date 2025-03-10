@@ -80,27 +80,14 @@ size_t encode_request(const char* identifier, uint8_t* buffer, size_t bufferSize
     CborEncoder encoder;
     cbor_encoder_init(&encoder, buffer, bufferSize, 0);
     CborEncoder map;
-    CborError err = cbor_encoder_create_map(&encoder, &map, CborIndefiniteLength);
-    if (err != CborNoError) {
-        NABTO_LOG_ERROR(LOG, "Failed to create CBOR map: %d", err);
+    if (nc_cbor_err_not_oom(cbor_encoder_create_map(&encoder, &map, CborIndefiniteLength)) ||
+        nc_cbor_err_not_oom(cbor_encode_text_stringz(&map, "Identifier")) ||
+        nc_cbor_err_not_oom(cbor_encode_text_stringz(&map, identifier)) ||
+        nc_cbor_err_not_oom(cbor_encoder_close_container(&encoder, &map))) {
+        NABTO_LOG_ERROR(LOG, "Failed to encode Cbor request");
         return 0;
     }
 
-    err = cbor_encode_text_stringz(&map, "Identifier");
-    if (err != CborNoError) {
-        NABTO_LOG_ERROR(LOG, "Failed to encode 'Identifier' key: %d", err);
-        return 0;
-    }
-    err = cbor_encode_text_stringz(&map, identifier);
-    if (err != CborNoError) {
-        NABTO_LOG_ERROR(LOG, "Failed to encode identifier value: %d", err);
-        return 0;
-    }
-    err = cbor_encoder_close_container(&encoder, &map);
-    if (err != CborNoError) {
-        NABTO_LOG_ERROR(LOG, "Failed to close CBOR map: %d", err);
-        return 0;
-    }
     return cbor_encoder_get_extra_bytes_needed(&encoder);
 }
 
@@ -170,13 +157,8 @@ bool parse_response(const uint8_t* buffer, size_t bufferSize, struct nc_attacher
         NABTO_LOG_INFO(LOG, "cbor_parser_init failed: %d", err);
         return false;
     }
-    if (!cbor_value_is_array(&root)) {
+    if (!cbor_value_is_array(&root) || cbor_value_enter_container(&root, &it) != CborNoError) {
         NABTO_LOG_INFO(LOG, "root is not array");
-        return false;
-    }
-    err = cbor_value_enter_container(&root, &it);
-    if (err != CborNoError) {
-        NABTO_LOG_INFO(LOG, "Failed to enter root container: %d", err);
         return false;
     }
 
@@ -189,91 +171,60 @@ bool parse_response(const uint8_t* buffer, size_t bufferSize, struct nc_attacher
             NABTO_LOG_INFO(LOG, "Array element not a map");
         }
 
-        err = cbor_value_map_find_value(&it, "Username", &username);
-        if (err != CborNoError) {
-            NABTO_LOG_INFO(LOG, "Failed to find 'Username': %d", err);
+        if (cbor_value_map_find_value(&it, "Username", &username) != CborNoError ||
+            cbor_value_map_find_value(&it, "Credential", &credential) != CborNoError) {
+                NABTO_LOG_TRACE(LOG, "Failed to parse Ice Server Username/Credential");
         }
-        err = cbor_value_map_find_value(&it, "Credential", &credential);
-        if (err != CborNoError) {
-            NABTO_LOG_INFO(LOG, "Failed to find 'Credential': %d", err);
-        }
-        err = cbor_value_map_find_value(&it, "Urls", &urls);
-        if (err != CborNoError) {
-            NABTO_LOG_INFO(LOG, "Failed to find 'Urls': %d", err);
+
+        if (cbor_value_map_find_value(&it, "Urls", &urls) != CborNoError) {
+            NABTO_LOG_ERROR(LOG, "Failed to find ICE server Urls");
+            return false;
         }
 
         struct nc_attacher_ice_server server;
         memset(&server, 0, sizeof(struct nc_attacher_ice_server));
 
-        CborError err2;
-        if (!nc_cbor_copy_text_string(&username, &server.username, 4096)) {
-            NABTO_LOG_INFO(LOG, "Failed to copy 'Username'");
+        if (!nc_cbor_copy_text_string(&username, &server.username, 4096) ||
+            !nc_cbor_copy_text_string(&credential, &server.credential, 4096)) {
+            NABTO_LOG_TRACE(LOG, "Failed to copy 'Username'/'Credential'");
         }
-        if (!nc_cbor_copy_text_string(&credential, &server.credential, 4096)) {
-            NABTO_LOG_INFO(LOG, "Failed to copy 'Credential'");
-        }
-        if (!cbor_value_is_array(&urls)) {
-            ice_server_clean(&server);
-            NABTO_LOG_INFO(LOG, "'Urls' is not an array");
-            return false;
-        }
-        err = cbor_value_enter_container(&urls, &it); // reuse 'it' for inner container
-        if (err != CborNoError) {
-            ice_server_clean(&server);
-            NABTO_LOG_INFO(LOG, "Failed to enter 'Urls' container: %d", err);
-            return false;
-        }
+
         CborValue urlsIt;
-        err = cbor_value_enter_container(&urls, &urlsIt);
-        if (err != CborNoError) {
+
+        if (!cbor_value_is_array(&urls) ||
+            cbor_value_enter_container(&urls, &urlsIt) != CborNoError)
+        {
             ice_server_clean(&server);
-            NABTO_LOG_INFO(LOG, "Failed to enter 'Urls' array: %d", err);
+            NABTO_LOG_INFO(LOG, "Failed to get username, credential, or urls");
             return false;
         }
+
         nn_vector_init(&server.urls, sizeof(char*), np_allocator_get());
         while (!cbor_value_at_end(&urlsIt)) {
             char * url = NULL;
-            if (!nc_cbor_copy_text_string(&urlsIt, &url, 4096)) {
+            if (!nc_cbor_copy_text_string(&urlsIt, &url, 4096) ||
+                !nn_vector_push_back(&server.urls, &url) ||
+                cbor_value_advance(&urlsIt) != CborNoError)
+            {
                 ice_server_clean(&server);
-                NABTO_LOG_INFO(LOG, "Failed to copy url");
-                return false;
-            }
-            if (!nn_vector_push_back(&server.urls, &url)) {
-                ice_server_clean(&server);
-                NABTO_LOG_INFO(LOG, "Failed to push url to vector");
-                return false;
-            }
-            err = cbor_value_advance(&urlsIt);
-            if (err != CborNoError) {
-                ice_server_clean(&server);
-                NABTO_LOG_INFO(LOG, "Failed to advance urls iterator: %d", err);
+                NABTO_LOG_INFO(LOG, "Failed to copy url or advance iterator");
                 return false;
             }
         }
-        err = cbor_value_leave_container(&urls, &urlsIt);
-        if (err != CborNoError) {
-            NABTO_LOG_INFO(LOG, "Failed to leave 'Urls' container: %d", err);
+        if (cbor_value_leave_container(&urls, &urlsIt) != CborNoError ||
+            cbor_value_advance(&it) != CborNoError)
+        {
+            NABTO_LOG_INFO(LOG, "Failed to leave containers or advance iterator");
             ice_server_clean(&server);
             return false;
         }
-        err = cbor_value_advance(&it);
-        if (err != CborNoError) {
-            NABTO_LOG_INFO(LOG, "Failed to advance iterator: %d", err);
-            ice_server_clean(&server);
-            return false;
-        }
-        if (!nn_vector_push_back(&ctx->iceServers, &server)) {
-            NABTO_LOG_INFO(LOG, "Failed to push server to vector");
-            ice_server_clean(&server);
-            return false;
-        }
+        nn_vector_push_back(&ctx->iceServers, &server);
     }
 
-    err = cbor_value_leave_container(&root, &it);
-    if (err != CborNoError) {
-        NABTO_LOG_INFO(LOG, "Could not leave the root container: %d", err);
+    if (cbor_value_leave_container(&root, &it) != CborNoError) {
+        // Server was pushed to the vector, so it will be clean up by deinit
+        NABTO_LOG_INFO(LOG, "Could not leave the root container");
         return false;
     }
 
-    return true;
-}
+    return true;}
