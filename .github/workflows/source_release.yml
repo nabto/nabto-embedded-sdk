@@ -25,6 +25,7 @@ jobs:
         with:
           name: source
           path: ${{ github.workspace }}/artifacts/nabto-embedded-sdk.zip
+          overwrite: true
 
   release-assets:
     timeout-minutes: 20

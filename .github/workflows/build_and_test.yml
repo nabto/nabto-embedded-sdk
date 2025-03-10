@@ -60,3 +60,4 @@ jobs:
           name: artifacts_${{ matrix.workflow.name }}
           path: ${{ github.workspace }}/artifacts
           if-no-files-found: warn
+          overwrite: true

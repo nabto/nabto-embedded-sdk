@@ -77,6 +77,7 @@ jobs:
             ${{ github.workspace }}/artifacts/bin/tcp_tunnel_device_${{matrix.friendly_name}}${{ matrix.exe_postfix }}
             ${{ github.workspace }}/artifacts/bin/thermostat_device_${{matrix.friendly_name}}${{ matrix.exe_postfix }}
           if-no-files-found: error
+          overwrite: true
 
   build-linux-arm:
     timeout-minutes: 20
@@ -140,6 +141,7 @@ jobs:
           ${{ github.workspace }}/artifacts/bin/tcp_tunnel_device_linux_${{matrix.arch}}
           ${{ github.workspace }}/artifacts/bin/thermostat_device_linux_${{matrix.arch}}
         if-no-files-found: error
+        overwrite: true
 
 
   upload-artifacts:
