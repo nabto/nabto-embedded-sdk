@@ -156,30 +156,14 @@ enum nc_attacher_status coap_attach_start_handle_response(
     CborParser parser;
     CborValue root;
     CborValue status;
-    CborError err;
-    if ((err = cbor_parser_init(payload, payloadSize, 0, &parser, &root)) != CborNoError) {
-        NABTO_LOG_ERROR(LOG, "cbor_parser_init failed: %d", err);
-        return NC_ATTACHER_STATUS_ERROR;
-    }
-
-    if (!cbor_value_is_map(&root)) {
-        NABTO_LOG_ERROR(LOG, "Invalid coap response format");
-        return NC_ATTACHER_STATUS_ERROR;
-    }
-
-    if ((err = cbor_value_map_find_value(&root, "Status", &status)) != CborNoError) {
-        NABTO_LOG_ERROR(LOG, "cbor_value_map_find_value for Status failed: %d", err);
-        return NC_ATTACHER_STATUS_ERROR;
-    }
-
-    if (!cbor_value_is_unsigned_integer(&status)) {
-        NABTO_LOG_ERROR(LOG, "Status not an integer");
-        return NC_ATTACHER_STATUS_ERROR;
-    }
-
     uint64_t s;
-    if ((err = cbor_value_get_uint64(&status, &s)) != CborNoError) {
-        NABTO_LOG_ERROR(LOG, "cbor_value_get_uint64 for Status failed: %d", err);
+
+    if (cbor_parser_init(payload, payloadSize, 0, &parser, &root) != CborNoError ||
+        !cbor_value_is_map(&root) ||
+        cbor_value_map_find_value(&root, "Status", &status) != CborNoError ||
+        !cbor_value_is_unsigned_integer(&status) ||
+        cbor_value_get_uint64(&status, &s) != CborNoError) {
+        NABTO_LOG_ERROR(LOG, "failed to parse response payload");
         return NC_ATTACHER_STATUS_ERROR;
     }
 
@@ -197,7 +181,6 @@ enum nc_attacher_status coap_attach_start_handle_response(
 enum nc_attacher_status handle_attached(struct nc_attach_context* ctx,
                                         CborValue* root)
 {
-    CborError err;
     CborValue keepAlive;
     if (cbor_value_map_find_value(root, "KeepAlive", &keepAlive) == CborNoError
         && cbor_value_is_map(&keepAlive)) { // TODO: remember else
@@ -231,8 +214,8 @@ enum nc_attacher_status handle_attached(struct nc_attach_context* ctx,
     }
 
     CborValue stun;
-    if ((err = cbor_value_map_find_value(root, "Stun", &stun)) != CborNoError) {
-        NABTO_LOG_ERROR(LOG, "cbor_value_map_find_value for Stun failed: %d", err);
+    if (cbor_value_map_find_value(root, "Stun", &stun) != CborNoError) {
+        NABTO_LOG_ERROR(LOG, "cbor_value_map_find_value for Stun failed");
     } else if (cbor_value_is_map(&stun)) {
         CborValue host;
         CborValue port;
@@ -274,7 +257,6 @@ enum nc_attacher_status handle_attached(struct nc_attach_context* ctx,
 enum nc_attacher_status handle_redirect(struct nc_attach_context* ctx,
                                         CborValue* root)
 {
-    CborError err;
     CborValue host;
     CborValue port;
     CborValue fingerprint;
@@ -312,8 +294,8 @@ enum nc_attacher_status handle_redirect(struct nc_attach_context* ctx,
             NABTO_LOG_ERROR(LOG, "Out of memory when handling redirect.");
             return NC_ATTACHER_STATUS_ERROR;
         }
-        if ((err = cbor_value_copy_text_string(&host, ctx->dns, &hostLength, NULL)) != CborNoError) {
-            NABTO_LOG_ERROR(LOG, "cbor_value_copy_text_string for redirect host failed: %d", err);
+        if (cbor_value_copy_text_string(&host, ctx->dns, &hostLength, NULL) != CborNoError) {
+            NABTO_LOG_ERROR(LOG, "cbor_value_copy_text_string for redirect host failed");
             free(ctx->dns);
             ctx->dns = NULL;
             return NC_ATTACHER_STATUS_ERROR;
