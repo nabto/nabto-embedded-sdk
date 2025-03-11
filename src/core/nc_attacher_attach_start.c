@@ -183,7 +183,7 @@ enum nc_attacher_status handle_attached(struct nc_attach_context* ctx,
 {
     CborValue keepAlive;
     if (cbor_value_map_find_value(root, "KeepAlive", &keepAlive) == CborNoError
-        && cbor_value_is_map(&keepAlive)) { // TODO: remember else
+        && cbor_value_is_map(&keepAlive)) {
         CborValue interval;
         CborValue retryInterval;
         CborValue maxRetries;
