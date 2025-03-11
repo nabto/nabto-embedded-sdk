@@ -23,9 +23,9 @@ jobs:
           - os: windows-2022
             name: "windows_vcpkg_static"
 
-          - os: macos-12
+          - os: macos-15
             name: mac_vcpkg_x86_64
-          - os: macos-12
+          - os: macos-15
             name: mac_fetchcontent_universal
 
     steps:
@@ -37,7 +37,7 @@ jobs:
         name: Install Ninja
         run: sudo apt-get update && sudo apt-get install -y ninja-build
 
-      - if: matrix.workflow.os == 'macos-12'
+      - if: matrix.workflow.os == 'macos-15'
         name: Install Ninja
         run: brew install ninja
 
