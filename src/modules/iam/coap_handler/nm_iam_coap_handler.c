@@ -123,7 +123,13 @@ bool nm_iam_cbor_init_parser(NabtoDeviceCoapRequest* request, CborParser* parser
         nabto_device_coap_error_response(request, 400, "Missing payload");
         return false;
     }
-    cbor_parser_init((const uint8_t*)payload, payloadSize, 0, parser, cborValue);
+    {
+        CborError err = cbor_parser_init((const uint8_t*)payload, payloadSize, 0, parser, cborValue);
+        if (err != CborNoError) {
+            nabto_device_coap_error_response(request, 400, "CBOR parsing error");
+            return false;
+        }
+    }
     return true;
 }
 
@@ -132,15 +138,21 @@ bool nm_iam_cbor_decode_string(CborValue* value, char** str)
 {
     if (cbor_value_is_text_string(value)) {
         size_t nameLength;
-        cbor_value_calculate_string_length (value, &nameLength);
+        CborError err = cbor_value_calculate_string_length(value, &nameLength);
+        if (err != CborNoError) {
+            return false;
+        }
         if (nameLength < 1024) {
             *str = nm_iam_calloc(1, nameLength+1);
             if (*str == NULL) {
                 return false;
             }
             size_t copySize = nameLength;
-            if (cbor_value_copy_text_string (value, *str, &copySize, NULL) == CborNoError) {
+            if (cbor_value_copy_text_string(value, *str, &copySize, NULL) == CborNoError) {
                 return true;
+            } else {
+                nm_iam_free(*str);
+                *str = NULL;
             }
         }
     } else if (cbor_value_is_null(value)) {
@@ -156,7 +168,9 @@ bool nm_iam_cbor_decode_string_set(CborValue* value, struct nn_string_set* set)
         return false;
     }
     CborValue item;
-    cbor_value_enter_container(value, &item);
+    if (cbor_value_enter_container(value, &item) != CborNoError) {
+        return false;
+    }
     while(!cbor_value_at_end(&item)) {
         char* s = NULL;
         if (nm_iam_cbor_decode_string(&item, &s) && nn_string_set_insert(set, s)) {
@@ -165,7 +179,9 @@ bool nm_iam_cbor_decode_string_set(CborValue* value, struct nn_string_set* set)
             nm_iam_free(s);
             return false;
         }
-        cbor_value_advance(&item);
+        if (cbor_value_advance(&item) != CborNoError) {
+            return false;
+        }
     }
     return true;
 }
@@ -187,7 +203,9 @@ bool nm_iam_cbor_decode_kv_string(CborValue* map, const char* key, char** str)
         return false;
     }
     CborValue nameValue;
-    cbor_value_map_find_value(map, key, &nameValue);
+    if (cbor_value_map_find_value(map, key, &nameValue) != CborNoError) {
+        return false;
+    }
     return nm_iam_cbor_decode_string(&nameValue, str);
 }
 
@@ -196,84 +214,132 @@ size_t nm_iam_cbor_encode_user(struct nm_iam_user* user, void* buffer, size_t bu
     CborEncoder encoder;
     cbor_encoder_init(&encoder, buffer, bufferSize, 0);
     CborEncoder map;
-    cbor_encoder_create_map(&encoder, &map, CborIndefiniteLength);
 
-    cbor_encode_text_stringz(&map, "Username");
-    cbor_encode_text_stringz(&map, user->username);
+    if (nm_iam_cbor_err_not_oom(cbor_encoder_create_map(&encoder, &map, CborIndefiniteLength)) ||
+        nm_iam_cbor_err_not_oom(cbor_encode_text_stringz(&map, "Username")) ||
+        nm_iam_cbor_err_not_oom(cbor_encode_text_stringz(&map, user->username))) {
+        return 0;
+    }
 
     if (user->displayName != NULL) {
-        cbor_encode_text_stringz(&map, "DisplayName");
-        cbor_encode_text_stringz(&map, user->displayName);
+        if (nm_iam_cbor_err_not_oom(cbor_encode_text_stringz(&map, "DisplayName")) ||
+            nm_iam_cbor_err_not_oom(cbor_encode_text_stringz(&map, user->displayName))) {
+            return 0;
+        }
     }
 
     if (user->role != NULL) {
-        cbor_encode_text_stringz(&map, "Role");
-        cbor_encode_text_stringz(&map, user->role);
+        if (nm_iam_cbor_err_not_oom(cbor_encode_text_stringz(&map, "Role")) ||
+            nm_iam_cbor_err_not_oom(cbor_encode_text_stringz(&map, user->role))) {
+            return 0;
+        }
     }
 
     {
         char* legacyFp = NULL;
-        cbor_encode_text_stringz(&map, "Fingerprints");
         CborEncoder array;
-        cbor_encoder_create_array(&map, &array, CborIndefiniteLength);
+
+
+        if (nm_iam_cbor_err_not_oom(cbor_encode_text_stringz(&map, "Fingerprints")) ||
+            nm_iam_cbor_err_not_oom(cbor_encoder_create_array(&map, &array, CborIndefiniteLength))) {
+            return 0;
+        }
         struct nm_iam_user_fingerprint* fp;
         NN_LLIST_FOREACH(fp, &user->fingerprints) {
             CborEncoder fpMap;
-            cbor_encoder_create_map(&array, &fpMap, CborIndefiniteLength);
-            cbor_encode_text_stringz(&fpMap, "Fingerprint");
-            cbor_encode_text_stringz(&fpMap, fp->fingerprint);
+
+            if (nm_iam_cbor_err_not_oom(cbor_encoder_create_map(&array, &fpMap, CborIndefiniteLength)) ||
+                nm_iam_cbor_err_not_oom(cbor_encode_text_stringz(&fpMap, "Fingerprint")) ||
+                nm_iam_cbor_err_not_oom(cbor_encode_text_stringz(&fpMap, fp->fingerprint))) {
+                return 0;
+            }
+
             legacyFp = fp->fingerprint;
             if (fp->name != NULL) {
-                cbor_encode_text_stringz(&fpMap, "Name");
-                cbor_encode_text_stringz(&fpMap, fp->name);
+                if (nm_iam_cbor_err_not_oom(cbor_encode_text_stringz(&fpMap, "Name")) ||
+                    nm_iam_cbor_err_not_oom(cbor_encode_text_stringz(&fpMap, fp->name))) {
+                    return 0;
+                }
             }
-            cbor_encoder_close_container(&array, &fpMap);
+            if(nm_iam_cbor_err_not_oom(cbor_encoder_close_container(&array, &fpMap))) {
+                return 0;
+            }
         }
-        cbor_encoder_close_container(&map, &array);
+        if(nm_iam_cbor_err_not_oom(cbor_encoder_close_container(&map, &array))) {
+            return 0;
+        }
         if (legacyFp) {
-            cbor_encode_text_stringz(&map, "Fingerprint");
-            cbor_encode_text_stringz(&map, legacyFp);
+            if (nm_iam_cbor_err_not_oom(cbor_encode_text_stringz(&map, "Fingerprint")) ||
+                nm_iam_cbor_err_not_oom(cbor_encode_text_stringz(&map, legacyFp))) {
+                return 0;
+            }
         }
     }
 
     if (user->sct != NULL) {
-        cbor_encode_text_stringz(&map, "Sct");
-        cbor_encode_text_stringz(&map, user->sct);
+        if (nm_iam_cbor_err_not_oom(cbor_encode_text_stringz(&map, "Sct")) ||
+            nm_iam_cbor_err_not_oom(cbor_encode_text_stringz(&map, user->sct))) {
+            return 0;
+        }
     }
 
     if (user->fcmToken != NULL || user->fcmProjectId != NULL) {
 
-        cbor_encode_text_stringz(&map, "Fcm");
         CborEncoder fcm;
-        cbor_encoder_create_map(&map, &fcm, CborIndefiniteLength);
+        if (nm_iam_cbor_err_not_oom(cbor_encode_text_stringz(&map, "Fcm")) ||
+            nm_iam_cbor_err_not_oom(cbor_encoder_create_map(&map, &fcm, CborIndefiniteLength))) {
+            return 0;
+        }
         if (user->fcmToken != NULL) {
-            cbor_encode_text_stringz(&fcm, "Token");
-            cbor_encode_text_stringz(&fcm, user->fcmToken);
+            if (nm_iam_cbor_err_not_oom(cbor_encode_text_stringz(&fcm, "Token")) ||
+                nm_iam_cbor_err_not_oom(cbor_encode_text_stringz(&fcm, user->fcmToken))) {
+                return 0;
+            }
         }
         if (user->fcmProjectId != NULL) {
-            cbor_encode_text_stringz(&fcm, "ProjectId");
-            cbor_encode_text_stringz(&fcm, user->fcmProjectId);
+            if (nm_iam_cbor_err_not_oom(cbor_encode_text_stringz(&fcm, "ProjectId")) ||
+                nm_iam_cbor_err_not_oom(cbor_encode_text_stringz(&fcm, user->fcmProjectId))) {
+                return 0;
+            }
         }
-        cbor_encoder_close_container(&map, &fcm);
+        if(nm_iam_cbor_err_not_oom(cbor_encoder_close_container(&map, &fcm))) {
+            return 0;
+        }
     }
 
     {
-        cbor_encode_text_stringz(&map, "NotificationCategories");
         CborEncoder array;
-        cbor_encoder_create_array(&map, &array, CborIndefiniteLength);
+        if (nm_iam_cbor_err_not_oom(cbor_encode_text_stringz(&map, "NotificationCategories")) ||
+            nm_iam_cbor_err_not_oom(cbor_encoder_create_array(&map, &array, CborIndefiniteLength))) {
+            return 0;
+        }
         const char* c;
         NN_STRING_SET_FOREACH(c, &user->notificationCategories) {
-            cbor_encode_text_stringz(&array, c);
+            if(nm_iam_cbor_err_not_oom(cbor_encode_text_stringz(&array, c))) {
+                return 0;
+            }
         }
-        cbor_encoder_close_container(&map, &array);
+        if(nm_iam_cbor_err_not_oom(cbor_encoder_close_container(&map, &array))) {
+            return 0;
+        }
     }
 
     if (user->oauthSubject != NULL) {
-        cbor_encode_text_stringz(&map, "OauthSubject");
-        cbor_encode_text_stringz(&map, user->oauthSubject);
+        if (nm_iam_cbor_err_not_oom(cbor_encode_text_stringz(&map, "OauthSubject")) ||
+            nm_iam_cbor_err_not_oom(cbor_encode_text_stringz(&map, user->oauthSubject))) {
+            return 0;
+        }
     }
 
-    cbor_encoder_close_container(&encoder, &map);
+    if(nm_iam_cbor_err_not_oom(cbor_encoder_close_container(&encoder, &map))) {
+        return 0;
+    }
 
     return cbor_encoder_get_extra_bytes_needed(&encoder);
+}
+
+
+bool nm_iam_cbor_err_not_oom(CborError e) {
+    // Cbor errors can be bitwise or'ed with other errors
+    return (e & ~CborErrorOutOfMemory) != CborNoError;
 }

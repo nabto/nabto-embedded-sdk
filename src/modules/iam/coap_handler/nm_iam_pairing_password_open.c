@@ -67,29 +67,36 @@ void handle_request(struct nm_iam_coap_handler* handler,
         // uses a 5.1 client. This is not suported any more.
         nabto_device_coap_error_response(
             request, 400, "5.1 clients are not supported for password pairing");
-    } else {
-        nm_iam_cbor_decode_kv_string(&value, "Username", &username);
-        nm_iam_cbor_decode_kv_string(&value, "FingerprintName", &fpName);
+        nm_iam_free(password);
+        return;
+    }
 
-        if (username == NULL) {
-            nabto_device_coap_error_response(request, 400, "Username missing");
-        } else {
-            enum nm_iam_error e = nm_iam_internal_pair_new_client(handler->iam, username, fingerprint, fpName);
-            switch (e) {
-            case NM_IAM_ERROR_OK:
-                // OK response
-                nabto_device_coap_response_set_code(request, 201);
-                nabto_device_coap_response_ready(request);
-                break;
-            case NM_IAM_ERROR_INVALID_ARGUMENT:
-                nabto_device_coap_error_response(request, 400, "Invalid username");
-                break;
-            case NM_IAM_ERROR_USER_EXISTS:
-                nabto_device_coap_error_response(request, 409, "Conflict");
-                break;
-            default:
-                nabto_device_coap_error_response(request, 500, "Server error");
-            }
+    if (!nm_iam_cbor_decode_kv_string(&value, "Username", &username)) {
+        nabto_device_coap_error_response(request, 400, "Username missing or invalid");
+        nm_iam_free(fingerprint);
+        return;
+    }
+
+    nm_iam_cbor_decode_kv_string(&value, "FingerprintName", &fpName);
+
+    if (username == NULL) {
+        nabto_device_coap_error_response(request, 400, "Username missing");
+    } else {
+        enum nm_iam_error e = nm_iam_internal_pair_new_client(handler->iam, username, fingerprint, fpName);
+        switch (e) {
+        case NM_IAM_ERROR_OK:
+            // OK response
+            nabto_device_coap_response_set_code(request, 201);
+            nabto_device_coap_response_ready(request);
+            break;
+        case NM_IAM_ERROR_INVALID_ARGUMENT:
+            nabto_device_coap_error_response(request, 400, "Invalid username");
+            break;
+        case NM_IAM_ERROR_USER_EXISTS:
+            nabto_device_coap_error_response(request, 409, "Conflict");
+            break;
+        default:
+            nabto_device_coap_error_response(request, 500, "Server error");
         }
     }
 

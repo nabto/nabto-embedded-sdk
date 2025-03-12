@@ -40,11 +40,8 @@ void handle_request(struct nm_iam_coap_handler* handler, NabtoDeviceCoapRequest*
 
     char* username = NULL;
 
-    nm_iam_cbor_decode_kv_string(&value, "Username", &username);
-
-    if (username == NULL) {
+    if (!nm_iam_cbor_decode_kv_string(&value, "Username", &username)) {
         nabto_device_coap_error_response(request, 400, "Username missing");
-        nm_iam_free(username);
         return;
     } else if (!nm_iam_user_validate_username(username)) {
         nabto_device_coap_error_response(request, 400, "Invalid username");
@@ -63,9 +60,15 @@ void handle_request(struct nm_iam_coap_handler* handler, NabtoDeviceCoapRequest*
     }
 
     struct nm_iam_user* user = nm_iam_user_new(username);
+    if (user == NULL) {
+        nabto_device_coap_error_response(request, 500, "Insufficient resources");
+        nm_iam_free(username);
+        return;
+    }
 
     char* sct;
     if (nabto_device_create_server_connect_token(handler->iam->device, &sct) != NABTO_DEVICE_EC_OK ||
+        sct == NULL ||
         strlen(sct) > handler->iam->sctMaxLength ||
         !nm_iam_user_set_sct(user, sct)) {
 

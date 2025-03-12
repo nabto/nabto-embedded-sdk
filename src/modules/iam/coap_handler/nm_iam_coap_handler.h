@@ -82,6 +82,8 @@ bool nm_iam_cbor_decode_string_set(CborValue* value, struct nn_string_set* set);
 bool nm_iam_cbor_decode_bool(CborValue* value, bool* b);
 bool nm_iam_cbor_decode_kv_string(CborValue* map, const char* key, char** str);
 
+bool nm_iam_cbor_err_not_oom(CborError e);
+
 // used from GET /iam/users/:user and GET /iam/me
 size_t nm_iam_cbor_encode_user(struct nm_iam_user* user, void* buffer, size_t bufferSize);
 

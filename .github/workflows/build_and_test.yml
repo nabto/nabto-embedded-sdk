@@ -23,9 +23,9 @@ jobs:
           - os: windows-2022
             name: "windows_vcpkg_static"
 
-          - os: macos-12
+          - os: macos-15
             name: mac_vcpkg_x86_64
-          - os: macos-12
+          - os: macos-15
             name: mac_fetchcontent_universal
 
     steps:
@@ -37,7 +37,7 @@ jobs:
         name: Install Ninja
         run: sudo apt-get update && sudo apt-get install -y ninja-build
 
-      - if: matrix.workflow.os == 'macos-12'
+      - if: matrix.workflow.os == 'macos-15'
         name: Install Ninja
         run: brew install ninja
 
@@ -55,8 +55,9 @@ jobs:
         run: ${{ github.workspace }}/build/${{ matrix.workflow.name }}/install/bin/embedded_unit_test -l test_suite --detect_memory_leaks=0
 
       - name: Upload artifacts
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: artifacts_${{ matrix.workflow.name }}
           path: ${{ github.workspace }}/artifacts
           if-no-files-found: warn
+          overwrite: true

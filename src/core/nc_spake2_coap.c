@@ -51,14 +51,18 @@ static bool read_username_and_password(struct nc_spake2_password_request* passwo
 {
     CborParser parser;
     CborValue map;
-    cbor_parser_init(payload, payloadLength, 0, &parser, &map);
+    if (cbor_parser_init(payload, payloadLength, 0, &parser, &map) != CborNoError) {
+        return false;
+    }
 
     // Read Username
     // Read T
     CborValue username;
     CborValue T;
-    cbor_value_map_find_value(&map, "Username", &username);
-    cbor_value_map_find_value(&map, "T", &T);
+    if (cbor_value_map_find_value(&map, "Username", &username) != CborNoError ||
+        cbor_value_map_find_value(&map, "T", &T) != CborNoError) {
+        return false;
+    }
 
     if (!nc_cbor_copy_text_string(&username, &passwordRequest->username,
                                   4096) ||

@@ -16,7 +16,6 @@ static void coap_handler(struct nabto_coap_client_request* request, void* data);
 size_t encode_request(const char* identifier, uint8_t* buffer, size_t bufferSize);
 bool parse_response(const uint8_t* buffer, size_t bufferSize, struct nc_attacher_request_ice_servers_context* ctx);
 
-
 static const char* coapPath[] = { "device", "ice-servers" };
 
 static void ice_server_clean(struct nc_attacher_ice_server* server) {
@@ -27,7 +26,6 @@ static void ice_server_clean(struct nc_attacher_ice_server* server) {
         nn_vector_deinit(&server->urls);
         np_free(server->username);
         np_free(server->credential);
-
 }
 
 void nc_attacher_ice_servers_ctx_init(struct nc_attacher_request_ice_servers_context* ctx, struct nc_attach_context* attacher) {
@@ -47,9 +45,7 @@ void nc_attacher_ice_servers_ctx_deinit(struct nc_attacher_request_ice_servers_c
     }
     nn_vector_deinit(&ctx->iceServers);
     nabto_coap_client_request_free(ctx->coapRequest);
-
 }
-
 
 np_error_code nc_attacher_request_ice_servers(struct nc_attacher_request_ice_servers_context* ctx, const char* identifier, nc_attacher_request_ice_servers_callback cb, void* userData)
 {
@@ -84,14 +80,15 @@ size_t encode_request(const char* identifier, uint8_t* buffer, size_t bufferSize
     CborEncoder encoder;
     cbor_encoder_init(&encoder, buffer, bufferSize, 0);
     CborEncoder map;
-    cbor_encoder_create_map(&encoder, &map, CborIndefiniteLength);
-
-    cbor_encode_text_stringz(&map, "Identifier");
-    cbor_encode_text_stringz(&map, identifier);
-    cbor_encoder_close_container(&encoder, &map);
+    if (nc_cbor_err_not_oom(cbor_encoder_create_map(&encoder, &map, CborIndefiniteLength)) ||
+        nc_cbor_err_not_oom(cbor_encode_text_stringz(&map, "Identifier")) ||
+        nc_cbor_err_not_oom(cbor_encode_text_stringz(&map, identifier)) ||
+        nc_cbor_err_not_oom(cbor_encoder_close_container(&encoder, &map))) {
+        NABTO_LOG_ERROR(LOG, "Failed to encode Cbor request");
+        return 0;
+    }
 
     return cbor_encoder_get_extra_bytes_needed(&encoder);
-
 }
 
 static void coap_handler(struct nabto_coap_client_request* request, void* data)
@@ -142,7 +139,7 @@ static void coap_handler(struct nabto_coap_client_request* request, void* data)
                 ec = NABTO_EC_OK;
             }
             else {
-                NABTO_LOG_ERROR(LOG, "Could not parse cbor response from basestation");
+                NABTO_LOG_ERROR(LOG, "Could not parse CBOR response from basestation");
                 ec = NABTO_EC_BAD_RESPONSE;
             }
         }
@@ -155,10 +152,12 @@ bool parse_response(const uint8_t* buffer, size_t bufferSize, struct nc_attacher
     CborParser parser;
     CborValue root;
     CborValue it;
-
-    cbor_parser_init(buffer, bufferSize, 0, &parser, &root);
-    if (!cbor_value_is_array(&root) ||
-        cbor_value_enter_container(&root, &it) != CborNoError) {
+    CborError err = cbor_parser_init(buffer, bufferSize, 0, &parser, &root);
+    if (err != CborNoError) {
+        NABTO_LOG_INFO(LOG, "cbor_parser_init failed: %d", err);
+        return false;
+    }
+    if (!cbor_value_is_array(&root) || cbor_value_enter_container(&root, &it) != CborNoError) {
         NABTO_LOG_INFO(LOG, "root is not array");
         return false;
     }
@@ -168,21 +167,30 @@ bool parse_response(const uint8_t* buffer, size_t bufferSize, struct nc_attacher
         CborValue credential;
         CborValue urls;
 
-
         if (!cbor_value_is_map(&it)) {
             NABTO_LOG_INFO(LOG, "Array element not a map");
         }
 
-        cbor_value_map_find_value(&it, "Username", &username);
-        cbor_value_map_find_value(&it, "Credential", &credential);
-        cbor_value_map_find_value(&it, "Urls", &urls);
+        if (cbor_value_map_find_value(&it, "Username", &username) != CborNoError ||
+            cbor_value_map_find_value(&it, "Credential", &credential) != CborNoError) {
+                NABTO_LOG_TRACE(LOG, "Failed to parse Ice Server Username/Credential");
+        }
+
+        if (cbor_value_map_find_value(&it, "Urls", &urls) != CborNoError) {
+            NABTO_LOG_ERROR(LOG, "Failed to find ICE server Urls");
+            return false;
+        }
 
         struct nc_attacher_ice_server server;
         memset(&server, 0, sizeof(struct nc_attacher_ice_server));
 
+        if (!nc_cbor_copy_text_string(&username, &server.username, 4096) ||
+            !nc_cbor_copy_text_string(&credential, &server.credential, 4096)) {
+            NABTO_LOG_TRACE(LOG, "Failed to copy 'Username'/'Credential'");
+        }
+
         CborValue urlsIt;
-        nc_cbor_copy_text_string(&username, &server.username, 4096);
-        nc_cbor_copy_text_string(&credential, &server.credential, 4096);
+
         if (!cbor_value_is_array(&urls) ||
             cbor_value_enter_container(&urls, &urlsIt) != CborNoError)
         {
@@ -219,6 +227,4 @@ bool parse_response(const uint8_t* buffer, size_t bufferSize, struct nc_attacher
         return false;
     }
 
-    return true;
-
-}
+    return true;}

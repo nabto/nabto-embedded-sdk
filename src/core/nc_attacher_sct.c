@@ -1,4 +1,3 @@
-
 #include "nc_attacher.h"
 
 #include <core/nc_coap.h>
@@ -45,7 +44,7 @@ np_error_code nc_attacher_sct_upload(struct nc_attach_context* attacher, nc_atta
     {
         CborEncoder encoder;
         cbor_encoder_init(&encoder, buffer, bufferSize, 0);
-        encode_scts(&encoder, &sctCtx->scts);
+        (void)encode_scts(&encoder, &sctCtx->scts);
     }
 
     struct nabto_coap_client_request* req;
@@ -100,13 +99,26 @@ void sct_request_handler(struct nabto_coap_client_request* request, void* userDa
 size_t encode_scts(CborEncoder* encoder, struct nn_string_set* scts)
 {
     CborEncoder array;
-    cbor_encoder_create_array(encoder, &array, CborIndefiniteLength);
+    CborError err = cbor_encoder_create_array(encoder, &array, CborIndefiniteLength);
+    if (err != CborNoError) {
+        NABTO_LOG_ERROR(LOG, "Failed to create CBOR array: %d", err);
+        return 0;
+    }
 
     const char* str;
     NN_STRING_SET_FOREACH(str, scts) {
-        cbor_encode_text_stringz(&array, str);
+        err = cbor_encode_text_stringz(&array, str);
+        if (err != CborNoError) {
+            NABTO_LOG_ERROR(LOG, "Failed to encode text string '%s': %d", str, err);
+            cbor_encoder_close_container(encoder, &array);
+            return 0;
+        }
     }
-    cbor_encoder_close_container(encoder, &array);
+    err = cbor_encoder_close_container(encoder, &array);
+    if (err != CborNoError) {
+        NABTO_LOG_ERROR(LOG, "Failed to close CBOR array container: %d", err);
+        return 0;
+    }
 
     return cbor_encoder_get_extra_bytes_needed(encoder);
 }

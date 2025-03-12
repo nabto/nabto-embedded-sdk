@@ -28,6 +28,7 @@ void handle_request(struct nm_iam_coap_handler* handler, NabtoDeviceCoapRequest*
     struct nn_string_set categories;
     nn_string_set_init(&categories, nm_iam_allocator_get());
     if (!nm_iam_cbor_decode_string_set(&value, &categories)) {
+        nn_string_set_deinit(&categories); // Free resources on failure
         nabto_device_coap_error_response(request, 400, "Bad request");
         return;
     }

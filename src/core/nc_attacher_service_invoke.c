@@ -115,15 +115,15 @@ size_t encode_request(struct nc_attacher_service_invoke_request* request, uint8_
     CborEncoder encoder;
     cbor_encoder_init(&encoder, buffer, bufferSize, 0);
     CborEncoder map;
-    cbor_encoder_create_map(&encoder, &map, CborIndefiniteLength);
-
-    cbor_encode_text_stringz(&map, "ServiceId");
-    cbor_encode_text_stringz(&map, request->serviceId);
-
-    cbor_encode_text_stringz(&map, "Message");
-    cbor_encode_byte_string(&map, request->message, request->messageLength);
-
-    cbor_encoder_close_container(&encoder, &map);
+    if (nc_cbor_err_not_oom(cbor_encoder_create_map(&encoder, &map, CborIndefiniteLength)) ||
+        nc_cbor_err_not_oom(cbor_encode_text_stringz(&map, "ServiceId")) ||
+        nc_cbor_err_not_oom(cbor_encode_text_stringz(&map, request->serviceId)) ||
+        nc_cbor_err_not_oom(cbor_encode_text_stringz(&map, "Message")) ||
+        nc_cbor_err_not_oom(cbor_encode_byte_string(&map, request->message, request->messageLength)) ||
+        nc_cbor_err_not_oom(cbor_encoder_close_container(&encoder, &map))) {
+            NABTO_LOG_ERROR(LOG, "Failed to encode SCT Cbor request");
+        return 0;
+    }
 
     return cbor_encoder_get_extra_bytes_needed(&encoder);
 }
@@ -131,42 +131,50 @@ size_t encode_request(struct nc_attacher_service_invoke_request* request, uint8_
 bool parse_response(const uint8_t* buffer, size_t bufferSize, struct nc_attacher_service_invoke_response* response) {
     CborParser parser;
     CborValue map;
+    CborError err;
+    if (cbor_parser_init(buffer, bufferSize, 0, &parser, &map) != CborNoError ||
+        !cbor_value_is_map(&map)) {
+        NABTO_LOG_ERROR(LOG, "Invalid Cbor response");
+        return false;
+    }
     CborValue statusCode;
     CborValue message;
     CborValue messageFormat;
-    cbor_parser_init(buffer, bufferSize, 0, &parser, &map);
-    if (!cbor_value_is_map(&map)) {
-        return false;
-    }
-    cbor_value_map_find_value(&map, "StatusCode", &statusCode);
-    cbor_value_map_find_value(&map, "Message", &message);
-    cbor_value_map_find_value(&map, "MessageFormat", &messageFormat);
-
-    if (!cbor_value_is_integer(&statusCode)) {
-        return false;
-    }
     int tmp;
-    if (cbor_value_get_int(&statusCode, &tmp) != CborNoError) {
+    if (cbor_value_map_find_value(&map, "StatusCode", &statusCode) != CborNoError ||
+        cbor_value_map_find_value(&map, "Message", &message) != CborNoError ||
+        cbor_value_map_find_value(&map, "MessageFormat", &messageFormat) != CborNoError ||
+        !cbor_value_is_integer(&statusCode) != CborNoError ||
+        cbor_value_get_int(&statusCode, &tmp) != CborNoError) {
+        NABTO_LOG_ERROR(LOG, "Parse Cbor response");
         return false;
     }
+
     response->statusCode = (uint16_t)tmp;
 
-    // if messageFormat exists, use as intented. If not we assume the
+    // if messageFormat exists, use as intended. If not we assume the
     // basestation uses old format, and set messageFormat to BINARY
-    if (cbor_value_is_integer(&messageFormat) &&
-        cbor_value_get_int(&messageFormat, &tmp) == CborNoError) {
-        response->messageFormat =
-            (enum nc_attacher_service_invoke_message_format)tmp;
-
-        if (response->messageFormat != NC_SERVICE_INVOKE_MESSAGE_FORMAT_NONE &&
-            !nc_cbor_copy_byte_string(&message, &response->message,
-                                      &response->messageLength, 65536)) {
+    if (cbor_value_is_integer(&messageFormat)) {
+        err = cbor_value_get_int(&messageFormat, &tmp);
+        if (err != CborNoError) {
+            NABTO_LOG_ERROR(LOG, "Failed to get integer from 'MessageFormat': %d", err);
             return false;
         }
-    } else if (!nc_cbor_copy_byte_string(&message, &response->message,
-                                         &response->messageLength, 65536)) {
-        return false;
+        response->messageFormat = (enum nc_attacher_service_invoke_message_format)tmp;
+
+        if (response->messageFormat != NC_SERVICE_INVOKE_MESSAGE_FORMAT_NONE) {
+            if (!nc_cbor_copy_byte_string(&message, &response->message,
+                                      &response->messageLength, 65536)) {
+                NABTO_LOG_ERROR(LOG, "Failed to copy message byte string");
+                return false;
+            }
+        }
     } else {
+        if (!nc_cbor_copy_byte_string(&message, &response->message,
+                                         &response->messageLength, 65536)) {
+            NABTO_LOG_ERROR(LOG, "Failed to copy message byte string (default binary)");
+            return false;
+        }
         response->messageFormat = NC_SERVICE_INVOKE_MESSAGE_FORMAT_BINARY;
     }
 
