@@ -57,7 +57,6 @@ BOOST_AUTO_TEST_CASE(rendezvous_payload_v4, *boost::unit_test::timeout(300))
     jsonEp["Port"] = 4444;
     jsonPay.push_back(jsonEp);
 
-    std::cout << "EP: " << jsonPay.dump() << std::endl;
 
     auto ctx = nabto::test::RendezvousTestCtx(jsonPay);
 
@@ -76,7 +75,6 @@ BOOST_AUTO_TEST_CASE(rendezvous_payload_v6, *boost::unit_test::timeout(300))
     jsonEp["Port"] = 4444;
     jsonPay.push_back(jsonEp);
 
-    std::cout << "EP: " << jsonPay.dump() << std::endl;
     auto ctx = nabto::test::RendezvousTestCtx(jsonPay);
 
     bool ret = handle_rendezvous_payload(&ctx.ctx, &ctx.request, ctx.payload.data(), ctx.payload.size());
@@ -103,7 +101,6 @@ BOOST_AUTO_TEST_CASE(rendezvous_payload_combi, *boost::unit_test::timeout(300))
         jsonPay.push_back(jsonEp);
     }
 
-    std::cout << "EP: " << jsonPay.dump() << std::endl;
     auto ctx = nabto::test::RendezvousTestCtx(jsonPay);
 
     bool ret = handle_rendezvous_payload(&ctx.ctx, &ctx.request, ctx.payload.data(), ctx.payload.size());
@@ -121,7 +118,6 @@ BOOST_AUTO_TEST_CASE(rendezvous_payload_v4_mapped, *boost::unit_test::timeout(30
     jsonEp["Port"] = 4444;
     jsonPay.push_back(jsonEp);
 
-    std::cout << "EP: " << jsonPay.dump() << std::endl;
     auto ctx = nabto::test::RendezvousTestCtx(jsonPay);
 
     bool ret = handle_rendezvous_payload(&ctx.ctx, &ctx.request, ctx.payload.data(), ctx.payload.size());
@@ -139,7 +135,6 @@ BOOST_AUTO_TEST_CASE(rendezvous_payload_invalid, *boost::unit_test::timeout(300)
     jsonEp["Port"] = 0;
     jsonPay.push_back(jsonEp);
 
-    std::cout << "EP: " << jsonPay.dump() << std::endl;
     auto ctx = nabto::test::RendezvousTestCtx(jsonPay);
 
     bool ret = handle_rendezvous_payload(&ctx.ctx, &ctx.request, ctx.payload.data(), ctx.payload.size());
@@ -160,7 +155,6 @@ BOOST_AUTO_TEST_CASE(rendezvous_payload_invalid2, *boost::unit_test::timeout(300
 
     jsonPay.push_back(jsonArr);
 
-    std::cout << "EP: " << jsonPay.dump() << std::endl;
     auto ctx = nabto::test::RendezvousTestCtx(jsonPay);
 
     bool ret = handle_rendezvous_payload(&ctx.ctx, &ctx.request, ctx.payload.data(), ctx.payload.size());
@@ -176,7 +170,6 @@ BOOST_AUTO_TEST_CASE(rendezvous_payload_invalid3, *boost::unit_test::timeout(300
 
     jsonPay.push_back(jsonEp);
 
-    std::cout << "EP: " << jsonPay.dump() << std::endl;
     auto ctx = nabto::test::RendezvousTestCtx(jsonPay);
 
     bool ret = handle_rendezvous_payload(&ctx.ctx, &ctx.request, ctx.payload.data(), ctx.payload.size());
@@ -195,7 +188,6 @@ BOOST_AUTO_TEST_CASE(rendezvous_payload_invalid4, *boost::unit_test::timeout(300
     jsonPay.push_back(jsonEp);
     jsonPay.push_back(jsonEp);
 
-    std::cout << "EP: " << jsonPay.dump() << std::endl;
     auto ctx = nabto::test::RendezvousTestCtx(jsonPay);
 
     bool ret = handle_rendezvous_payload(&ctx.ctx, &ctx.request, ctx.payload.data(), ctx.payload.size());
@@ -214,7 +206,6 @@ BOOST_AUTO_TEST_CASE(rendezvous_payload_invalid5, *boost::unit_test::timeout(300
     jsonEp["Port"] = 0;
     jsonPay.push_back(jsonEp);
 
-    std::cout << "EP: " << jsonPay.dump() << std::endl;
     auto ctx = nabto::test::RendezvousTestCtx(jsonPay);
 
     auto pl = ctx.payload;
