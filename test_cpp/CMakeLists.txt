@@ -52,6 +52,7 @@ set(test_src
   tests/policies/statement_json_test.cpp
   tests/policies/policy_test.cpp
   tests/policies/policy_json_test.cpp
+  tests/rendezvous/rendezvous_test.cpp
   tests/dns/dns_test.cpp
   tests/local_ping/local_ping_test.cpp
   tests/core/nc_coap_rest_error_test.cpp
@@ -101,6 +102,7 @@ target_link_libraries(embedded_unit_test nm_libevent nlohmann_json::nlohmann_jso
 
 target_include_directories(embedded_unit_test PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
 target_include_directories(embedded_unit_test PRIVATE platform)
+target_include_directories(embedded_unit_test PRIVATE "../nabto-common/components")
 
 install(TARGETS embedded_unit_test
   RUNTIME DESTINATION bin

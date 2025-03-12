@@ -5,6 +5,10 @@
 #include <platform/np_dtls_srv.h>
 #include <platform/np_completion_event.h>
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #define NC_RENDEZVOUS_SEND_QUEUE_LENGTH 10
 
 struct nc_client_connection_dispatch_context;
@@ -48,5 +52,9 @@ void nc_rendezvous_handle_packet(
 // enqueue a rendezvous packet to be sent async. The packet is copied
 // into the internal structure of the module.
 void nc_rendezvous_send_rendezvous(struct nc_rendezvous_context* ctx, struct nc_rendezvous_send_packet* packet);
+
+#ifdef __cplusplus
+} // extern c
+#endif
 
 #endif // NC_RENDEZVOUS_H
