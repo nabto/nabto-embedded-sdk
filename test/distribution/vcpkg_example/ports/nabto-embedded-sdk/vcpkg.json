@@ -1,0 +1,32 @@
+{
+    "name": "nabto-embedded-sdk",
+    "version": "0.0.0+b05465f002a6b00722e14ba7955758fe919a5b08",
+    "description": "Nabto Embedded SDK",
+    "homepage": "https://github.com/nabto/nabto-embedded-sdk",
+    "license": "Apache-2.0",
+    "dependencies": [
+      {
+        "name": "vcpkg-cmake",
+        "host": true
+      },
+      {
+        "name": "vcpkg-cmake-config",
+        "host": true
+      },
+      {
+        "name": "nabto-common"
+      },
+      {
+        "name": "libevent"
+      },
+      {
+        "name": "cjson"
+      },
+      {
+        "name": "mbedtls"
+      },
+      {
+        "name": "tinycbor"
+      }
+    ]
+  }

@@ -10,7 +10,7 @@ jobs:
     runs-on: ubuntu-24.04
     strategy:
       matrix:
-        distribution_test: [cmake_fetchcontent, cmake_find_package, direct_link_gcc]
+        distribution_test: [cmake_fetchcontent, cmake_find_package, direct_link_gcc, vcpkg_example]
 
     steps:
       - uses: actions/checkout@v4
