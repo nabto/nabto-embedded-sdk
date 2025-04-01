@@ -444,3 +444,9 @@ np_error_code udp_create_socket_any(struct np_udp_socket* s)
     s->type = type;
     return NABTO_EC_OK;
 }
+
+
+void nm_libevent_udp_test_recv_failure(struct np_udp_socket* sock)
+{
+    complete_recv_wait(sock, NABTO_EC_FAILED);
+}
