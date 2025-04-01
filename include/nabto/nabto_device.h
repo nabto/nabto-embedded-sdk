@@ -697,6 +697,7 @@ nabto_device_listener_connection_event(NabtoDeviceListener* listener,
  * NABTO_DEVICE_EVENT_WRONG_DEVICE_ID
  * NABTO_DEVICE_EVENT_CERTIFICATE_VALIDATION_FAILED
  * NABTO_DEVICE_EVENT_WATCHDOG_FAILURE
+ * NABTO_DEVICE_EVENT_PLATFORM_FATAL_FAILURE
  * ```
  */
 typedef int NabtoDeviceEvent;
@@ -727,6 +728,9 @@ NABTO_DEVICE_DECL_PREFIX extern const NabtoDeviceEvent NABTO_DEVICE_EVENT_CERTIF
 
 // The device also has an internal watchdog which will emit an event if the device is not attached and the automatic reattach states are not cycled regularly.
 NABTO_DEVICE_DECL_PREFIX extern const NabtoDeviceEvent NABTO_DEVICE_EVENT_WATCHDOG_FAILURE;
+
+// The underlying platform implementation returned a fatal error to the core. The device has stopped working and should be stopped and freed.
+NABTO_DEVICE_DECL_PREFIX extern const NabtoDeviceEvent NABTO_DEVICE_EVENT_PLATFORM_FATAL_FAILURE;
 
 
 /**

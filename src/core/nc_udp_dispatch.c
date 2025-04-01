@@ -19,7 +19,7 @@ void nc_udp_dispatch_handle_packet(struct np_udp_endpoint* ep,
 static void start_recv(struct nc_udp_dispatch_context* ctx);
 static void async_recv_wait_complete(const np_error_code ec, void* userData);
 
-np_error_code nc_udp_dispatch_init(struct nc_udp_dispatch_context* ctx, struct np_platform* pl)
+np_error_code nc_udp_dispatch_init(struct nc_udp_dispatch_context* ctx, struct np_platform* pl, nc_udp_dispatch_event_listener listener, void* listenerData)
 {
     memset(ctx, 0, sizeof(struct nc_udp_dispatch_context));
     np_error_code ec = np_udp_create(&pl->udp, &ctx->sock);
@@ -31,6 +31,8 @@ np_error_code nc_udp_dispatch_init(struct nc_udp_dispatch_context* ctx, struct n
         return ec;
     }
     ctx->pl = pl;
+    ctx->listener = listener;
+    ctx->listenerData = listenerData;
     return NABTO_EC_OK;
 }
 
@@ -83,6 +85,8 @@ void async_recv_wait_complete(const np_error_code ec, void* userData)
 {
     struct nc_udp_dispatch_context* ctx = userData;
     if (ec) {
+        NABTO_LOG_TRACE(LOG, "recv wait completed with error code: %d", ec);
+        ctx->listener(NC_DEVICE_EVENT_PLATFORM_FATAL_FAILURE, ctx->listenerData);
         return;
     }
 
@@ -111,9 +115,12 @@ void async_recv_wait_complete(const np_error_code ec, void* userData)
 
     np_free(recvBuffer);
 
-    if (recvEc == NABTO_EC_OK || recvEc == NABTO_EC_AGAIN) {
-        start_recv(ctx);
+    if (recvEc == NABTO_EC_ABORTED) {
+        return;
+    } else if (recvEc != NABTO_EC_OK && recvEc != NABTO_EC_AGAIN) {
+        NABTO_LOG_ERROR(LOG, "udp recv from returned unexpected error: %d" )
     }
+    start_recv(ctx);
 }
 
 void nc_udp_dispatch_handle_packet(struct np_udp_endpoint* ep,

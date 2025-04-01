@@ -40,10 +40,15 @@ class AttachTest {
         np_completion_event_deinit(&boundCompletionEvent);
     }
 
+    static void udpEvent(enum nc_device_event event, void* data)
+    {
+        // we do not test udp socket failures here, just ignore event
+    }
+
     void start(std::function<void (AttachTest& at)> event, std::function<void (AttachTest& at)> state) {
         event_ = event;
         state_ = state;
-        BOOST_TEST(nc_udp_dispatch_init(&udpDispatch_, tp_.getPlatform()) == NABTO_EC_OK);
+        BOOST_TEST(nc_udp_dispatch_init(&udpDispatch_, tp_.getPlatform(), &AttachTest::udpEvent, this) == NABTO_EC_OK);
         nc_udp_dispatch_async_bind(&udpDispatch_, tp_.getPlatform(), 0,
                                    &boundCompletionEvent);
     }
