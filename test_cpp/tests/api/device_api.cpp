@@ -115,11 +115,12 @@ BOOST_AUTO_TEST_CASE(udp_recv_error_event, *boost::unit_test::timeout(10))
 
     nm_libevent_udp_test_recv_failure(internalDevice->core.udp.sock);
 
-    BOOST_TEST(nabto_device_future_wait(fut) == NABTO_DEVICE_EC_OK);
+    BOOST_TEST(nabto_device_future_wait(evFut) == NABTO_DEVICE_EC_OK);
     std::this_thread::sleep_for(std::chrono::milliseconds(20));
     BOOST_TEST(event == NABTO_DEVICE_EVENT_PLATFORM_FATAL_FAILURE);
-
     nabto_device_stop(dev);
+    nabto_device_future_free(evFut);
+    nabto_device_listener_free(listener);
     nabto_device_free(dev);
 }
 
