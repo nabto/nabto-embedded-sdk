@@ -3,6 +3,8 @@
 #include <platform/np_dns_wrapper.h>
 #include <platform/np_platform.h>
 #include <platform/np_logging.h>
+#include <platform/np_allocator.h>
+#include <nn/string.h>
 
 #define LOG NABTO_LOG_MODULE_DNS
 
@@ -45,7 +47,7 @@ void nc_dns_multi_resolver_resolve(struct nc_dns_multi_resolver_context* ctx, co
     ctx->v6IpsSize = 0;
     ctx->v4Ec = NABTO_EC_OPERATION_IN_PROGRESS;
     ctx->v6Ec = NABTO_EC_OPERATION_IN_PROGRESS;
-    ctx->host = host;
+    ctx->host = nn_strdup(host, np_allocator_get());
     np_dns_async_resolve_v4(&pl->dns, host, ctx->v4Ips, NC_DNS_MULTI_RESOLVER_MAX_IPS, &ctx->v4IpsSize, &ctx->v4CompletionEvent);
     np_dns_async_resolve_v6(&pl->dns, host, ctx->v6Ips, NC_DNS_MULTI_RESOLVER_MAX_IPS, &ctx->v6IpsSize, &ctx->v6CompletionEvent);
 }
@@ -102,6 +104,7 @@ void dns_resolved(struct nc_dns_multi_resolver_context* ctx)
     }
     np_error_code ec = dns_resolved_ec(ctx);
     print_dns_results(ctx, ec);
+    np_free(ctx->host);
     np_completion_event_resolve(ctx->resolvedCompletionEvent, ec);
 }
 
