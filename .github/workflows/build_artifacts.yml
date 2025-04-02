@@ -37,6 +37,13 @@ jobs:
         with:
           submodules: recursive
           fetch-depth: 0
+
+      # Temporarily ping CMake version to 3.31 (see #47)
+      - name: Install cmake
+        uses: jwlawson/actions-setup-cmake@v2
+        with:
+          cmake-version: '3.31.x'
+
       - if: matrix.os == 'ubuntu-20.04'
         name: Install Ninja
         run: sudo apt-get update && sudo apt-get install -y ninja-build

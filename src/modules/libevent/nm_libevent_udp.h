@@ -29,4 +29,14 @@ np_error_code nm_libevent_udp_add_to_libevent(struct np_udp_socket* sock);
 
 evutil_socket_t nm_libevent_udp_create_nonblocking_socket(int domain, int type);
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+void nm_libevent_udp_test_recv_failure(struct np_udp_socket* sock);
+
+#ifdef __cplusplus
+} //extern "C"
+#endif
+
 #endif

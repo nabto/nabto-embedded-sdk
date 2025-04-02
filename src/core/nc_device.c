@@ -54,17 +54,17 @@ np_error_code nc_device_init(struct nc_device_context* device, struct np_platfor
 
 
     np_error_code ec;
-    ec = nc_udp_dispatch_init(&device->udp, pl);
+    ec = nc_udp_dispatch_init(&device->udp, pl, &nc_device_events_listener_notify, device);
     if (ec != NABTO_EC_OK) {
         nc_device_deinit(device);
         return ec;
     }
-    ec = nc_udp_dispatch_init(&device->secondaryUdp, pl);
+    ec = nc_udp_dispatch_init(&device->secondaryUdp, pl, &nc_device_events_listener_notify, device);
     if (ec != NABTO_EC_OK) {
         nc_device_deinit(device);
         return ec;
     }
-    ec = nc_udp_dispatch_init(&device->localUdp, pl);
+    ec = nc_udp_dispatch_init(&device->localUdp, pl, &nc_device_events_listener_notify, device);
     if (ec != NABTO_EC_OK) {
         nc_device_deinit(device);
         return ec;
