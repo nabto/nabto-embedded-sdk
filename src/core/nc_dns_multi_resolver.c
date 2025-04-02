@@ -110,7 +110,7 @@ void print_dns_results(struct nc_dns_multi_resolver_context* ctx, np_error_code 
     if (ec != NABTO_EC_OK) {
         NABTO_LOG_INFO(LOG, "Failed to resolve hostname: %s with error: %s", ctx->host, np_error_code_to_string(ec));
     } else {
-        NABTO_LOG_INFO(LOG, "Hostname: %s resolved to %d IPs", ctx->host, ctx->ipsResolved);
+        NABTO_LOG_INFO(LOG, "Hostname: %s resolved to %d IPs", ctx->host, *ctx->ipsResolved);
         for (size_t i = 0; i < *ctx->ipsResolved; i++) {
             NABTO_LOG_INFO(LOG, "  resolved IP #%d: %s", i+1, np_ip_address_to_string(&ctx->ips[i]));
         }
