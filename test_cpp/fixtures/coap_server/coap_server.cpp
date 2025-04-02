@@ -3,6 +3,7 @@
 #include <algorithm>
 
 #include <platform/np_allocator.h>
+#include <boost/asio.hpp>
 
 namespace nabto {
 namespace coap {
@@ -54,7 +55,7 @@ void CoapServer::init()
 void CoapServer::notifyEvent()
 {
     auto self = shared_from_this();
-    io_.post([self](){ self->event(); });
+    boost::asio::post(io_, [self](){ self->event(); });
 }
 
 void CoapServer::event()
@@ -134,7 +135,7 @@ void CoapServer::handleWait()
         currentExpiry_ = nextStamp;
         uint32_t now = nabto_coap_server_stamp_now(&requests_);
         int32_t diff = nabto_coap_stamp_diff(nextStamp, now);
-        timer_.expires_from_now(std::chrono::milliseconds(diff));
+        timer_.expires_after(std::chrono::milliseconds(diff));
         timer_.async_wait([self](const boost::system::error_code& ec) {
                 if (ec) {
                     return;
