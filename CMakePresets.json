@@ -8,7 +8,7 @@
         },
         {
             "name": "unix_base",
-            "generator": "Ninja"
+            "generator": "Unix Makefiles"
         },
         {
             "name": "vcpkg_base",
