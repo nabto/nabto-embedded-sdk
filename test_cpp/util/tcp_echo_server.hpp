@@ -118,10 +118,10 @@ class TcpEchoServerImpl : public std::enable_shared_from_this<TcpEchoServerImpl>
 
     void stop() {
         auto self = shared_from_this();
-        io_.post([self](){
+        boost::asio::post(io_, [self](){
                 self->acceptor_.close();
                 for (auto c : self->connections_) {
-                    self->io_.post([c](){ c->stopFromManager(); });
+                    boost::asio::post(self->io_, [c](){ c->stopFromManager(); });
                 }
             });
     }

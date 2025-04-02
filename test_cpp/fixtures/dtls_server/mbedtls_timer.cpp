@@ -9,8 +9,7 @@ void MbedTlsTimer::mbedSetTimer(uint32_t intermediateMilliseconds, uint32_t fina
     }
     if (finalMilliseconds == 0) {
         // disable current timer;
-        boost::system::error_code ec;
-        finalTimer_.cancel(ec);
+        finalTimer_.cancel();
         finalTp_ = boost::none;
     } else {
         intermediateTp_ = std::chrono::steady_clock::now() + std::chrono::milliseconds(intermediateMilliseconds);

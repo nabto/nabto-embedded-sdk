@@ -16,9 +16,7 @@ class IoService {
  public:
     ~IoService();
     static IoServicePtr create(const std::string& name);
-    void workReset();
     void stop();
-    void restart();
     void shutdown();
     boost::asio::io_context& getIoService();
 
@@ -27,9 +25,12 @@ class IoService {
 private:
     void start();
     boost::asio::io_context io_;
-    std::unique_ptr<boost::asio::io_context::work> work_;
     std::unique_ptr<std::thread> thread_;
     std::string name_;
+    boost::asio::executor_work_guard<
+        boost::asio::io_context::executor_type, void, void>
+        work_;
+
 };
 
 } // namespace

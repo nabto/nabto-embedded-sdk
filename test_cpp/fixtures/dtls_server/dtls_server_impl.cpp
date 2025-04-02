@@ -290,7 +290,7 @@ std::shared_ptr<DtlsConnectionImpl> DtlsServerImpl::getConnection(const mbedtls_
 void DtlsServerImpl::closeConnection(DtlsConnectionImplPtr connection)
 {
     auto self = shared_from_this();
-    ioContext_.post([connection, self](){
+    boost::asio::post(ioContext_, [connection, self](){
             connection->asyncClose([connection, self](const lib::error_code& /*ec*/){
                 });
         });
@@ -561,10 +561,10 @@ void DtlsConnectionImpl::asyncSendApplicationData(lib::span<const uint8_t> data,
         // TODO unknown error
     } else {
         dtlsSentCount_++;
-        io_.post([dsh](){ dsh(make_error_code(DtlsError::ok)); });
+        boost::asio::post(io_, [dsh](){ dsh(make_error_code(DtlsError::ok)); });
         return;
     }
-    io_.post([dsh](){ dsh(make_error_code(DtlsError::write_failed)); });
+    boost::asio::post(io_, [dsh](){ dsh(make_error_code(DtlsError::write_failed)); });
 }
 
 void DtlsConnectionImpl::asyncSendRelayPacket(lib::span<const uint8_t> packet, DatagramSentHandler dsh)
@@ -577,12 +577,12 @@ void DtlsConnectionImpl::asyncSendRelayPacket(lib::span<const uint8_t> packet, D
 void DtlsConnectionImpl::asyncClose(std::function<void (const lib::error_code& ec)> cb)
 {
     if (state_ > DATA) {
-        io_.post(std::bind(cb, make_error_code(DtlsError::ok)));
+        boost::asio::post(io_, std::bind(cb, make_error_code(DtlsError::ok)));
     }
     relayDataHandler_ = nullptr;
     mbedtls_ssl_close_notify(&ssl_);
     closeFromSelf();
-    io_.post(std::bind(cb, make_error_code(DtlsError::ok)));
+    boost::asio::post(io_, std::bind(cb, make_error_code(DtlsError::ok)));
 }
 
 void DtlsConnectionImpl::closeFromSelf()

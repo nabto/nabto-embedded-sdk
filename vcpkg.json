@@ -10,5 +10,12 @@
       "cjson",
       "nlohmann-json",
       "nabto-common"
-    ]
+    ],
+    "builtin-baseline": "b02e341c927f16d991edbd915d8ea43eac52096c",
+    "overrides": [
+    {
+        "name": "tinycbor",
+        "version": "0.6.0#1"
+    }
+  ]
   }

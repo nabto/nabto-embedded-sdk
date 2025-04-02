@@ -39,7 +39,7 @@ void KeepAlive::asyncWaitSendKeepAlive(std::function<void (const lib::error_code
     if (stopped_) {
         cb(make_error_code(DtlsError::closed));
     }
-    keepAliveTimer_.expires_from_now(settings_.keepAliveRetryInterval);
+    keepAliveTimer_.expires_after(settings_.keepAliveRetryInterval);
     keepAliveTimer_.async_wait([cb](const boost::system::error_code& ec){
             cb(ec);
         });
