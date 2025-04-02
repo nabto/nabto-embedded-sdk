@@ -484,7 +484,7 @@ void dns_resolved_callback(const np_error_code ec, void* data)
     size_t ipsSize = ctx->resolvedIpsSize;
 
     for (size_t i = 0; i < ipsSize; i++) {
-        if (ctx->initialPacket.endpointsIndex < NC_ATTACHER_MAX_ENDPOINTS) {
+        if (ctx->initialPacket.endpointsSize < NC_ATTACHER_MAX_ENDPOINTS) {
             ctx->initialPacket.endpoints[ctx->initialPacket.endpointsSize].ip = ctx->resolvedIps[i];
             ctx->initialPacket.endpoints[ctx->initialPacket.endpointsSize].port = ctx->currentPort;
             ctx->initialPacket.endpointsSize++;
