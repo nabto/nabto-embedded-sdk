@@ -270,6 +270,16 @@ class AttachServer : public AttachCoapServer,
                 return;
             });
         dtlsServer_.addResourceHandler(
+            NABTO_COAP_CODE_PUT, "/device/sct",
+            [self](DtlsConnectionPtr connection,
+                   std::shared_ptr<CoapServerRequest> request,
+                   std::shared_ptr<CoapServerResponse> response) {
+                (void)connection;
+                (void)request;
+                response->setCode(201);
+                return;
+            });
+        dtlsServer_.addResourceHandler(
             NABTO_COAP_CODE_POST, "/device/fcm/send",
             [self](DtlsConnectionPtr connection,
                    std::shared_ptr<CoapServerRequest> request,

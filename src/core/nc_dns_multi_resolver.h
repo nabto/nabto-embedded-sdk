@@ -25,6 +25,7 @@ struct nc_dns_multi_resolver_context {
     np_error_code v6Ec;
     struct np_completion_event v4CompletionEvent;
     struct np_completion_event v6CompletionEvent;
+    char* host;
 
     // output from the resolving.
     struct np_ip_address* ips;

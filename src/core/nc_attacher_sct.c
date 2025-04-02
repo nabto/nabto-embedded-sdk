@@ -1,5 +1,6 @@
 #include "nc_attacher.h"
 
+#include <core/nc_cbor.h>
 #include <core/nc_coap.h>
 #include <platform/np_logging.h>
 #include <platform/np_allocator.h>
@@ -99,24 +100,23 @@ void sct_request_handler(struct nabto_coap_client_request* request, void* userDa
 size_t encode_scts(CborEncoder* encoder, struct nn_string_set* scts)
 {
     CborEncoder array;
-    CborError err = cbor_encoder_create_array(encoder, &array, CborIndefiniteLength);
-    if (err != CborNoError) {
-        NABTO_LOG_ERROR(LOG, "Failed to create CBOR array: %d", err);
+    if (nc_cbor_err_not_oom(cbor_encoder_create_array(encoder, &array, CborIndefiniteLength))) {
+        NABTO_LOG_ERROR(LOG, "Failed to create CBOR array");
         return 0;
     }
 
     const char* str;
     NN_STRING_SET_FOREACH(str, scts) {
-        err = cbor_encode_text_stringz(&array, str);
-        if (err != CborNoError) {
-            NABTO_LOG_ERROR(LOG, "Failed to encode text string '%s': %d", str, err);
+
+        if (nc_cbor_err_not_oom(cbor_encode_text_stringz(&array, str))) {
+            NABTO_LOG_ERROR(LOG, "Failed to encode text string '%s'", str);
             cbor_encoder_close_container(encoder, &array);
             return 0;
         }
     }
-    err = cbor_encoder_close_container(encoder, &array);
-    if (err != CborNoError) {
-        NABTO_LOG_ERROR(LOG, "Failed to close CBOR array container: %d", err);
+
+    if (nc_cbor_err_not_oom(cbor_encoder_close_container(encoder, &array))) {
+        NABTO_LOG_ERROR(LOG, "Failed to close CBOR array container");
         return 0;
     }
 
