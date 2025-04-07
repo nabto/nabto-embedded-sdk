@@ -295,8 +295,7 @@ enum nc_attacher_status handle_redirect(struct nc_attach_context* ctx,
         }
         if (cbor_value_copy_text_string(&host, ctx->dns, &hostLength, NULL) != CborNoError) {
             NABTO_LOG_ERROR(LOG, "cbor_value_copy_text_string for redirect host failed");
-            // TODO use np_free
-            free(ctx->dns);
+            np_free(ctx->dns);
             ctx->dns = NULL;
             return NC_ATTACHER_STATUS_ERROR;
         }
