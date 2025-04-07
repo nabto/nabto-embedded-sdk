@@ -61,6 +61,7 @@ np_error_code nc_attacher_request_ice_servers(struct nc_attacher_request_ice_ser
     if (buffer == NULL) {
         return NABTO_EC_OUT_OF_MEMORY;
     }
+    // TODO check return value
     encode_request(identifier, buffer, bufferSize);
 
     nabto_coap_error err = nabto_coap_client_request_set_payload(ctx->coapRequest, buffer, bufferSize);
@@ -85,6 +86,7 @@ size_t encode_request(const char* identifier, uint8_t* buffer, size_t bufferSize
         nc_cbor_err_not_oom(cbor_encode_text_stringz(&map, identifier)) ||
         nc_cbor_err_not_oom(cbor_encoder_close_container(&encoder, &map))) {
         NABTO_LOG_ERROR(LOG, "Failed to encode Cbor request");
+        // TODO 0 means ok
         return 0;
     }
 
@@ -112,15 +114,18 @@ static void coap_handler(struct nabto_coap_client_request* request, void* data)
 
         uint16_t resCode = nabto_coap_client_response_get_code(res);
         uint16_t contentFormat = 0;
+        // TODO check return value.
         nabto_coap_client_response_get_content_format(res, &contentFormat);
 
         const uint8_t* payload = NULL;
         size_t payloadLength = 0;
+        // TODO check return value.
         nabto_coap_client_response_get_payload(res, &payload, &payloadLength);
 
         ec = NABTO_EC_UNKNOWN;
         if (resCode != 201) {
             struct nc_coap_rest_error error;
+            // todo check or remove the return value, the error object can not be uninitialized after the call but the function suggest otherwise.
             nc_coap_rest_error_decode_response(res, &error);
             NABTO_LOG_ERROR(LOG, "Failed to get TURN server. (%d)%s", resCode, error.message);
             nc_coap_rest_error_deinit(&error);
@@ -195,6 +200,7 @@ bool parse_response(const uint8_t* buffer, size_t bufferSize, struct nc_attacher
             cbor_value_enter_container(&urls, &urlsIt) != CborNoError)
         {
             ice_server_clean(&server);
+            // TODO fix error message
             NABTO_LOG_INFO(LOG, "Failed to get username, credential, or urls");
             return false;
         }
@@ -218,6 +224,7 @@ bool parse_response(const uint8_t* buffer, size_t bufferSize, struct nc_attacher
             ice_server_clean(&server);
             return false;
         }
+        // TODO check return value
         nn_vector_push_back(&ctx->iceServers, &server);
     }
 

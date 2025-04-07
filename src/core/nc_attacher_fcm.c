@@ -37,6 +37,7 @@ np_error_code nc_attacher_fcm_send(struct nc_attach_context *attacher, struct nc
     if (buffer == NULL) {
         return NABTO_EC_OUT_OF_MEMORY;
     }
+    // todo check return value
     encode_request(&fcmContext->fcmRequest, buffer, bufferSize);
 
     nabto_coap_error err = nabto_coap_client_request_set_payload(fcmContext->coapRequest, buffer, bufferSize);
@@ -104,6 +105,7 @@ size_t encode_request(struct nc_attacher_fcm_request* request, uint8_t* buffer, 
     CborEncoder encoder;
     cbor_encoder_init(&encoder, buffer, bufferSize, 0);
     CborEncoder map;
+    // TODO check return values
     cbor_encoder_create_map(&encoder, &map, CborIndefiniteLength);
 
     cbor_encode_text_stringz(&map, "ProjectId");
@@ -122,11 +124,14 @@ bool parse_response(const uint8_t* buffer, size_t bufferSize, struct nc_attacher
     CborValue map;
     CborValue statusCode;
     CborValue body;
+    // TODO check return value
     cbor_parser_init(buffer, bufferSize, 0, &parser, &map);
     if (!cbor_value_is_map(&map)) {
         return false;
     }
+    // TODO check return value
     cbor_value_map_find_value(&map, "StatusCode", &statusCode);
+    // TODO check return value
     cbor_value_map_find_value(&map, "Body", &body);
 
     if (!nc_cbor_copy_text_string(&body, &response->body, 4096)) {

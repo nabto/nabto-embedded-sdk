@@ -296,6 +296,7 @@ enum nc_attacher_status handle_redirect(struct nc_attach_context* ctx,
         }
         if (cbor_value_copy_text_string(&host, ctx->dns, &hostLength, NULL) != CborNoError) {
             NABTO_LOG_ERROR(LOG, "cbor_value_copy_text_string for redirect host failed");
+            // TODO use np_free
             free(ctx->dns);
             ctx->dns = NULL;
             return NC_ATTACHER_STATUS_ERROR;
@@ -341,6 +342,7 @@ size_t encode_cbor_request(CborEncoder* encoder, struct nc_attach_context* ctx)
         nc_cbor_err_not_oom(cbor_encode_text_stringz(&map, ctx->deviceId)) ||
         nc_cbor_err_not_oom(cbor_encoder_close_container(encoder, &map))) {
         NABTO_LOG_ERROR(LOG, "Failed to encode Cbor request");
+        // TODO 0 means ok.
         return 0;
     }
     return cbor_encoder_get_extra_bytes_needed(encoder);
