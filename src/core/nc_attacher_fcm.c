@@ -40,7 +40,7 @@ np_error_code nc_attacher_fcm_send(struct nc_attach_context *attacher, struct nc
             return NABTO_EC_FAILED;
         }
 
-        size_t bufferSize = cbor_encoder_get_extra_bytes_needed(&encoder);
+        bufferSize = cbor_encoder_get_extra_bytes_needed(&encoder);
     }
     uint8_t* buffer = np_calloc(1, bufferSize);
     if (buffer == NULL) {
@@ -119,7 +119,7 @@ void nc_attacher_fcm_send_stop(struct nc_attacher_fcm_send_context* fcmSend)
 CborError encode_request(CborEncoder* encoder, struct nc_attacher_fcm_request* request)
 {
     CborEncoder map;
-    NC_CBOR_CHECK_FOR_ERROR_EXCEPT_OOM(cbor_encoder_create_map(&encoder, &map, CborIndefiniteLength));
+    NC_CBOR_CHECK_FOR_ERROR_EXCEPT_OOM(cbor_encoder_create_map(encoder, &map, CborIndefiniteLength));
 
     NC_CBOR_CHECK_FOR_ERROR_EXCEPT_OOM(cbor_encode_text_stringz(&map, "ProjectId"));
     NC_CBOR_CHECK_FOR_ERROR_EXCEPT_OOM(cbor_encode_text_stringz(&map, request->projectId));

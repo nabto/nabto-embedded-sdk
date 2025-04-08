@@ -29,11 +29,11 @@ bool nc_cbor_err_not_oom(CborError e);
  * and the error is not CborErrorOutOfMemory.
  */
 #define NC_CBOR_CHECK_FOR_ERROR_EXCEPT_OOM(e)              \
-    do {                                                \
-        CborError ec = e;                               \
-        if ((ec | ~CborErrorOutOfMemory) != CborNoError) { \
-            return ec;                                   \
-        }                                               \
+    do {                                                   \
+        CborError ec = e;                                  \
+        if ((ec & ~CborErrorOutOfMemory) != CborNoError) { \
+            return ec;                                     \
+        }                                                  \
     } while(0)
 
 #endif
