@@ -215,5 +215,6 @@ void nc_coap_client_set_infinite_stamp(struct nc_coap_client_context* ctx)
 {
     uint32_t now = np_timestamp_now_ms(&ctx->pl->timestamp);
     ctx->currentExpiry = now;
+    // overflow is welldefined for unsigned integers in the c standard.
     ctx->currentExpiry += (1 << 29);
 }
