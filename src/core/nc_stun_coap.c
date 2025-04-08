@@ -139,7 +139,7 @@ void nc_rendezvous_endpoints_completed(const np_error_code ec, const struct nabt
     {
         CborEncoder encoder;
         cbor_encoder_init(&encoder, buffer, bufferSize, 0);
-        if (encode_endpoints_response(&encoder, &endpointsResponse) != CborErrorOutOfMemory) {
+        if (encode_endpoints_response(&encoder, &endpointsResponse) != CborNoError) {
             NABTO_LOG_ERROR(LOG, "Cannot encode endpoints as cbor");
             np_free(buffer);
             send_500_response(ctx);
