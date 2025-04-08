@@ -133,8 +133,7 @@ int32_t nc_coap_server_response_get_content_format(struct nc_coap_server_request
 
 bool nc_coap_server_response_get_payload(struct nc_coap_server_request* request, void** payload, size_t* payloadLength);
 
-nabto_coap_code nc_coap_server_response_get_code(struct nc_coap_server_request* request);
-uint16_t nc_coap_server_response_get_code_human(struct nc_coap_server_request* request);
+np_error_code nc_coap_server_response_get_code_human(struct nc_coap_server_request* request, uint16_t* code);
 
 
 

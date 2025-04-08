@@ -320,11 +320,12 @@ nabto_device_virtual_coap_request_get_response_status_code(NabtoDeviceVirtualCoa
         return NABTO_DEVICE_EC_INVALID_STATE;
     }
     struct nabto_device_context* dev = req->connection->dev;
-
+    np_error_code ec;
     nabto_device_threads_mutex_lock(dev->eventMutex);
-    *statusCode = nc_coap_server_response_get_code_human(req->apiReq.req);
+
+    ec = nc_coap_server_response_get_code_human(req->apiReq.req, statusCode);
     nabto_device_threads_mutex_unlock(dev->eventMutex);
-    return NABTO_DEVICE_EC_OK;
+    return nabto_device_error_core_to_api(ec);
 }
 
 NabtoDeviceError NABTO_DEVICE_API
@@ -568,4 +569,3 @@ void close_completed(np_error_code ec, void* userdata)
     nabto_device_future_resolve(str->closeFuture, nabto_device_error_core_to_api(ec));
     str->closeFuture = NULL;
 }
-
