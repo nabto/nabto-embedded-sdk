@@ -1,5 +1,5 @@
 find_package( Threads )
-find_package( Boost REQUIRED COMPONENTS system asio)
+find_package( Boost CONFIG REQUIRED COMPONENTS system asio)
 
 set(CMAKE_CXX_STANDARD 14)
 set(src
