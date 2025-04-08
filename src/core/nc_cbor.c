@@ -41,9 +41,3 @@ bool nc_cbor_copy_byte_string(CborValue* s, uint8_t** out, size_t* outLength, si
     cbor_value_copy_byte_string(s, *out, &length, NULL);
     return true;
 }
-
-
-bool nc_cbor_err_not_oom(CborError e) {
-    // Cbor errors can be bitwise or'ed with other errors
-    return (e & ~CborErrorOutOfMemory) != CborNoError;
-}

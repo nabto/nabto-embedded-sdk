@@ -13,11 +13,7 @@ const char* sctUploadPath[2] = {"device", "sct"};
 
 static void sct_request_handler(struct nabto_coap_client_request* request, void* data);
 
-/**
- * return the number of bytes needed to encode the scts if an encoder
- * without a buffer is used. Else return 0.
- */
-static size_t encode_scts(CborEncoder* encoder, struct nn_string_set* scts);
+static CborError encode_scts(CborEncoder* encoder, struct nn_string_set* scts);
 
 np_error_code nc_attacher_sct_upload(struct nc_attach_context* attacher, nc_attacher_sct_callback cb, void* userData)
 {
@@ -35,7 +31,11 @@ np_error_code nc_attacher_sct_upload(struct nc_attach_context* attacher, nc_atta
     {
         CborEncoder encoder;
         cbor_encoder_init(&encoder, NULL, 0, 0);
-        bufferSize = encode_scts(&encoder, &sctCtx->scts);
+        if (encode_scts(&encoder, &sctCtx->scts) != CborErrorOutOfMemory) {
+            NABTO_LOG_ERROR(LOG, "Cannot determine size for sct cbor structure.");
+            return NABTO_EC_FAILED;
+        }
+        bufferSize = cbor_encoder_get_extra_bytes_needed(&encoder);
     }
     uint8_t* buffer = np_calloc(1, bufferSize);
     if (!buffer) {
@@ -45,7 +45,11 @@ np_error_code nc_attacher_sct_upload(struct nc_attach_context* attacher, nc_atta
     {
         CborEncoder encoder;
         cbor_encoder_init(&encoder, buffer, bufferSize, 0);
-        (void)encode_scts(&encoder, &sctCtx->scts);
+        if (encode_scts(&encoder, &sctCtx->scts) != CborNoError) {
+            NABTO_LOG_ERROR(LOG, "Cannot encode scts as cbor.");
+            np_free(buffer);
+            return NABTO_EC_FAILED;
+        }
     }
 
     struct nabto_coap_client_request* req;
@@ -97,28 +101,15 @@ void sct_request_handler(struct nabto_coap_client_request* request, void* userDa
     cb(status, cbUserData);
 }
 
-size_t encode_scts(CborEncoder* encoder, struct nn_string_set* scts)
+CborError encode_scts(CborEncoder* encoder, struct nn_string_set* scts)
 {
     CborEncoder array;
-    if (nc_cbor_err_not_oom(cbor_encoder_create_array(encoder, &array, CborIndefiniteLength))) {
-        NABTO_LOG_ERROR(LOG, "Failed to create CBOR array");
-        return 0;
-    }
+    NC_CBOR_CHECK_FOR_ERROR_EXCEPT_OOM(cbor_encoder_create_array(encoder, &array, CborIndefiniteLength));
 
     const char* str;
     NN_STRING_SET_FOREACH(str, scts) {
-
-        if (nc_cbor_err_not_oom(cbor_encode_text_stringz(&array, str))) {
-            NABTO_LOG_ERROR(LOG, "Failed to encode text string '%s'", str);
-            cbor_encoder_close_container(encoder, &array);
-            return 0;
-        }
+        NC_CBOR_CHECK_FOR_ERROR_EXCEPT_OOM(cbor_encode_text_stringz(&array, str));
     }
 
-    if (nc_cbor_err_not_oom(cbor_encoder_close_container(encoder, &array))) {
-        NABTO_LOG_ERROR(LOG, "Failed to close CBOR array container");
-        return 0;
-    }
-
-    return cbor_encoder_get_extra_bytes_needed(encoder);
+    return cbor_encoder_close_container(encoder, &array);
 }
