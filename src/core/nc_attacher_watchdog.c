@@ -4,7 +4,7 @@
 
 static const uint32_t WATCHDOG_TIMEOUT = 600000; // 10min
 
-static void handleStateChanged(struct nc_watchdog_ctx* ctx, enum nc_attacher_attach_state state);
+static void handle_state_changed(struct nc_watchdog_ctx* ctx, enum nc_attacher_attach_state state);
 static void timeout(void* data);
 
 np_error_code nc_attacher_watchdog_init(struct nc_watchdog_ctx* ctx, struct np_platform* pl, struct nc_attach_context* attacher, nc_attacher_watchdog_callback callback, void* callbackData)
@@ -21,7 +21,7 @@ np_error_code nc_attacher_watchdog_init(struct nc_watchdog_ctx* ctx, struct np_p
     }
 
     nc_attacher_set_state_listener(attacher, &nc_attacher_watchdog_state_changed, ctx);
-    handleStateChanged(ctx, attacher->state);
+    handle_state_changed(ctx, attacher->state);
     return NABTO_EC_OK;
 }
 
@@ -35,10 +35,10 @@ void nc_attacher_watchdog_deinit(struct nc_watchdog_ctx* ctx)
 void nc_attacher_watchdog_state_changed(enum nc_attacher_attach_state state, void* data)
 {
     struct nc_watchdog_ctx* ctx = (struct nc_watchdog_ctx*)data;
-    handleStateChanged(ctx, state);
+    handle_state_changed(ctx, state);
 }
 
-void handleStateChanged(struct nc_watchdog_ctx* ctx, enum nc_attacher_attach_state state)
+void handle_state_changed(struct nc_watchdog_ctx* ctx, enum nc_attacher_attach_state state)
 {
     np_event_queue_cancel_event(&ctx->pl->eq, ctx->timer);
     if (state != NC_ATTACHER_STATE_ATTACHED) {
