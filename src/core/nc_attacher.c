@@ -150,7 +150,7 @@ np_error_code nc_attacher_init(struct nc_attach_context* ctx, struct np_platform
         return ec;
     }
 
-    nc_dns_multi_resolver_init(pl, &ctx->dnsMultiResolver);
+    ec = nc_dns_multi_resolver_init(pl, &ctx->dnsMultiResolver);
 
     return ec;
 }
@@ -240,8 +240,7 @@ np_error_code nc_attacher_set_handshake_timeout(struct nc_attach_context* ctx,
                                                 uint32_t minTimeoutMilliseconds, uint32_t maxTimeoutMilliseconds)
 {
     struct np_platform* pl = ctx->pl;
-    pl->dtlsC.set_handshake_timeout(ctx->pl, minTimeoutMilliseconds, maxTimeoutMilliseconds);
-    return NABTO_EC_OK;
+    return pl->dtlsC.set_handshake_timeout(ctx->pl, minTimeoutMilliseconds, maxTimeoutMilliseconds);
 }
 
 static np_error_code update_dns(struct nc_attach_context* ctx , const char* hostname)
@@ -755,7 +754,10 @@ void coap_attach_end_handler(np_error_code ec, void* data)
 
 void coap_attach_failed(struct nc_attach_context* ctx)
 {
-    ctx->pl->dtlsC.async_close(ctx->dtls);
+    np_error_code ec = ctx->pl->dtlsC.async_close(ctx->dtls);
+    if (ec != NABTO_EC_OK) {
+        NABTO_LOG_ERROR(LOG, "Calling close on the attach DTLS connection failed %s", np_error_code_to_string(ec));
+    }
 }
 
 void nc_attacher_handle_dtls_packet(struct nc_attach_context* ctx, struct np_udp_endpoint* ep, uint8_t* buffer, size_t bufferSize)
