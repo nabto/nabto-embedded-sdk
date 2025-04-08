@@ -89,6 +89,14 @@
             "environment": {
                 "CFLAGS": "-ansi -std=gnu99"
             }
+        },
+        {
+            "name": "linux_debug",
+            "inherits": ["base", "unix_base", "vcpkg_base"],
+            "cacheVariables": {
+                "CMAKE_BUILD_TYPE": "Debug",
+                "DEVICE_BUILD_TESTS": "ON"
+            }
         }
     ],
     "buildPresets": [
@@ -131,6 +139,11 @@
         {
             "name": "test_ansi_c99",
             "configurePreset": "test_ansi_c99"
+        },
+        {
+            "name": "linux_debug",
+            "configurePreset": "linux_debug",
+            "targets": ["install"]
         }
     ],
     "workflowPresets": [
@@ -210,6 +223,19 @@
                 {
                     "type": "build",
                     "name": "linux_vcpkg"
+                }
+            ]
+        },
+        {
+            "name": "linux_debug",
+            "steps": [
+                {
+                    "type": "configure",
+                    "name": "linux_debug"
+                },
+                {
+                    "type": "build",
+                    "name": "linux_debug"
                 }
             ]
         },

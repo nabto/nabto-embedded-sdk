@@ -13,7 +13,7 @@
 #define LOG NABTO_LOG_MODULE_ATTACHER
 
 static void coap_handler(struct nabto_coap_client_request* request, void* data);
-size_t encode_request(const char* identifier, uint8_t* buffer, size_t bufferSize);
+static CborError encode_request(CborEncoder* encoder, const char* identifier);
 bool parse_response(const uint8_t* buffer, size_t bufferSize, struct nc_attacher_request_ice_servers_context* ctx);
 
 static const char* coapPath[] = { "device", "ice-servers" };
@@ -55,13 +55,31 @@ np_error_code nc_attacher_request_ice_servers(struct nc_attacher_request_ice_ser
 
     nabto_coap_client_request_set_content_format(ctx->coapRequest, NABTO_COAP_CONTENT_FORMAT_APPLICATION_CBOR);
 
-    size_t bufferSize = encode_request(identifier, NULL, 0);
+    size_t bufferSize;
+
+    {
+        CborEncoder encoder;
+        cbor_encoder_init(&encoder, NULL, 0, 0);
+        if (encode_request(&encoder, identifier) != CborErrorOutOfMemory) {
+            NABTO_LOG_ERROR(LOG, "Cannot determine buffer space needed to encode ice servers request.");
+            return NABTO_EC_FAILED;
+        }
+        bufferSize = cbor_encoder_get_extra_bytes_needed(&encoder);
+    }
 
     uint8_t* buffer = np_calloc(1, bufferSize);
     if (buffer == NULL) {
         return NABTO_EC_OUT_OF_MEMORY;
     }
-    encode_request(identifier, buffer, bufferSize);
+    {
+        CborEncoder encoder;
+        cbor_encoder_init(&encoder, buffer, bufferSize, 0);
+        if (encode_request(&encoder, identifier) != CborNoError) {
+            NABTO_LOG_ERROR(LOG, "Cannot encode ice servers request as cbor.");
+            np_free(buffer);
+            return NABTO_EC_FAILED;
+        }
+    }
 
     nabto_coap_error err = nabto_coap_client_request_set_payload(ctx->coapRequest, buffer, bufferSize);
     np_free(buffer);
@@ -75,20 +93,14 @@ np_error_code nc_attacher_request_ice_servers(struct nc_attacher_request_ice_ser
     return NABTO_EC_OK;
 }
 
-size_t encode_request(const char* identifier, uint8_t* buffer, size_t bufferSize)
+CborError encode_request(CborEncoder* encoder, const char* identifier)
 {
-    CborEncoder encoder;
-    cbor_encoder_init(&encoder, buffer, bufferSize, 0);
     CborEncoder map;
-    if (nc_cbor_err_not_oom(cbor_encoder_create_map(&encoder, &map, CborIndefiniteLength)) ||
-        nc_cbor_err_not_oom(cbor_encode_text_stringz(&map, "Identifier")) ||
-        nc_cbor_err_not_oom(cbor_encode_text_stringz(&map, identifier)) ||
-        nc_cbor_err_not_oom(cbor_encoder_close_container(&encoder, &map))) {
-        NABTO_LOG_ERROR(LOG, "Failed to encode Cbor request");
-        return 0;
-    }
 
-    return cbor_encoder_get_extra_bytes_needed(&encoder);
+    NC_CBOR_CHECK_FOR_ERROR_EXCEPT_OOM(cbor_encoder_create_map(encoder, &map, CborIndefiniteLength));
+    NC_CBOR_CHECK_FOR_ERROR_EXCEPT_OOM(cbor_encode_text_stringz(&map, "Identifier"));
+    NC_CBOR_CHECK_FOR_ERROR_EXCEPT_OOM(cbor_encode_text_stringz(&map, identifier));
+    return cbor_encoder_close_container(encoder, &map);
 }
 
 static void coap_handler(struct nabto_coap_client_request* request, void* data)
@@ -112,15 +124,19 @@ static void coap_handler(struct nabto_coap_client_request* request, void* data)
 
         uint16_t resCode = nabto_coap_client_response_get_code(res);
         uint16_t contentFormat = 0;
+        // Ignoring return value, and let the contentFormat default to 0.
         nabto_coap_client_response_get_content_format(res, &contentFormat);
 
         const uint8_t* payload = NULL;
         size_t payloadLength = 0;
+        // Ignoring the return value and let the payload and size default to NULL, 0.
         nabto_coap_client_response_get_payload(res, &payload, &payloadLength);
 
         ec = NABTO_EC_UNKNOWN;
         if (resCode != 201) {
             struct nc_coap_rest_error error;
+            // Ignoring the return value as the function ensures the error
+            // struct is initialized properly.
             nc_coap_rest_error_decode_response(res, &error);
             NABTO_LOG_ERROR(LOG, "Failed to get TURN server. (%d)%s", resCode, error.message);
             nc_coap_rest_error_deinit(&error);
@@ -195,7 +211,7 @@ bool parse_response(const uint8_t* buffer, size_t bufferSize, struct nc_attacher
             cbor_value_enter_container(&urls, &urlsIt) != CborNoError)
         {
             ice_server_clean(&server);
-            NABTO_LOG_INFO(LOG, "Failed to get username, credential, or urls");
+            NABTO_LOG_ERROR(LOG, "Failed to get urls from ice servers response.");
             return false;
         }
 
@@ -207,18 +223,22 @@ bool parse_response(const uint8_t* buffer, size_t bufferSize, struct nc_attacher
                 cbor_value_advance(&urlsIt) != CborNoError)
             {
                 ice_server_clean(&server);
-                NABTO_LOG_INFO(LOG, "Failed to copy url or advance iterator");
+                NABTO_LOG_ERROR(LOG, "Failed to copy url or advance iterator");
                 return false;
             }
         }
         if (cbor_value_leave_container(&urls, &urlsIt) != CborNoError ||
             cbor_value_advance(&it) != CborNoError)
         {
-            NABTO_LOG_INFO(LOG, "Failed to leave containers or advance iterator");
+            NABTO_LOG_ERROR(LOG, "Failed to leave containers or advance iterator");
             ice_server_clean(&server);
             return false;
         }
-        nn_vector_push_back(&ctx->iceServers, &server);
+        if (!nn_vector_push_back(&ctx->iceServers, &server)) {
+            ice_server_clean(&server);
+            NABTO_LOG_ERROR(LOG, "Cannot append ice server to list of ice servers");
+            return false;
+        }
     }
 
     if (cbor_value_leave_container(&root, &it) != CborNoError) {

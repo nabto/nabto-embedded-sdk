@@ -17,7 +17,7 @@ const char* attachStartPath[] = {"device", "attach-start"};
 static void coap_attach_start_handler(struct nabto_coap_client_request* request,
                                       void* data);
 
-static size_t encode_cbor_request(CborEncoder* encoder,
+static CborError encode_cbor_request(CborEncoder* encoder,
                                   struct nc_attach_context* ctx);
 
 static enum nc_attacher_status coap_attach_start_handle_response(
@@ -40,11 +40,12 @@ np_error_code nc_attacher_attach_start_request(
     {
         CborEncoder encoder;
         cbor_encoder_init(&encoder, NULL, 0, 0);
-        bufferSize = encode_cbor_request(&encoder, ctx);
-        if (bufferSize == 0) {
+        if (encode_cbor_request(&encoder, ctx) != CborErrorOutOfMemory) {
             NABTO_LOG_ERROR(LOG, "CBOR encoding size calculation failed");
             return NABTO_EC_UNKNOWN;
         }
+
+        bufferSize = cbor_encoder_get_extra_bytes_needed(&encoder);
     }
 
     uint8_t* buffer = np_calloc(1, bufferSize);
@@ -65,8 +66,7 @@ np_error_code nc_attacher_attach_start_request(
     {
         CborEncoder encoder;
         cbor_encoder_init(&encoder, buffer, bufferSize, 0);
-        /* If encoding succeeds, cbor_encoder_get_extra_bytes_needed should be 0 */
-        if (encode_cbor_request(&encoder, ctx) != 0) {
+        if (encode_cbor_request(&encoder, ctx) != CborNoError) {
             NABTO_LOG_ERROR(LOG, "CBOR encoding failed");
             nabto_coap_client_request_free(req);
             np_free(buffer);
@@ -141,7 +141,6 @@ enum nc_attacher_status coap_attach_start_handle_response(
                                 error.coapResponseCode, error.nabtoErrorCode,
                                 error.message ? error.message : "");
                 ec = NC_ATTACHER_STATUS_ERROR;
-
         }
         nc_coap_rest_error_deinit(&error);
         return ec;
@@ -296,7 +295,7 @@ enum nc_attacher_status handle_redirect(struct nc_attach_context* ctx,
         }
         if (cbor_value_copy_text_string(&host, ctx->dns, &hostLength, NULL) != CborNoError) {
             NABTO_LOG_ERROR(LOG, "cbor_value_copy_text_string for redirect host failed");
-            free(ctx->dns);
+            np_free(ctx->dns);
             ctx->dns = NULL;
             return NC_ATTACHER_STATUS_ERROR;
         }
@@ -325,23 +324,20 @@ void coap_attach_start_handler(struct nabto_coap_client_request* request,
     cb(result, userData);
 }
 
-size_t encode_cbor_request(CborEncoder* encoder, struct nc_attach_context* ctx)
+CborError encode_cbor_request(CborEncoder* encoder,
+                              struct nc_attach_context* ctx)
 {
     CborEncoder map;
-    if (nc_cbor_err_not_oom(cbor_encoder_create_map(encoder, &map, CborIndefiniteLength)) ||
-        nc_cbor_err_not_oom(cbor_encode_text_stringz(&map, "NabtoVersion")) ||
-        nc_cbor_err_not_oom(cbor_encode_text_stringz(&map, nc_version())) ||
-        nc_cbor_err_not_oom(cbor_encode_text_stringz(&map, "AppName")) ||
-        nc_cbor_err_not_oom(cbor_encode_text_stringz(&map, ctx->appName ? ctx->appName : "")) ||
-        nc_cbor_err_not_oom(cbor_encode_text_stringz(&map, "AppVersion")) ||
-        nc_cbor_err_not_oom(cbor_encode_text_stringz(&map, ctx->appVersion ? ctx->appVersion : "")) ||
-        nc_cbor_err_not_oom(cbor_encode_text_stringz(&map, "ProductId")) ||
-        nc_cbor_err_not_oom(cbor_encode_text_stringz(&map, ctx->productId)) ||
-        nc_cbor_err_not_oom(cbor_encode_text_stringz(&map, "DeviceId")) ||
-        nc_cbor_err_not_oom(cbor_encode_text_stringz(&map, ctx->deviceId)) ||
-        nc_cbor_err_not_oom(cbor_encoder_close_container(encoder, &map))) {
-        NABTO_LOG_ERROR(LOG, "Failed to encode Cbor request");
-        return 0;
-    }
-    return cbor_encoder_get_extra_bytes_needed(encoder);
+    NC_CBOR_CHECK_FOR_ERROR_EXCEPT_OOM(cbor_encoder_create_map(encoder, &map, CborIndefiniteLength));
+    NC_CBOR_CHECK_FOR_ERROR_EXCEPT_OOM(cbor_encode_text_stringz(&map, "NabtoVersion"));
+    NC_CBOR_CHECK_FOR_ERROR_EXCEPT_OOM(cbor_encode_text_stringz(&map, nc_version()));
+    NC_CBOR_CHECK_FOR_ERROR_EXCEPT_OOM(cbor_encode_text_stringz(&map, "AppName"));
+    NC_CBOR_CHECK_FOR_ERROR_EXCEPT_OOM(cbor_encode_text_stringz(&map, ctx->appName ? ctx->appName : ""));
+    NC_CBOR_CHECK_FOR_ERROR_EXCEPT_OOM(cbor_encode_text_stringz(&map, "AppVersion"));
+    NC_CBOR_CHECK_FOR_ERROR_EXCEPT_OOM(cbor_encode_text_stringz(&map, ctx->appVersion ? ctx->appVersion : ""));
+    NC_CBOR_CHECK_FOR_ERROR_EXCEPT_OOM(cbor_encode_text_stringz(&map, "ProductId"));
+    NC_CBOR_CHECK_FOR_ERROR_EXCEPT_OOM(cbor_encode_text_stringz(&map, ctx->productId));
+    NC_CBOR_CHECK_FOR_ERROR_EXCEPT_OOM(cbor_encode_text_stringz(&map, "DeviceId"));
+    NC_CBOR_CHECK_FOR_ERROR_EXCEPT_OOM(cbor_encode_text_stringz(&map, ctx->deviceId));
+    return cbor_encoder_close_container(encoder, &map);
 }

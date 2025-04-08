@@ -13,7 +13,7 @@
 
 static void coap_handler(struct nabto_coap_client_request* request, void* data);
 
-static size_t encode_request(struct nc_attacher_fcm_request* request, uint8_t* buffer, size_t bufferSize);
+static CborError encode_request(CborEncoder* encoder, struct nc_attacher_fcm_request* request);
 static bool parse_response(const uint8_t* buffer, size_t bufferSize, struct nc_attacher_fcm_response* response);
 
 const char* sendPath[] = { "device", "fcm", "send" };
@@ -31,13 +31,30 @@ np_error_code nc_attacher_fcm_send(struct nc_attach_context *attacher, struct nc
                                                               fcmContext, attacher->dtls);
     nabto_coap_client_request_set_content_format(fcmContext->coapRequest, NABTO_COAP_CONTENT_FORMAT_APPLICATION_CBOR);
 
-    size_t bufferSize = encode_request(&fcmContext->fcmRequest, NULL, 0);
+    size_t bufferSize;
+    {
+        CborEncoder encoder;
+        cbor_encoder_init(&encoder, NULL, 0, 0);
+        if (encode_request(&encoder, &fcmContext->fcmRequest) != CborErrorOutOfMemory) {
+            NABTO_LOG_ERROR(LOG, "Cannot determine buffersize for fcm cbor request");
+            return NABTO_EC_FAILED;
+        }
 
+        bufferSize = cbor_encoder_get_extra_bytes_needed(&encoder);
+    }
     uint8_t* buffer = np_calloc(1, bufferSize);
     if (buffer == NULL) {
         return NABTO_EC_OUT_OF_MEMORY;
     }
-    encode_request(&fcmContext->fcmRequest, buffer, bufferSize);
+    {
+        CborEncoder encoder;
+        cbor_encoder_init(&encoder, buffer, bufferSize, 0);
+        if (encode_request(&encoder, &fcmContext->fcmRequest) != CborNoError) {
+            NABTO_LOG_ERROR(LOG, "Cannot encode fcm request as cbor");
+            np_free(buffer);
+            return NABTO_EC_FAILED;
+        }
+    }
 
     nabto_coap_error err = nabto_coap_client_request_set_payload(fcmContext->coapRequest, buffer, bufferSize);
     np_free(buffer);
@@ -99,22 +116,18 @@ void nc_attacher_fcm_send_stop(struct nc_attacher_fcm_send_context* fcmSend)
     }
 }
 
-size_t encode_request(struct nc_attacher_fcm_request* request, uint8_t* buffer, size_t bufferSize)
+CborError encode_request(CborEncoder* encoder, struct nc_attacher_fcm_request* request)
 {
-    CborEncoder encoder;
-    cbor_encoder_init(&encoder, buffer, bufferSize, 0);
     CborEncoder map;
-    cbor_encoder_create_map(&encoder, &map, CborIndefiniteLength);
+    NC_CBOR_CHECK_FOR_ERROR_EXCEPT_OOM(cbor_encoder_create_map(encoder, &map, CborIndefiniteLength));
 
-    cbor_encode_text_stringz(&map, "ProjectId");
-    cbor_encode_text_stringz(&map, request->projectId);
+    NC_CBOR_CHECK_FOR_ERROR_EXCEPT_OOM(cbor_encode_text_stringz(&map, "ProjectId"));
+    NC_CBOR_CHECK_FOR_ERROR_EXCEPT_OOM(cbor_encode_text_stringz(&map, request->projectId));
 
-    cbor_encode_text_stringz(&map, "Body");
-    cbor_encode_text_stringz(&map, request->payload);
+    NC_CBOR_CHECK_FOR_ERROR_EXCEPT_OOM(cbor_encode_text_stringz(&map, "Body"));
+    NC_CBOR_CHECK_FOR_ERROR_EXCEPT_OOM(cbor_encode_text_stringz(&map, request->payload));
 
-    cbor_encoder_close_container(&encoder, &map);
-
-    return cbor_encoder_get_extra_bytes_needed(&encoder);
+    return cbor_encoder_close_container(encoder, &map);
 }
 
 bool parse_response(const uint8_t* buffer, size_t bufferSize, struct nc_attacher_fcm_response* response) {
@@ -122,12 +135,18 @@ bool parse_response(const uint8_t* buffer, size_t bufferSize, struct nc_attacher
     CborValue map;
     CborValue statusCode;
     CborValue body;
-    cbor_parser_init(buffer, bufferSize, 0, &parser, &map);
+    if (cbor_parser_init(buffer, bufferSize, 0, &parser, &map) != CborNoError) {
+        return false;
+    }
     if (!cbor_value_is_map(&map)) {
         return false;
     }
-    cbor_value_map_find_value(&map, "StatusCode", &statusCode);
-    cbor_value_map_find_value(&map, "Body", &body);
+    if (cbor_value_map_find_value(&map, "StatusCode", &statusCode) != CborNoError) {
+        return false;
+    }
+    if (cbor_value_map_find_value(&map, "Body", &body) != CborNoError) {
+        return false;
+    }
 
     if (!nc_cbor_copy_text_string(&body, &response->body, 4096)) {
         return false;
@@ -138,6 +157,10 @@ bool parse_response(const uint8_t* buffer, size_t bufferSize, struct nc_attacher
     }
     int tmp;
     if (cbor_value_get_int(&statusCode, &tmp) != CborNoError) {
+        return false;
+    }
+
+    if (tmp > UINT16_MAX || tmp < 0) {
         return false;
     }
 
