@@ -8,8 +8,6 @@
 
 #define LOG NABTO_LOG_MODULE_COAP
 
-static char* safeWrite(char* buffer, char* end, const char* format, ...);
-
 static const char* blockToString(uint32_t value)
 {
     uint32_t blockSize = 16 << (value & 0x7);
@@ -100,7 +98,7 @@ const char* coapOptionToString(uint16_t option)
     return buffer;
 }
 
-char* safeWrite(char* buffer, char* end, const char* format, ...)
+static char* safeWrite(char* buffer, char* end, const char* format, ...)
 {
     va_list args;
     int written;
