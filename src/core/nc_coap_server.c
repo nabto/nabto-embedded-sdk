@@ -34,7 +34,10 @@ np_error_code nc_coap_server_init(struct np_platform* pl, struct nc_device_conte
 {
     ctx->sendBuffer = NULL;
     nabto_coap_error err = nabto_coap_server_init(&ctx->server, logger, np_allocator_get());
-    nabto_coap_server_requests_init(&ctx->requests, &ctx->server, &nc_coap_server_get_stamp, &nc_coap_server_notify_event, ctx);
+    if (err != NABTO_COAP_ERROR_OK) {
+        return nc_coap_error_to_core(err);
+    }
+    err = nabto_coap_server_requests_init(&ctx->requests, &ctx->server, &nc_coap_server_get_stamp, &nc_coap_server_notify_event, ctx);
     if (err != NABTO_COAP_ERROR_OK) {
         return nc_coap_error_to_core(err);
     }
@@ -291,7 +294,10 @@ void nc_coap_server_remove_resource(struct nc_coap_server_resource* resource)
     while(!nn_llist_is_end(&it)) {
         req = nn_llist_get_item(&it);
         nn_llist_next(&it);
-        nc_coap_server_send_error_response(req, NABTO_COAP_CODE_NOT_FOUND, "Resource not found");
+        nabto_coap_error ec = nc_coap_server_send_error_response(req, NABTO_COAP_CODE_NOT_FOUND, "Resource not found");
+        if (ec != NABTO_COAP_ERROR_OK) {
+            NABTO_LOG_ERROR(LOG, "Cannot send coap error response. Discarding the response.");
+        }
     }
     np_free(resource);
 }
@@ -532,26 +538,17 @@ bool nc_coap_server_response_get_payload(struct nc_coap_server_request* request,
 
 }
 
-nabto_coap_code nc_coap_server_response_get_code(struct nc_coap_server_request* request)
+np_error_code nc_coap_server_response_get_code_human(struct nc_coap_server_request* request, uint16_t* code)
 {
     if (!request->isVirtual ||
         request->virRequest == NULL ||
-        !request->virRequest->responseReady) {
-        return -1;
-    } else {
-        return request->virRequest->respStatusCode;
-    }
-
-}
-uint16_t nc_coap_server_response_get_code_human(struct nc_coap_server_request* request)
-{
-    if (!request->isVirtual ||
-        request->virRequest == NULL ||
-        !request->virRequest->responseReady) {
-        return 0;
+        !request->virRequest->responseReady)
+    {
+        return NABTO_EC_INVALID_STATE;
     } else {
         uint8_t compactCode = request->virRequest->respStatusCode;
-        return ((compactCode >> 5)) * 100 + (compactCode & 0x1f);
+        *code = ((compactCode >> 5)) * 100 + (compactCode & 0x1f);
+        return NABTO_EC_OK;
     }
 }
 

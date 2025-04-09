@@ -75,7 +75,12 @@ struct nc_connection* nc_connections_alloc_client_connection(struct nc_connectio
         np_free(cliConn);
         return NULL;
     }
-    nc_connection_init(connection, ctx->device, false, cliConn);
+    np_error_code ec = nc_connection_init(connection, ctx->device, false, cliConn);
+    if (ec != NABTO_EC_OK) {
+        np_free(connection);
+        np_free(cliConn);
+        return NULL;
+    }
     ctx->currentConnections++;
     nn_llist_append(&ctx->connections, &connection->connectionsNode, connection);
     return connection;
@@ -95,7 +100,12 @@ struct nc_connection* nc_connections_alloc_virtual_connection(struct nc_connecti
         np_free(virConn);
         return NULL;
     }
-    nc_connection_init(connection, ctx->device, true, virConn);
+    np_error_code ec = nc_connection_init(connection, ctx->device, true, virConn);
+    if (ec != NABTO_EC_OK) {
+        np_free(connection);
+        np_free(virConn);
+        return NULL;
+    }
     ctx->currentConnections++;
     nn_llist_append(&ctx->connections, &connection->connectionsNode, connection);
     return connection;

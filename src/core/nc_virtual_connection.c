@@ -47,26 +47,26 @@ void nc_virtual_connection_close(struct nc_virtual_connection* conn)
     // TODO: does this do anything?
 }
 
-bool nc_virtual_connection_set_client_fingerprint(struct nc_virtual_connection* conn, uint8_t* fp)
+np_error_code nc_virtual_connection_set_client_fingerprint(struct nc_virtual_connection* conn, uint8_t* fp)
 {
     np_free(conn->clientFingerprint);
     conn->clientFingerprint = np_calloc(1, 32);
     if (conn->clientFingerprint == NULL) {
-        return false;
+        return NABTO_EC_OUT_OF_MEMORY;
     }
     memcpy(conn->clientFingerprint, fp, 32);
-    return true;
+    return NABTO_EC_OK;
 }
 
-bool nc_virtual_connection_set_device_fingerprint(struct nc_virtual_connection* conn, uint8_t* fp)
+np_error_code nc_virtual_connection_set_device_fingerprint(struct nc_virtual_connection* conn, uint8_t* fp)
 {
     np_free(conn->deviceFingerprint);
     conn->deviceFingerprint = np_calloc(1, 32);
     if (conn->deviceFingerprint == NULL) {
-        return false;
+        return NABTO_EC_OUT_OF_MEMORY;
     }
     memcpy(conn->deviceFingerprint, fp, 32);
-    return true;
+    return NABTO_EC_OK;
 }
 
 

@@ -32,7 +32,7 @@ void nc_stream_manager_init(struct nc_stream_manager_context* ctx, struct np_pla
     ctx->nonceCounter = 0;
     nn_llist_init(&ctx->listeners);
     nn_llist_init(&ctx->streams);
-    np_completion_event_init(&pl->eq, &ctx->sendCtx.ev, &nc_stream_manager_send_rst_callback, ctx);
+    np_completion_event_init(&pl->eq, &ctx->sendRstCtx.ev, &nc_stream_manager_send_rst_callback, ctx);
 }
 
 void nc_stream_manager_resolve_listener(struct nc_stream_listener* listener, struct nc_stream_context* stream, np_error_code ec)
@@ -48,7 +48,7 @@ void nc_stream_manager_deinit(struct nc_stream_manager_context* ctx)
         {
             nc_stream_manager_resolve_listener(listener, NULL, NABTO_EC_ABORTED);
         }
-        np_completion_event_deinit(&ctx->sendCtx.ev);
+        np_completion_event_deinit(&ctx->sendRstCtx.ev);
     }
 }
 
@@ -279,10 +279,10 @@ void nc_stream_manager_send_rst(struct nc_stream_manager_context* ctx, struct nc
 
     ret = nabto_stream_create_rst_packet(ptr, ctx->pl->buf.size(ctx->rstBuf) - (ptr - start));
 
-    ctx->sendCtx.buffer = start;
-    ctx->sendCtx.bufferSize = (uint16_t)(ptr-start+ret);
-    ctx->sendCtx.channelId = NP_DTLS_CLI_DEFAULT_CHANNEL_ID;
-    nc_client_connection_async_send_data(conn, &ctx->sendCtx);
+    ctx->sendRstCtx.buffer = start;
+    ctx->sendRstCtx.bufferSize = (uint16_t)(ptr-start+ret);
+    ctx->sendRstCtx.channelId = NP_DTLS_CLI_DEFAULT_CHANNEL_ID;
+    nc_client_connection_async_send_data(conn, &ctx->sendRstCtx);
 }
 
 void nc_stream_manager_send_rst_callback(const np_error_code ec, void* data)
@@ -408,6 +408,7 @@ np_error_code nc_stream_manager_get_ephemeral_stream_port(struct nc_stream_manag
             return NABTO_EC_OK;
         }
     }
+    NABTO_LOG_ERROR(LOG, "Could not allocate an ephemeral stream port.");
     return NABTO_EC_UNKNOWN;
 }
 

@@ -100,7 +100,7 @@ void nc_rendezvous_endpoints_completed(const np_error_code ec, const struct nabt
     memset(&endpointsResponse, 0, sizeof(struct endpoints_response));
 
     {
-        // Get local addresses
+        // Get local addresses. Leave room in the endpointsResponse structure for the global ep from stun.
         struct np_ip_address localAddrs[ENDPOINTS_RESPONSE_ENDPOINTS_MAX-1];
         size_t addrs = np_local_ip_get_local_ips(&pl->localIp, localAddrs, ENDPOINTS_RESPONSE_ENDPOINTS_MAX-1);
         uint16_t localPort = nc_stun_get_local_port(ctx->stunCoap->stun);
@@ -134,6 +134,7 @@ void nc_rendezvous_endpoints_completed(const np_error_code ec, const struct nabt
     if (buffer == NULL) {
         NABTO_LOG_ERROR(LOG, "Cannot allocate memory for cbor object");
         send_500_response(ctx);
+        return;
     }
 
     {

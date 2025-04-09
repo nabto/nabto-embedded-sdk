@@ -29,7 +29,9 @@ bool nc_coap_rest_error_decode_response(struct nabto_coap_client_response* respo
                 CborValue cborError;
                 CborValue cborCode;
                 CborValue message;
-                cbor_parser_init(payload, payloadLength, 0, &parser, &root);
+                if (cbor_parser_init(payload, payloadLength, 0, &parser, &root) != CborNoError) {
+                    return false;
+                }
                 if (cbor_value_is_map(&root)) {
                     cbor_value_map_find_value(&root, "Error", &cborError);
                     if (cbor_value_is_map(&cborError)) {
