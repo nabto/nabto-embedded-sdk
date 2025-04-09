@@ -64,7 +64,7 @@ jobs:
       - name: Upload artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: artifacts_${{ matrix.workflow.name }}_${{ matrix.workflow.os }}_${{ matrix.workflow.name }}
+          name: artifacts_${{ matrix.workflow.name }}_${{ matrix.workflow.os }}
           path: ${{ github.workspace }}/artifacts
           if-no-files-found: warn
           overwrite: true
