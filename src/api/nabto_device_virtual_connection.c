@@ -132,6 +132,7 @@ nabto_device_virtual_connection_set_device_fingerprint(NabtoDeviceVirtualConnect
         np_free(fpBin);
         return NABTO_DEVICE_EC_INVALID_ARGUMENT;
     }
+    // TODO get lock
     if (!nc_virtual_connection_set_device_fingerprint(conn->connection->connectionImplCtx, fpBin)) {
         np_free(fpBin);
         return NABTO_DEVICE_EC_OUT_OF_MEMORY;
@@ -150,6 +151,7 @@ nabto_device_virtual_connection_set_client_fingerprint(NabtoDeviceVirtualConnect
         np_free(fpBin);
         return NABTO_DEVICE_EC_INVALID_ARGUMENT;
     }
+    // TODO lock mutex
     if (!nc_virtual_connection_set_client_fingerprint(conn->connection->connectionImplCtx, fpBin)) {
         np_free(fpBin);
         return NABTO_DEVICE_EC_OUT_OF_MEMORY;

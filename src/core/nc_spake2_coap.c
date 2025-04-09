@@ -74,8 +74,8 @@ static bool read_username_and_password(struct nc_spake2_password_request* passwo
 
 void nc_spake2_handle_coap_1(struct nc_coap_server_request* request, void* data)
 {
-    uint8_t* payload;
-    size_t payloadLength;
+    uint8_t* payload = NULL;
+    size_t payloadLength = 0;
 
     struct nc_spake2_module* spake2 = data;
 
@@ -119,8 +119,8 @@ void nc_spake2_handle_coap_1(struct nc_coap_server_request* request, void* data)
 
 void nc_spake2_handle_coap_2(struct nc_coap_server_request* request, void* data)
 {
-    uint8_t* payload;
-    size_t payloadLength;
+    uint8_t* payload = NULL;
+    size_t payloadLength = 0;
     struct nc_connection* connection = nc_coap_server_request_get_connection(request);
 
     struct nc_spake2_module* spake2 = data;
