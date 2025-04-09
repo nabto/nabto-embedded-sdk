@@ -34,9 +34,6 @@ struct nabto_device_virtual_stream {
 
     struct nabto_device_future* closeFuture;
     struct np_completion_event closeEv;
-
-
-
 };
 
 struct nabto_device_virtual_coap_response {
@@ -132,13 +129,11 @@ nabto_device_virtual_connection_set_device_fingerprint(NabtoDeviceVirtualConnect
         np_free(fpBin);
         return NABTO_DEVICE_EC_INVALID_ARGUMENT;
     }
-    // TODO get lock
-    if (!nc_virtual_connection_set_device_fingerprint(conn->connection->connectionImplCtx, fpBin)) {
-        np_free(fpBin);
-        return NABTO_DEVICE_EC_OUT_OF_MEMORY;
-    };
+    nabto_device_threads_mutex_lock(conn->dev->eventMutex);
+    np_error_code ec = nc_virtual_connection_set_device_fingerprint(conn->connection->connectionImplCtx, fpBin);
+    nabto_device_threads_mutex_unlock(conn->dev->eventMutex);
     np_free(fpBin);
-    return NABTO_DEVICE_EC_OK;
+    return nabto_device_error_core_to_api(ec);
 }
 
 NabtoDeviceError NABTO_DEVICE_API
@@ -151,13 +146,11 @@ nabto_device_virtual_connection_set_client_fingerprint(NabtoDeviceVirtualConnect
         np_free(fpBin);
         return NABTO_DEVICE_EC_INVALID_ARGUMENT;
     }
-    // TODO lock mutex
-    if (!nc_virtual_connection_set_client_fingerprint(conn->connection->connectionImplCtx, fpBin)) {
-        np_free(fpBin);
-        return NABTO_DEVICE_EC_OUT_OF_MEMORY;
-    };
+    nabto_device_threads_mutex_lock(conn->dev->eventMutex);
+    np_error_code ec = nc_virtual_connection_set_client_fingerprint(conn->connection->connectionImplCtx, fpBin);
+    nabto_device_threads_mutex_unlock(conn->dev->eventMutex);
     np_free(fpBin);
-    return NABTO_DEVICE_EC_OK;
+    return nabto_device_error_core_to_api(ec);
 }
 
 NabtoDeviceConnectionRef  NABTO_DEVICE_API
@@ -229,6 +222,10 @@ nabto_device_virtual_coap_request_new(NabtoDeviceVirtualConnection* connection, 
     virReq->responseReady = false;
     virReq->method = nabto_device_coap_method_to_code(method);
     virReq->path = nn_strdup(path, np_allocator_get());
+    if (virReq->path == NULL) {
+        np_free(virReq);
+        return NULL;
+    }
     virReq->apiReq.dev = conn->dev;
     virReq->apiReq.connectionRef = conn->connection->connectionRef;
     size_t pathLen = strlen(virReq->path);
@@ -244,6 +241,11 @@ nabto_device_virtual_coap_request_new(NabtoDeviceVirtualConnection* connection, 
         }
     }
     virReq->segments = np_calloc(segmentCount+1, sizeof(char*)); // count +1 for NULL termination
+    if (virReq->segments == NULL) {
+        np_free(virReq->path);
+        np_free(virReq);
+        return NULL;
+    }
     size_t index = 0;
     for (size_t i = 0; i < pathLen; i++) {
         if (virReq->path[i] == '/') {
@@ -473,6 +475,7 @@ nabto_device_virtual_stream_read_some(NabtoDeviceVirtualStream* stream,
     nabto_device_future_reset(fut);
     if (str->readFuture != NULL) {
         nabto_device_future_resolve(fut, NABTO_DEVICE_EC_OPERATION_IN_PROGRESS);
+        nabto_device_threads_mutex_unlock(dev->eventMutex);
         return;
     }
     str->readFuture = fut;
@@ -498,6 +501,7 @@ nabto_device_virtual_stream_write(NabtoDeviceVirtualStream* stream,
     nabto_device_future_reset(fut);
     if (str->writeFuture != NULL) {
         nabto_device_future_resolve(fut, NABTO_DEVICE_EC_OPERATION_IN_PROGRESS);
+        nabto_device_threads_mutex_unlock(dev->eventMutex);
         return;
     }
     str->writeFuture = fut;
@@ -517,6 +521,7 @@ nabto_device_virtual_stream_close(NabtoDeviceVirtualStream* stream, NabtoDeviceF
     nabto_device_future_reset(fut);
     if (str->closeFuture != NULL) {
         nabto_device_future_resolve(fut, NABTO_DEVICE_EC_OPERATION_IN_PROGRESS);
+        nabto_device_threads_mutex_unlock(dev->eventMutex);
         return;
     }
     str->closeFuture = fut;
