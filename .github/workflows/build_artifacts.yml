@@ -79,7 +79,7 @@ jobs:
         if: ${{ success() }}
         uses: actions/upload-artifact@v4
         with:
-          name: artifacts_${{ matrix.os }}
+          name: ${{ matrix.friendly_name }}
 
           path: |
             ${{ github.workspace }}/artifacts/bin/tcp_tunnel_device_${{matrix.friendly_name}}${{ matrix.exe_postfix }}
@@ -145,7 +145,7 @@ jobs:
       if: ${{ success() }}
       uses: actions/upload-artifact@v4
       with:
-        name: artifacts_${{ matrix.arch }}
+        name: linux_${{ matrix.arch }}
         path: |
           ${{ github.workspace }}/artifacts/bin/tcp_tunnel_device_linux_${{matrix.arch}}
           ${{ github.workspace }}/artifacts/bin/thermostat_device_linux_${{matrix.arch}}
@@ -157,6 +157,7 @@ jobs:
     timeout-minutes: 20
     strategy:
       matrix:
+        friendly_name: [linux_x86_64, linux_armv6, linux_armhf, linux_aarch64, windows, macos]
         binary: [tcp_tunnel_device, thermostat_device]
         suffix: [linux_x86_64, linux_armv6, linux_armhf, linux_aarch64, windows.zip, macos]
     name: Release Assets
@@ -169,7 +170,7 @@ jobs:
     if: github.event_name == 'release'
     steps:
       - name: download artifacts
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4
         with:
           path: ./
       - name: list files
@@ -180,6 +181,6 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           upload_url: ${{ github.event.release.upload_url }}
-          asset_path: ./artifact/${{matrix.binary}}_${{matrix.suffix}}
+          asset_path: ./${{matrix.friendly_name}}/${{matrix.binary}}_${{matrix.suffix}}
           asset_name: ${{matrix.binary}}_${{matrix.suffix}}
           asset_content_type: application/octet-stream
