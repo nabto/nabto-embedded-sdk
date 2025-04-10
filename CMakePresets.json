@@ -106,6 +106,16 @@
                 "DEVICE_BUILD_TESTS": "ON",
                 "CMAKE_C_CLANG_TIDY": "clang-tidy;-checks=-bugprone-easily-swappable-parameters"
             }
+        },
+        {
+            "name": "werror",
+            "inherits": ["base", "unix_base", "vcpkg_base"],
+            "cacheVariables": {
+                "CMAKE_BUILD_TYPE": "Debug",
+                "DEVICE_BUILD_TESTS": "ON",
+                "CMAKE_C_FLAGS": "-Werror -Wall -pedantic",
+                "CMAKE_CXX_FLAGS": "-Werror -Wall -pedantic"
+            }
         }
     ],
     "buildPresets": [
@@ -158,6 +168,10 @@
             "name": "clang_tidy",
             "configurePreset": "clang_tidy",
             "targets": ["install"]
+        },
+        {
+            "name": "werror",
+            "configurePreset": "werror"
         }
     ],
     "workflowPresets": [
@@ -289,6 +303,19 @@
                 {
                     "type": "build",
                     "name": "clang_tidy"
+                }
+            ]
+        },
+        {
+            "name": "werror",
+            "steps": [
+                {
+                    "type": "configure",
+                    "name": "werror"
+                },
+                {
+                    "type": "build",
+                    "name": "werror"
                 }
             ]
         }

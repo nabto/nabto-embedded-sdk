@@ -40,6 +40,10 @@ np_error_code nc_coap_client_init(struct np_platform* pl, struct nc_coap_client_
 
     ec = np_completion_event_init(&ctx->pl->eq, &ctx->sendCtx.ev,
                                   &nc_coap_client_send_to_callback, ctx);
+    if (ec != NABTO_EC_OK)
+    {
+        return ec;
+    }
 
     nabto_coap_error err = nabto_coap_client_init(&ctx->client, np_allocator_get(), &nc_coap_client_notify_event, ctx);
     if (err != NABTO_COAP_ERROR_OK) {

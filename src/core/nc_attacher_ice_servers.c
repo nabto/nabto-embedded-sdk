@@ -132,7 +132,6 @@ static void coap_handler(struct nabto_coap_client_request* request, void* data)
         // Ignoring the return value and let the payload and size default to NULL, 0.
         nabto_coap_client_response_get_payload(res, &payload, &payloadLength);
 
-        ec = NABTO_EC_UNKNOWN;
         if (resCode != 201) {
             struct nc_coap_rest_error error;
             // Ignoring the return value as the function ensures the error
