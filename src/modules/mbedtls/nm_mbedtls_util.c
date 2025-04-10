@@ -102,13 +102,19 @@ np_error_code nm_dtls_create_crt_from_private_key_inner(struct crt_from_private_
     // mbedtls_x509write_crt_set_serial is deprecated from mbedtls 3.4 and onwards.
     unsigned char serial[1] = { 0x01 };
     ret = mbedtls_x509write_crt_set_serial_raw(&ctx->crt, serial, 1);
+    if (ret != 0) {
+        return NABTO_EC_UNKNOWN;
+    }
 #else
     ret = mbedtls_mpi_read_string( &ctx->serial, 10, "1");
     if (ret != 0) {
         return NABTO_EC_UNKNOWN;
     }
 
-    mbedtls_x509write_crt_set_serial( &ctx->crt, &ctx->serial );
+    ret = mbedtls_x509write_crt_set_serial( &ctx->crt, &ctx->serial );
+    if (ret != 0) {
+        return NABTO_EC_UNKNOWN;
+    }
 #endif
 
     ret = mbedtls_x509write_crt_set_subject_name( &ctx->crt, "CN=nabto" );
@@ -284,7 +290,8 @@ void nm_mbedtls_util_check_logging(mbedtls_ssl_config* conf)
 int nm_mbedtls_sha256( const unsigned char *input, size_t ilen, unsigned char output[32] )
 {
 #if MBEDTLS_VERSION_MAJOR >= 3
-    return mbedtls_sha256(input, ilen, output, 0);
+    mbedtls_sha256(input, ilen, output, 0);
+    return 0;
 #else
     return mbedtls_sha256_ret(input, ilen, output, 0);
 #endif

@@ -424,6 +424,9 @@ bool handle_main(struct args* args, struct tcp_tunnel* tunnel)
         args->homeDir = expand_file_name(homeEnv, HOMEDIR_EDGE_FOLDER);
         char* dotNabto = expand_file_name(homeEnv, HOMEDIR_NABTO_FOLDER);
         if (dotNabto == NULL || args->homeDir == NULL) {
+            free(args->homeDir);
+            args->homeDir = NULL;
+            free(dotNabto);
             return false;
         }
         make_directory(dotNabto);

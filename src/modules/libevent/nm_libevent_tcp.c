@@ -94,6 +94,7 @@ np_error_code tcp_create(struct np_tcp* obj, struct np_tcp_socket** sock)
     s->aborted = false;
     s->bev = bufferevent_socket_new(ctx->eventBase, -1, BEV_OPT_CLOSE_ON_FREE | BEV_OPT_THREADSAFE);
     if (s->bev == NULL) {
+        np_free(s);
         return NABTO_EC_OUT_OF_MEMORY;
     }
 

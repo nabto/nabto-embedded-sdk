@@ -97,6 +97,15 @@
                 "CMAKE_BUILD_TYPE": "Debug",
                 "DEVICE_BUILD_TESTS": "ON"
             }
+        },
+        {
+            "name": "clang_tidy",
+            "inherits": ["base", "unix_base", "vcpkg_base"],
+            "cacheVariables": {
+                "CMAKE_BUILD_TYPE": "Debug",
+                "DEVICE_BUILD_TESTS": "ON",
+                "CMAKE_C_CLANG_TIDY": "clang-tidy;-checks=-bugprone-easily-swappable-parameters"
+            }
         }
     ],
     "buildPresets": [
@@ -143,6 +152,11 @@
         {
             "name": "linux_debug",
             "configurePreset": "linux_debug",
+            "targets": ["install"]
+        },
+        {
+            "name": "clang_tidy",
+            "configurePreset": "clang_tidy",
             "targets": ["install"]
         }
     ],
@@ -262,6 +276,19 @@
                 {
                     "type": "build",
                     "name": "windows_vcpkg_static"
+                }
+            ]
+        },
+        {
+            "name": "clang_tidy",
+            "steps": [
+                {
+                    "type": "configure",
+                    "name": "clang_tidy"
+                },
+                {
+                    "type": "build",
+                    "name": "clang_tidy"
                 }
             ]
         }

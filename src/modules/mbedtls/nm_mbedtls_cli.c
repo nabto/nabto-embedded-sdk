@@ -289,6 +289,9 @@ np_error_code create_connection(struct np_platform* pl, struct np_dtls_cli_conne
 
     ec = np_completion_event_init(&pl->eq, &conn->senderEvent,
                                   &dtls_udp_send_callback, conn);
+    if (ec != NABTO_EC_OK) {
+        return ec;
+    }
 
     mbedtls_ssl_set_bio( &conn->ssl, conn,
                          nm_dtls_mbedtls_send, nm_dtls_mbedtls_recv, NULL );
