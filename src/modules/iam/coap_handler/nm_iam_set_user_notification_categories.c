@@ -20,8 +20,13 @@ void handle_request(struct nm_iam_coap_handler* handler, NabtoDeviceCoapRequest*
     CborParser parser;
     CborValue value;
     const char* username = nabto_device_coap_request_get_parameter(request, "user");
-    if (username == NULL || !nm_iam_cbor_init_parser(request, &parser, &value)) {
+    if (username == NULL) {
         nabto_device_coap_error_response(request, 400, "Bad request");
+        return;
+    }
+    enum nm_iam_cbor_error ec = nm_iam_cbor_init_parser(request, &parser, &value);
+    if ( ec != IAM_CBOR_OK ) {
+        nm_iam_cbor_send_error_response(request, ec);
         return;
     }
 

@@ -33,8 +33,9 @@ void handle_request(struct nm_iam_coap_handler* handler, NabtoDeviceCoapRequest*
     CborParser parser;
     CborValue value;
 
-    if (!nm_iam_cbor_init_parser(request, &parser, &value)) {
-        nabto_device_coap_error_response(request, 400, "Bad request");
+    enum nm_iam_cbor_error ec = nm_iam_cbor_init_parser(request, &parser, &value);
+    if ( ec != IAM_CBOR_OK ) {
+        nm_iam_cbor_send_error_response(request, ec);
         return;
     }
 
@@ -95,8 +96,8 @@ void handle_request(struct nm_iam_coap_handler* handler, NabtoDeviceCoapRequest*
 
     nabto_device_coap_response_set_code(request, 201);
     nabto_device_coap_response_set_content_format(request, NABTO_DEVICE_COAP_CONTENT_FORMAT_APPLICATION_CBOR);
-    NabtoDeviceError ec = nabto_device_coap_response_set_payload(request, payload, payloadSize);
-    if (ec != NABTO_DEVICE_EC_OK) {
+    NabtoDeviceError err = nabto_device_coap_response_set_payload(request, payload, payloadSize);
+    if (err != NABTO_DEVICE_EC_OK) {
         nabto_device_coap_error_response(request, 500, "Insufficient resources");
     } else {
         nabto_device_coap_response_ready(request);

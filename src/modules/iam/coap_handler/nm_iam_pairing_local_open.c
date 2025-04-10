@@ -43,8 +43,9 @@ void handle_request(struct nm_iam_coap_handler* handler, NabtoDeviceCoapRequest*
     CborParser parser;
     CborValue value;
 
-    if (!nm_iam_cbor_init_parser(request, &parser, &value)) {
-        nabto_device_coap_error_response(request, 400, "Bad request");
+    enum nm_iam_cbor_error err = nm_iam_cbor_init_parser(request, &parser, &value);
+    if ( err != IAM_CBOR_OK ) {
+        nm_iam_cbor_send_error_response(request, err);
         nm_iam_free(fingerprint);
         return;
     }

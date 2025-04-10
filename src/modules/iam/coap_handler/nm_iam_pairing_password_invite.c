@@ -66,7 +66,7 @@ void handle_request(struct nm_iam_coap_handler* handler, NabtoDeviceCoapRequest*
                     }
                 } else {
                     char* fpName = NULL;
-                    if (nm_iam_cbor_init_parser(request, &parser, &value)) {
+                    if (nm_iam_cbor_init_parser(request, &parser, &value) == IAM_CBOR_OK) {
                         nm_iam_cbor_decode_kv_string(&value, "FingerprintName", &fpName); // If decoding fails, leave fpName as NULL.
                     }
                     if (!nm_iam_user_add_fingerprint(user, fp, fpName)) {

@@ -14,30 +14,18 @@ NabtoDeviceError nm_iam_get_notification_categories_init(struct nm_iam_coap_hand
     return nm_iam_coap_handler_init(handler, device, iam, NABTO_DEVICE_COAP_GET, paths, &handle_request);
 }
 
-static size_t encode_categories(struct nm_iam* iam, void* buffer, size_t bufferSize)
+static CborError encode_categories(struct nm_iam* iam, CborEncoder* encoder)
 {
-    CborEncoder encoder;
-    cbor_encoder_init(&encoder, buffer, bufferSize, 0);
     CborEncoder array;
-    CborError err = cbor_encoder_create_array(&encoder, &array, CborIndefiniteLength);
-    if (err != CborNoError) {
-        return 0;
-    }
+
+    NM_IAM_CBOR_ERROR_RETURN_EXCEPT_OOM(cbor_encoder_create_array(encoder, &array, CborIndefiniteLength));
 
     const char* s;
     NN_STRING_SET_FOREACH(s, &iam->notificationCategories) {
-        err = cbor_encode_text_stringz(&array, s);
-        if (err != CborNoError) {
-            return 0;
-        }
+        NM_IAM_CBOR_ERROR_RETURN_EXCEPT_OOM(cbor_encode_text_stringz(&array, s));
     }
 
-    err = cbor_encoder_close_container(&encoder, &array);
-    if (err != CborNoError) {
-        return 0;
-    }
-
-    return cbor_encoder_get_extra_bytes_needed(&encoder);
+    return cbor_encoder_close_container(encoder, &array);
 }
 
 void handle_request(struct nm_iam_coap_handler* handler, NabtoDeviceCoapRequest* request)
@@ -47,10 +35,16 @@ void handle_request(struct nm_iam_coap_handler* handler, NabtoDeviceCoapRequest*
         return;
     }
 
-    size_t payloadSize = encode_categories(handler->iam, NULL, 0);
-    if (payloadSize == 0) {
-        nabto_device_coap_error_response(request, 500, "Encoding error");
-        return;
+    size_t payloadSize;
+    {
+        CborEncoder encoder;
+        cbor_encoder_init(&encoder, NULL, 0, 0);
+
+        if (encode_categories(handler->iam, &encoder) != CborErrorOutOfMemory) {
+            nabto_device_coap_error_response(request, 500, "Encoding error");
+            return;
+        }
+        payloadSize = cbor_encoder_get_extra_bytes_needed(&encoder);
     }
     uint8_t* payload = nm_iam_calloc(1, payloadSize);
     if (payload == NULL) {
@@ -58,10 +52,14 @@ void handle_request(struct nm_iam_coap_handler* handler, NabtoDeviceCoapRequest*
         return;
     }
 
-    if (encode_categories(handler->iam, payload, payloadSize) == 0) {
-        nm_iam_free(payload);
-        nabto_device_coap_error_response(request, 500, "Encoding error");
-        return;
+    {
+        CborEncoder encoder;
+        cbor_encoder_init(&encoder, payload, payloadSize, 0);
+
+        if (encode_categories(handler->iam, &encoder) != CborNoError) {
+            nabto_device_coap_error_response(request, 500, "Encoding error");
+            return;
+        }
     }
 
     nabto_device_coap_response_set_code(request, 205);

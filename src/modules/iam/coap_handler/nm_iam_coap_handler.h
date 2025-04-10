@@ -25,6 +25,13 @@ struct nm_iam_coap_handler {
     bool locked;
 };
 
+enum nm_iam_cbor_error {
+    IAM_CBOR_OK,
+    IAM_CBOR_INVALID_CONTENT_FORMAT,
+    IAM_CBOR_MISSING_PAYLOAD,
+    IAM_CBOR_PARSING_ERROR
+};
+
 NabtoDeviceError nm_iam_coap_handler_init(
     struct nm_iam_coap_handler* handler,
     NabtoDevice* device,
@@ -75,7 +82,8 @@ NabtoDeviceError nm_iam_settings_get_init(struct nm_iam_coap_handler* handler, N
 NabtoDeviceError nm_iam_device_info_set_init(struct nm_iam_coap_handler* handler, NabtoDevice* device, struct nm_iam* iam);
 
 // utility functions
-bool nm_iam_cbor_init_parser(NabtoDeviceCoapRequest* request, CborParser* parser, CborValue* cborValue);
+enum nm_iam_cbor_error nm_iam_cbor_init_parser(NabtoDeviceCoapRequest* request, CborParser* parser, CborValue* cborValue);
+void nm_iam_cbor_send_error_response(NabtoDeviceCoapRequest* request, enum nm_iam_cbor_error ec);
 
 bool nm_iam_cbor_decode_string(CborValue* value, char** str);
 bool nm_iam_cbor_decode_string_set(CborValue* value, struct nn_string_set* set);
@@ -86,5 +94,18 @@ bool nm_iam_cbor_err_not_oom(CborError e);
 
 // used from GET /iam/users/:user and GET /iam/me
 size_t nm_iam_cbor_encode_user(struct nm_iam_user* user, void* buffer, size_t bufferSize);
+
+
+/**
+ * Returns from the function if the embedded cbor function `e` returns with an error
+ * and the error is not CborErrorOutOfMemory.
+ */
+#define NM_IAM_CBOR_ERROR_RETURN_EXCEPT_OOM(e)              \
+    do {                                                   \
+        CborError ec = e;                                  \
+        if ((ec & ~CborErrorOutOfMemory) != CborNoError) { \
+            return ec;                                     \
+        }                                                  \
+    } while(0)
 
 #endif
