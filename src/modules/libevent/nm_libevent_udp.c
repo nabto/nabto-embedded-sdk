@@ -248,21 +248,31 @@ evutil_socket_t nm_libevent_udp_create_nonblocking_socket(int domain, int type)
 #endif
 
     evutil_socket_t sock = socket(domain, type, 0);
+    if (sock < 0) {
+        NABTO_LOG_ERROR(LOG, "Cannot create socket.");
+        return NM_INVALID_SOCKET;
+    }
 
 #ifndef SOCK_NONBLOCK
 #if defined(F_GETFL)
     int flags = fcntl(sock, F_GETFL, 0);
     if (flags < 0) {
         NABTO_LOG_ERROR(LOG, "cannot set nonblocking mode, fcntl F_GETFL failed");
+        evutil_closesocket(sock);
         return NM_INVALID_SOCKET;
     }
     if (fcntl(sock, F_SETFL, flags | O_NONBLOCK) < 0) {
         NABTO_LOG_ERROR(LOG, "cannot set nonblocking mode, fcntl F_SETFL failed");
+        evutil_closesocket(sock);
         return NM_INVALID_SOCKET;
     }
 #elif defined(FIONBIO)
     u_long nonblocking = 1;
-    ioctlsocket(sock, FIONBIO, &nonblocking);
+    if (ioctlsocket(sock, FIONBIO, &nonblocking) != 0) {
+        NABTO_LOG_ERROR(LOG, "Could not set socket to nonblocking mode.");
+        evutil_closesocket(sock);
+        return NM_INVALID_SOCKET;
+    }
 #else
     #error cannot make socket nonblocking
 #endif

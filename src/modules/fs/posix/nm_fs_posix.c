@@ -33,7 +33,7 @@ struct nm_fs nm_fs_posix_get_impl()
     impl.read_file = read_file;
     impl.write_file = write_file;
     return impl;
-};
+}
 
 static enum nm_fs_error create_directory(void* impl, const char* path)
 {

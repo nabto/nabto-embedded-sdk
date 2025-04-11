@@ -1,9 +1,9 @@
 #include "nm_communication_buffer.h"
 
-#include <platform/np_communication_buffer.h>
-#include <platform/np_platform.h>
-#include <platform/np_logging.h>
 #include <platform/np_allocator.h>
+#include <platform/np_communication_buffer.h>
+#include <platform/np_logging.h>
+#include <platform/np_platform.h>
 
 
 

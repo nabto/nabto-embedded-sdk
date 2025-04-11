@@ -350,13 +350,15 @@ NabtoDeviceError NABTO_DEVICE_API nabto_device_set_private_key(NabtoDevice* devi
         }
         dev->certificate = crt;
 
+        if (ec == NABTO_EC_OK) {
 #if defined(NABTO_DEVICE_MBEDTLS)
-        ec = nm_mbedtls_get_fingerprint_from_private_key(dev->privateKey, dev->fingerprint);
+            ec = nm_mbedtls_get_fingerprint_from_private_key(dev->privateKey, dev->fingerprint);
 #elif defined(NABTO_DEVICE_WOLFSSL)
-        ec = nm_wolfssl_get_fingerprint_from_private_key(dev->privateKey, dev->fingerprint);
+            ec = nm_wolfssl_get_fingerprint_from_private_key(dev->privateKey, dev->fingerprint);
 #else
 #error Missing implementation to create a crt from a private key.
 #endif
+        }
     }
 
     nabto_device_threads_mutex_unlock(dev->eventMutex);

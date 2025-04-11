@@ -90,7 +90,7 @@ void nc_keep_alive_create_request(struct nc_keep_alive_context* ctx, uint8_t** b
     uint8_t* ptr = ctx->sendBuffer;
     *ptr = AT_KEEP_ALIVE; ptr++;
     *ptr = CT_KEEP_ALIVE_REQUEST; ptr++;
-    memset(ptr, 0, 16); ptr += 16;
+    memset(ptr, 0, 16); // ptr += 16;
 
     ctx->isSending = true;
     *buffer = ctx->sendBuffer;

@@ -92,7 +92,6 @@ static void coap_handler(struct nabto_coap_client_request* request, void* data)
         size_t payloadLength = 0;
         nabto_coap_client_response_get_payload(res, &payload, &payloadLength);
 
-        ec = NABTO_EC_UNKNOWN;
         if (resCode != 201) {
             struct nc_coap_rest_error error;
             nc_coap_rest_error_decode_response(res, &error);
