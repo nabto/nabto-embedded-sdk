@@ -113,8 +113,9 @@
             "cacheVariables": {
                 "CMAKE_BUILD_TYPE": "Debug",
                 "DEVICE_BUILD_TESTS": "ON",
-                "CMAKE_C_FLAGS": "-Werror -Wall -pedantic",
-                "CMAKE_CXX_FLAGS": "-Werror -Wall -pedantic"
+                "CMAKE_COMPILE_WARNING_AS_ERROR": "ON",
+                "CMAKE_C_FLAGS": "-Wall -pedantic",
+                "CMAKE_CXX_FLAGS": "-Wall -pedantic"
             }
         }
     ],
