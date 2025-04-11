@@ -8,7 +8,6 @@
 #include "../nm_iam_allocator.h"
 
 
-
 static void start_listen(struct nm_iam_coap_handler* handler);
 static void request_callback(NabtoDeviceFuture* future, NabtoDeviceError ec, void* userData);
 
@@ -108,29 +107,40 @@ void nm_iam_coap_handler_async_request_end(struct nm_iam_coap_handler* handler)
 }
 
 
-bool nm_iam_cbor_init_parser(NabtoDeviceCoapRequest* request, CborParser* parser, CborValue* cborValue)
+enum nm_iam_cbor_error nm_iam_cbor_init_parser(NabtoDeviceCoapRequest* request, CborParser* parser, CborValue* cborValue)
 {
     uint16_t contentFormat;
     NabtoDeviceError ec;
     ec = nabto_device_coap_request_get_content_format(request, &contentFormat);
     if (ec || contentFormat != NABTO_DEVICE_COAP_CONTENT_FORMAT_APPLICATION_CBOR) {
-        nabto_device_coap_error_response(request, 400, "Invalid Content Format");
-        return false;
+        return IAM_CBOR_INVALID_CONTENT_FORMAT;
     }
     void* payload;
     size_t payloadSize;
     if (nabto_device_coap_request_get_payload(request, &payload, &payloadSize) != NABTO_DEVICE_EC_OK) {
-        nabto_device_coap_error_response(request, 400, "Missing payload");
-        return false;
+        return IAM_CBOR_MISSING_PAYLOAD;
     }
     {
         CborError err = cbor_parser_init((const uint8_t*)payload, payloadSize, 0, parser, cborValue);
         if (err != CborNoError) {
-            nabto_device_coap_error_response(request, 400, "CBOR parsing error");
-            return false;
+            return IAM_CBOR_PARSING_ERROR;
         }
     }
-    return true;
+    return IAM_CBOR_OK;
+}
+
+void nm_iam_cbor_send_error_response(NabtoDeviceCoapRequest* request, enum nm_iam_cbor_error ec)
+{
+    switch(ec) {
+    case IAM_CBOR_INVALID_CONTENT_FORMAT:
+        nabto_device_coap_error_response(request, 400, "Invalid Content Format");
+    case IAM_CBOR_MISSING_PAYLOAD:
+        nabto_device_coap_error_response(request, 400, "Missing payload");
+    case IAM_CBOR_PARSING_ERROR:
+        nabto_device_coap_error_response(request, 400, "CBOR parsing error");
+    default:
+        nabto_device_coap_error_response(request, 400, "Bad request");
+    }
 }
 
 
