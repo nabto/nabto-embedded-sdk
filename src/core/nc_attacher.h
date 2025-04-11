@@ -17,8 +17,6 @@ extern "C" {
 
 #define NABTO_MAX_BASESTATION_EPS 2
 
-enum nc_device_event;
-
 struct nabto_coap_client_request;
 
 typedef void (*nc_attacher_fcm_send_callback)(const np_error_code ec, void* userData);
