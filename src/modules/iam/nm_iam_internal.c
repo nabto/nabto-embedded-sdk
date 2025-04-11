@@ -333,45 +333,64 @@ bool validate_user_fingerprints(struct nm_iam_user* user) {
     return true;
 }
 
+size_t strlen_check_null(const char* str) {
+    if(str == NULL) {
+        return 0;
+    }
+    return strlen(str);
+}
+
+bool check_length(size_t minLength, size_t maxLength, const char* str) {
+    if (str == NULL) {
+        return true;
+    }
+    size_t length = strlen(str);
+    if (length < minLength || length > maxLength) {
+        return false;
+    }
+    return true;
+}
+
 bool validate_state(struct nm_iam* iam, struct nm_iam_state* state) {
     if (nn_llist_size(&state->users) > iam->maxUsers ||
-        (state->passwordOpenPassword != NULL && (strlen(state->passwordOpenPassword) > iam->passwordMaxLength || strlen(state->passwordOpenPassword) < iam->passwordMinLength)) ||
-        (state->passwordOpenSct != NULL && strlen(state->passwordOpenSct) > iam->sctMaxLength) ||
-        (state->initialPairingUsername != NULL && strlen(state->initialPairingUsername) > iam->usernameMaxLength) ||
-        (state->friendlyName != NULL && strlen(state->friendlyName) > iam->friendlyNameMaxLength)
+        !check_length(iam->passwordMaxLength, iam->passwordMaxLength, state->passwordOpenPassword) ||
+        !check_length(0, iam->sctMaxLength, state->passwordOpenSct) ||
+        !check_length(0,iam->usernameMaxLength, state->initialPairingUsername) ||
+        !check_length(0, iam->friendlyNameMaxLength, state->friendlyName)
         ) {
         NN_LOG_ERROR(iam->logger, LOGM,
                      "One of the following length checks failed. maxUsers: %d>%d, passwordOpenPassword: %d>%d>%d, passwordOpenSct: %d>%d, initialPairingUsername: %d>%d, friendlyName: %d>%d",
                      nn_llist_size(&state->users), iam->maxUsers, iam->passwordMinLength,
-                     strlen(state->passwordOpenPassword), iam->passwordMaxLength,
-                     strlen(state->passwordOpenSct), iam->sctMaxLength,
-                     strlen(state->initialPairingUsername), iam->usernameMaxLength,
-                     strlen(state->friendlyName), iam->friendlyNameMaxLength);
+                     strlen_check_null(state->passwordOpenPassword), iam->passwordMaxLength,
+                     strlen_check_null(state->passwordOpenSct), iam->sctMaxLength,
+                     strlen_check_null(state->initialPairingUsername), iam->usernameMaxLength,
+                     strlen_check_null(state->friendlyName), iam->friendlyNameMaxLength);
         return false;
     }
 
     struct nm_iam_user* user;
     NN_LLIST_FOREACH(user, &state->users) {
         if (strlen(user->username) > iam->usernameMaxLength ||
-            (user->displayName != NULL && strlen(user->displayName) > iam->displayNameMaxLength) ||
-            (user->password != NULL && (strlen(user->password) > iam->passwordMaxLength || strlen(user->password) < iam->passwordMinLength)) ||
-            (!validate_user_fingerprints(user)) ||
-            (user->sct != NULL && strlen(user->sct) > iam->sctMaxLength) ||
-            (user->fcmToken != NULL && strlen(user->fcmToken) > iam->fcmTokenMaxLength) ||
-            (user->fcmProjectId != NULL && strlen(user->fcmProjectId) > iam->fcmProjectIdMaxLength) ||
-            (user->oauthSubject != NULL && strlen(user->oauthSubject) > iam->oauthSubjectMaxLength)
-            ) {
+            !check_length(0, iam->displayNameMaxLength, user->displayName) ||
+            !check_length(iam->passwordMinLength, iam->passwordMaxLength, user->password) ||
+            !validate_user_fingerprints(user) ||
+            !check_length(0, iam->sctMaxLength, user->sct) ||
+            !check_length(0, iam->fcmTokenMaxLength, user->fcmToken) ||
+            !check_length(0, iam->fcmProjectIdMaxLength, user->fcmProjectId) ||
+            !check_length(0, iam->oauthSubjectMaxLength, user->oauthSubject)
+            )
+        {
             NN_LOG_ERROR(iam->logger, LOGM,
                          "A user exceeded length a length limit. username: %d>%d, displayName: %d>%d, password: %d>%d>%d, fingerprint: %s, sct: %d>%d, fcmToken: %d>%d, fcmProjectId: %d>%d, oauthSubject: %d>%d",
-                         (user->username == NULL) ? 0 : strlen(user->username), iam->usernameMaxLength,
-                         (user->displayName == NULL) ? 0 : strlen(user->displayName), iam->displayNameMaxLength,
+                         strlen_check_null(user->username), iam->usernameMaxLength,
+                         strlen_check_null(user->displayName), iam->displayNameMaxLength,
                          iam->passwordMinLength,
-                         (user->password == NULL) ? 0 : strlen(user->password), iam->passwordMaxLength,
+                         strlen_check_null(user->password), iam->passwordMaxLength,
                          (validate_user_fingerprints(user)) ? "valid" : "invalid",
-                         (user->sct == NULL) ? 0 : strlen(user->sct), iam->usernameMaxLength,
-                         (user->fcmToken == NULL) ? 0 : strlen(user->fcmToken), iam->fcmTokenMaxLength,
-                         (user->fcmProjectId == NULL) ? 0 : strlen(user->fcmProjectId), iam->fcmProjectIdMaxLength,
-                         (user->oauthSubject == NULL) ? 0 : strlen(user->oauthSubject), iam->oauthSubjectMaxLength);
+                         strlen_check_null(user->sct), iam->usernameMaxLength,
+                         strlen_check_null(user->fcmToken), iam->fcmTokenMaxLength,
+                         strlen_check_null(user->fcmProjectId), iam->fcmProjectIdMaxLength,
+                         strlen_check_null(user->oauthSubject), iam->oauthSubjectMaxLength);
             return false;
         }
         const char* s;
