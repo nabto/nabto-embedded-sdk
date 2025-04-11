@@ -353,7 +353,7 @@ bool check_length(size_t minLength, size_t maxLength, const char* str) {
 
 bool validate_state(struct nm_iam* iam, struct nm_iam_state* state) {
     if (nn_llist_size(&state->users) > iam->maxUsers ||
-        !check_length(iam->passwordMaxLength, iam->passwordMaxLength, state->passwordOpenPassword) ||
+        !check_length(iam->passwordMinLength, iam->passwordMaxLength, state->passwordOpenPassword) ||
         !check_length(0, iam->sctMaxLength, state->passwordOpenSct) ||
         !check_length(0,iam->usernameMaxLength, state->initialPairingUsername) ||
         !check_length(0, iam->friendlyNameMaxLength, state->friendlyName)
