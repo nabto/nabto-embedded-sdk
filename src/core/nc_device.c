@@ -322,12 +322,12 @@ static np_error_code nc_device_populate_mdns(struct nc_device_context* device)
         return NABTO_EC_INVALID_STATE;
     }
 
-    char* ptr = uniqueId;
-    strcpy(ptr, device->productId);
-    ptr += strlen(device->productId);
-    strcpy(ptr, "-");
-    ptr += strlen("-");
-    strcpy(ptr, device->deviceId);
+    if (!nn_strcat(uniqueId, 64, device->productId) ||
+        !nn_strcat(uniqueId, 64, "-") ||
+        !nn_strcat(uniqueId, 64, device->deviceId)) {
+        return NABTO_EC_OUT_OF_MEMORY;
+    }
+
     if (!nn_string_set_insert(&device->mdnsSubtypes, uniqueId)) {
         return NABTO_EC_OUT_OF_MEMORY;
     }
@@ -405,15 +405,13 @@ np_error_code nc_device_start(struct nc_device_context* dev,
     }
 
     if (dev->hostname == NULL) {
-        dev->hostname = np_calloc(1, strlen(dev->productId) + strlen(defaultServerUrlSuffix)+1);
-        if (dev->hostname == NULL) {
+        size_t hostLen = strlen(dev->productId) + strlen(defaultServerUrlSuffix)+1;
+        dev->hostname = np_calloc(1, hostLen);
+        if (dev->hostname == NULL ||
+            !nn_strcat(dev->hostname, hostLen, dev->productId) ||
+            !nn_strcat(dev->hostname, hostLen, defaultServerUrlSuffix)) {
             return NABTO_EC_OUT_OF_MEMORY;
         }
-        char* ptr = dev->hostname;
-
-        strcpy(ptr, dev->productId);
-        ptr = ptr + strlen(dev->productId);
-        strcpy(ptr, defaultServerUrlSuffix);
     }
 
     np_error_code ec = NABTO_EC_OK;

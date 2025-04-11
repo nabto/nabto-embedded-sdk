@@ -9,7 +9,7 @@
 #include <platform/np_logging.h>
 #include <platform/np_allocator.h>
 
-
+#include <nn/string.h>
 
 #include <string.h>
 
@@ -90,11 +90,10 @@ void nc_spake2_password_ready(struct nc_spake2_password_request* req, const char
                                       connection->spake2Key) == NABTO_EC_OK) {
             connection->hasSpake2Key = true;
             np_free(connection->username);
-            connection->username = np_calloc(1, strlen(req->username)+1);
+            connection->username = nn_strdup(req->username, np_allocator_get());
             if (connection->username == NULL) {
                 nc_coap_server_send_error_response(coap, (nabto_coap_code)NABTO_COAP_CODE(5,00), NULL);
             } else {
-                strcpy(connection->username, req->username);
 
                 // respond with S
                 nc_coap_server_response_set_payload(coap, buffer, olen);

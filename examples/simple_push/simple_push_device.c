@@ -424,12 +424,9 @@ void iam_logger(void* data, enum nn_log_severity severity, const char* module,
             // The log line was too large for the array
         }
         size_t fileLen = strlen(file);
-        char fileTmp[16+4];
+        const char* fileTmp = file;
         if(fileLen > 16) {
-            strcpy(fileTmp, "...");
-            strcpy(fileTmp + 3, file + fileLen - 16);
-        } else {
-            strcpy(fileTmp, file);
+            fileTmp = file + fileLen - 16;
         }
         const char* level;
         switch(severity) {
