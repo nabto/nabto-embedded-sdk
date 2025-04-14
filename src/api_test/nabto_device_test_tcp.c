@@ -139,11 +139,10 @@ void tcp_rst_connected(np_error_code ec, void* userData)
     if (ec == NABTO_EC_ABORTED) {
         rst_test_done(t);
         return;
-    } else {
-        NABTO_LOG_ERROR(LOG, "Expected %s got, %s", np_error_code_to_string(NABTO_EC_ABORTED), np_error_code_to_string(ec));
-        resolve_and_free_test(t, NABTO_EC_FAILED);
-        return;
     }
+    NABTO_LOG_ERROR(LOG, "Expected %s got, %s", np_error_code_to_string(NABTO_EC_ABORTED), np_error_code_to_string(ec));
+    resolve_and_free_test(t, NABTO_EC_FAILED);
+    return;
 }
 
 void tcp_rst_test(struct tcp_test* t)

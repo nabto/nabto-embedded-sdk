@@ -54,14 +54,13 @@ void request_callback(NabtoDeviceFuture *future, NabtoDeviceError ec, void *user
     struct nm_iam_pake_handler *handler = userData;
     if (ec != NABTO_DEVICE_EC_OK) {
         return;
-    } else {
-        struct nm_iam* iam = handler->iam;
-        nm_iam_lock(iam);
-        handle_request(handler, handler->request);
-        nm_iam_unlock(iam);
-        nabto_device_password_authentication_request_free(handler->request);
-        start_listen(handler);
     }
+    struct nm_iam* iam = handler->iam;
+    nm_iam_lock(iam);
+    handle_request(handler, handler->request);
+    nm_iam_unlock(iam);
+    nabto_device_password_authentication_request_free(handler->request);
+    start_listen(handler);
 }
 
 void handle_request(struct nm_iam_pake_handler *handler, NabtoDevicePasswordAuthenticationRequest *request)

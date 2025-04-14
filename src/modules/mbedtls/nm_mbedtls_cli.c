@@ -614,7 +614,8 @@ void event_do_one(void* data)
                 nm_mbedtls_timer_cancel(&conn->timer);
                 conn->eventHandler(event, conn->callbackData);
                 return;
-            } else if (mbedtls_ssl_get_alpn_protocol(&conn->ssl) == NULL) {
+            }
+            if (mbedtls_ssl_get_alpn_protocol(&conn->ssl) == NULL) {
                 NABTO_LOG_ERROR(LOG, "Application Layer Protocol Negotiation failed for DTLS client connection");
                 conn->state = CLOSING;
                 nm_mbedtls_timer_cancel(&conn->timer);
@@ -627,7 +628,8 @@ void event_do_one(void* data)
             conn->eventHandler(NP_DTLS_EVENT_HANDSHAKE_COMPLETE, conn->callbackData);
         }
         return;
-    } else if(conn->state == DATA) {
+    }
+    if(conn->state == DATA) {
         uint8_t* recvBuffer;
         ret = nm_mbedtls_recv_data(&conn->ssl, &recvBuffer);
         if (ret == 0) {
@@ -846,9 +848,8 @@ int nm_dtls_mbedtls_send(void* data, const unsigned char* buffer,
             return (int)bufferSize;
         }
         return (int)bufferSize;
-    } else {
-        return MBEDTLS_ERR_SSL_WANT_WRITE;
     }
+    return MBEDTLS_ERR_SSL_WANT_WRITE;
 }
 
 int nm_dtls_mbedtls_recv(void* data, unsigned char* buffer, size_t bufferSize)
@@ -856,17 +857,16 @@ int nm_dtls_mbedtls_recv(void* data, unsigned char* buffer, size_t bufferSize)
     struct np_dtls_cli_connection* conn = data;
     if (conn->recvBufferSize == 0) {
         return MBEDTLS_ERR_SSL_WANT_READ;
-    } else {
-        size_t maxCp = bufferSize > conn->recvBufferSize ? conn->recvBufferSize : bufferSize;
-        memcpy(buffer, conn->recvBuffer, maxCp);
-        if (maxCp < conn->recvBufferSize) {
-            conn->recvBuffer += maxCp;
-            conn->recvBufferSize -= maxCp;
-        } else {
-            conn->recvBufferSize = 0;
-        }
-        return (int)maxCp;
     }
+    size_t maxCp = bufferSize > conn->recvBufferSize ? conn->recvBufferSize : bufferSize;
+    memcpy(buffer, conn->recvBuffer, maxCp);
+    if (maxCp < conn->recvBufferSize) {
+        conn->recvBuffer += maxCp;
+        conn->recvBufferSize -= maxCp;
+    } else {
+        conn->recvBufferSize = 0;
+    }
+    return (int)maxCp;
 }
 
 void nm_dtls_timed_event_do_one(void* data) {

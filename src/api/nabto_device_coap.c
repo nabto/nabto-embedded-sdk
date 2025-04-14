@@ -150,9 +150,8 @@ NabtoDeviceError NABTO_DEVICE_API nabto_device_coap_request_get_content_format(N
     if (cf >= 0) {
         *contentFormat = (uint16_t)cf;
         return NABTO_DEVICE_EC_OK;
-    } else {
-        return NABTO_DEVICE_EC_UNKNOWN;
     }
+    return NABTO_DEVICE_EC_UNKNOWN;
 }
 
 NabtoDeviceError NABTO_DEVICE_API nabto_device_coap_request_get_payload(NabtoDeviceCoapRequest* request,
@@ -164,9 +163,8 @@ NabtoDeviceError NABTO_DEVICE_API nabto_device_coap_request_get_payload(NabtoDev
     nabto_device_threads_mutex_unlock(req->dev->eventMutex);
     if(*payload == NULL) {
         return NABTO_DEVICE_EC_UNKNOWN;
-    } else {
-        return NABTO_DEVICE_EC_OK;
     }
+    return NABTO_DEVICE_EC_OK;
 }
 
 NabtoDeviceConnectionRef NABTO_DEVICE_API nabto_device_coap_request_get_connection_ref(NabtoDeviceCoapRequest* request)

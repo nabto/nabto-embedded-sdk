@@ -604,9 +604,8 @@ int nm_mbedtls_srv_mbedtls_send(void* data, const unsigned char* buffer, size_t 
             return (int)bufferSize;
         }
         return (int)bufferSize;
-    } else {
-        return MBEDTLS_ERR_SSL_WANT_WRITE;
     }
+    return MBEDTLS_ERR_SSL_WANT_WRITE;
 }
 
 void nm_mbedtls_srv_connection_send_callback(const np_error_code ec, void* data)
@@ -635,12 +634,11 @@ int nm_mbedtls_srv_mbedtls_recv(void* data, unsigned char* buffer, size_t buffer
     struct np_dtls_srv_connection* ctx = (struct np_dtls_srv_connection*) data;
     if (ctx->recvBufferSize == 0) {
         return MBEDTLS_ERR_SSL_WANT_READ;
-    } else {
-        size_t maxCp = bufferSize > ctx->recvBufferSize ? ctx->recvBufferSize : bufferSize;
-        memcpy(buffer, ctx->recvBuffer, maxCp);
-        ctx->recvBufferSize = 0;
-        return (int)maxCp;
     }
+    size_t maxCp = bufferSize > ctx->recvBufferSize ? ctx->recvBufferSize : bufferSize;
+    memcpy(buffer, ctx->recvBuffer, maxCp);
+    ctx->recvBufferSize = 0;
+    return (int)maxCp;
 }
 
 void nm_mbedtls_srv_timed_event_do_one(void* data) {

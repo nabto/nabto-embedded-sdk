@@ -48,7 +48,8 @@ void handle_request(struct nm_iam_coap_handler* handler, NabtoDeviceCoapRequest*
             if ( ec != IAM_CBOR_OK && ec != IAM_CBOR_INVALID_CONTENT_FORMAT ) {
                 nm_iam_cbor_send_error_response(request, ec);
                 return;
-            } else if (ec == IAM_CBOR_OK) {
+            }
+            if (ec == IAM_CBOR_OK) {
                 if (!nm_iam_cbor_decode_kv_string(&value, "FingerprintName", &fpName)) {
                     nabto_device_coap_error_response(request, 400, "Missing FingerprintName");
                     return;

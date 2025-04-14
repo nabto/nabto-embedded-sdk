@@ -182,9 +182,8 @@ enum nm_iam_error nm_iam_internal_pair_new_client(struct nm_iam* iam, const char
         if (namedUsr == fpUsr) {
             // Already paired
             return NM_IAM_ERROR_OK;
-        } else {
-            return NM_IAM_ERROR_USER_EXISTS;
         }
+        return NM_IAM_ERROR_USER_EXISTS;
     }
 
     const char* role = iam->state->openPairingRole;

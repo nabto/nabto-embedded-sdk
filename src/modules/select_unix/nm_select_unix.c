@@ -150,11 +150,10 @@ void* network_thread(void* data)
         nm_select_unix_unlock(ctx);
         if (stopped) {
             return NULL;
-        } else {
-            // Wait for events.
-            nfds = nm_select_unix_inf_wait(ctx);
-            nm_select_unix_read(ctx, nfds);
         }
+        // Wait for events.
+        nfds = nm_select_unix_inf_wait(ctx);
+        nm_select_unix_read(ctx, nfds);
     }
     return NULL;
 }

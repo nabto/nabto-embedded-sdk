@@ -268,11 +268,10 @@ void tcp_async_write(struct np_tcp_socket* sock, const void* data, size_t dataLe
     }
     if (status == 0) {
         return;
-    } else {
-        sock->write.completionEvent = NULL;
-        np_completion_event_resolve(completionEvent, NABTO_EC_UNKNOWN);
-        return;
     }
+    sock->write.completionEvent = NULL;
+    np_completion_event_resolve(completionEvent, NABTO_EC_UNKNOWN);
+    return;
 }
 
 void tcp_async_read(struct np_tcp_socket* sock, void* buffer, size_t bufferLength, size_t* readLength, struct np_completion_event* completionEvent)

@@ -212,9 +212,8 @@ np_error_code nm_mbedtls_spake2_calculate_key(
 
     if (status == 0) {
         return NABTO_EC_OK;
-    } else {
-        return NABTO_EC_FAILED;
     }
+    return NABTO_EC_FAILED;
 }
 
 static np_error_code mbedtls_spake2_calculate_key(
@@ -247,9 +246,8 @@ static np_error_code mbedtls_spake2_key_confirmation(struct np_spake2_context* s
     nm_mbedtls_sha256(hash1, 32, hash2);
     if (memcmp(payload, hash2, 32) != 0) {
         return NABTO_EC_ACCESS_DENIED;
-    } else {
-        return NABTO_EC_OK;
     }
+    return NABTO_EC_OK;
 }
 
 

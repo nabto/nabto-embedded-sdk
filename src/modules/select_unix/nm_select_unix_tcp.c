@@ -238,15 +238,14 @@ np_error_code async_connect_ec(struct np_tcp_socket* sock, struct np_ip_address*
         if (status == 0) {
             // connected
             return NABTO_EC_OK;
-        } else {
-            if (errno == EINPROGRESS || errno == EWOULDBLOCK) {
-                // OK
-            } else {
-                NABTO_LOG_ERROR(LOG, "Connect failed %s", strerror(errno));
-                return NABTO_EC_UNKNOWN;
-            }
-            nm_select_unix_notify(sock->selectCtx);
         }
+        if (errno == EINPROGRESS || errno == EWOULDBLOCK) {
+            // OK
+        } else {
+            NABTO_LOG_ERROR(LOG, "Connect failed %s", strerror(errno));
+            return NABTO_EC_UNKNOWN;
+        }
+        nm_select_unix_notify(sock->selectCtx);
     }
     return NABTO_EC_AGAIN;
 }
@@ -268,12 +267,11 @@ void async_connect(struct np_tcp_socket* sock, struct np_ip_address* address, ui
     if (ec == NABTO_EC_AGAIN) {
         // a deferred operation has begun
         return;
-    } else {
-        // connected or error.
-        sock->connect.completionEvent = NULL;
-        np_completion_event_resolve(completionEvent, ec);
-        return;
     }
+    // connected or error.
+    sock->connect.completionEvent = NULL;
+    np_completion_event_resolve(completionEvent, ec);
+    return;
 }
 
 np_error_code is_connected_ec(struct np_tcp_socket* sock)
@@ -284,17 +282,16 @@ np_error_code is_connected_ec(struct np_tcp_socket* sock)
     if (getsockopt(sock->fd, SOL_SOCKET, SO_ERROR, &err, &len) != 0) {
         NABTO_LOG_ERROR(LOG, "getsockopt error %s",strerror(errno));
         return NABTO_EC_UNKNOWN;
-    } else {
-        if (err == 0) {
-            return NABTO_EC_OK;
-        } else if ( err == EINPROGRESS) {
-            // Wait for next event
-            return NABTO_EC_AGAIN;
-        } else {
-            NABTO_LOG_ERROR(LOG, "Cannot connect socket %s", strerror(err));
-            return NABTO_EC_UNKNOWN;
-        }
     }
+    if (err == 0) {
+        return NABTO_EC_OK;
+    }
+    if ( err == EINPROGRESS) {
+        // Wait for next event
+        return NABTO_EC_AGAIN;
+    }
+    NABTO_LOG_ERROR(LOG, "Cannot connect socket %s", strerror(err));
+    return NABTO_EC_UNKNOWN;
 }
 
 void is_connected(struct np_tcp_socket* sock) {
@@ -317,19 +314,16 @@ np_error_code tcp_do_write_ec(struct np_tcp_socket* sock)
         if (sent == EAGAIN || sent == EWOULDBLOCK) {
             // Wait for next event which triggers write.
             return NABTO_EC_AGAIN;
-        } else {
-            return NABTO_EC_UNKNOWN;
         }
-    } else {
-        sock->write.data = (uint8_t*)sock->write.data + sent;
-        sock->write.dataLength -= sent;
-        if (sock->write.dataLength > 0) {
-            // Wait for next event which triggers write.
-            return NABTO_EC_AGAIN;
-        } else {
-            return NABTO_EC_OK;
-        }
+        return NABTO_EC_UNKNOWN;
     }
+    sock->write.data = (uint8_t*)sock->write.data + sent;
+    sock->write.dataLength -= sent;
+    if (sock->write.dataLength > 0) {
+        // Wait for next event which triggers write.
+        return NABTO_EC_AGAIN;
+    }
+    return NABTO_EC_OK;
 }
 
 void tcp_do_write(struct np_tcp_socket* sock)
@@ -383,16 +377,15 @@ np_error_code tcp_do_read_ec(struct np_tcp_socket* sock)
     if (readen == -1) {
         if (errno == EAGAIN || errno == EWOULDBLOCK) {
             return NABTO_EC_AGAIN;
-        } else {
-            NABTO_LOG_ERROR(LOG, "recv error %s", strerror(errno));
-            return NABTO_EC_UNKNOWN;
         }
-    } else if (readen == 0) {
-        return NABTO_EC_EOF;
-    } else {
-        *(sock->read.readLength) = readen;
-        return NABTO_EC_OK;
+        NABTO_LOG_ERROR(LOG, "recv error %s", strerror(errno));
+        return NABTO_EC_UNKNOWN;
     }
+    if (readen == 0) {
+        return NABTO_EC_EOF;
+    }
+    *(sock->read.readLength) = readen;
+    return NABTO_EC_OK;
 }
 
 void tcp_do_read(struct np_tcp_socket* sock)

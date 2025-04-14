@@ -84,9 +84,8 @@ nabto_device_ice_servers_request_get_username(NabtoDeviceIceServersRequest* requ
     struct nc_attacher_ice_server* server = nn_vector_reference(&req->turnCtx.iceServers, index);
     if (server != NULL) {
         return server->username;
-    } else {
-        return NULL;
     }
+    return NULL;
 }
 
 const char* NABTO_DEVICE_API
@@ -96,9 +95,8 @@ nabto_device_ice_servers_request_get_credential(NabtoDeviceIceServersRequest* re
     struct nc_attacher_ice_server* server = nn_vector_reference(&req->turnCtx.iceServers, index);
     if (server != NULL) {
         return server->credential;
-    } else {
-        return NULL;
     }
+    return NULL;
 }
 
 size_t NABTO_DEVICE_API
@@ -108,9 +106,8 @@ nabto_device_ice_servers_request_get_urls_count(NabtoDeviceIceServersRequest* re
     struct nc_attacher_ice_server* server = nn_vector_reference(&req->turnCtx.iceServers, index);
     if (server != NULL) {
         return nn_vector_size(&server->urls);
-    } else {
-        return 0;
     }
+    return 0;
 }
 
 
@@ -123,8 +120,7 @@ nabto_device_ice_servers_request_get_url(NabtoDeviceIceServersRequest* request, 
         char* url = NULL;
         nn_vector_get(&server->urls, urlIndex, &url);
         return url;
-    } else {
-        return NULL;
     }
+    return NULL;
 
 }

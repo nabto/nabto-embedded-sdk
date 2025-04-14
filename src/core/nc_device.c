@@ -659,16 +659,19 @@ np_error_code nc_device_set_basestation_attach(struct nc_device_context* dev, bo
     if (dev->state == NC_DEVICE_STATE_SETUP) {
         dev->enableAttach = enabled;
         return NABTO_EC_OK;
-    } else if (dev->state == NC_DEVICE_STATE_RUNNING && enabled && !dev->enableAttach) {
+    }
+    if (dev->state == NC_DEVICE_STATE_RUNNING && enabled && !dev->enableAttach) {
         dev->enableAttach = true;
         return nc_attacher_start(&dev->attacher, dev->hostname, dev->serverPort, &dev->udp);
-    } else if (dev->state == NC_DEVICE_STATE_RUNNING && enabled) {
-        return nc_attacher_restart(&dev->attacher);
-    } else if (dev->state == NC_DEVICE_STATE_RUNNING && !enabled) {
-        return nc_attacher_async_close(&dev->attacher, nc_device_attach_disabled_cb, dev);
-    } else { // NC_DEVICE_STATE_CLOSED
-        return NABTO_EC_INVALID_STATE;
     }
+    if (dev->state == NC_DEVICE_STATE_RUNNING && enabled) {
+        return nc_attacher_restart(&dev->attacher);
+    }
+     if (dev->state == NC_DEVICE_STATE_RUNNING && !enabled) {
+        return nc_attacher_async_close(&dev->attacher, nc_device_attach_disabled_cb, dev);
+    }
+    // NC_DEVICE_STATE_CLOSED
+    return NABTO_EC_INVALID_STATE;
 }
 
 np_error_code nc_device_enable_mdns(struct nc_device_context* dev)

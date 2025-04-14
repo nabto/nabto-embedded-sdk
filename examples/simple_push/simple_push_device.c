@@ -498,8 +498,7 @@ bool generate_default_state(NabtoDevice* device)
         printf("Failed to persist default IAM state to file: %s\n", stateFile);
         nm_iam_serializer_string_free(stateStr);
         return false;
-    } else {
-        nm_iam_serializer_string_free(stateStr);
-        return true;
     }
+    nm_iam_serializer_string_free(stateStr);
+    return true;
 }

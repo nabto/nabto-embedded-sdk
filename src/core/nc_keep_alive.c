@@ -68,16 +68,15 @@ enum nc_keep_alive_action nc_keep_alive_should_send(struct nc_keep_alive_context
         ctx->lastRecvCount = recvCount;
         ctx->lastSentCount = sentCount;
         return DO_NOTHING;
-    } else if (ctx->lostKeepAlives > ctx->kaMaxRetries+ctx->n) {
-        return KA_TIMEOUT;
-    } else {
-        ctx->lostKeepAlives++;
-        if(!ctx->isSending && ctx->lostKeepAlives > ctx->n) {
-            return SEND_KA;
-        } else {
-            return DO_NOTHING;
-        }
     }
+    if (ctx->lostKeepAlives > ctx->kaMaxRetries+ctx->n) {
+        return KA_TIMEOUT;
+    }
+    ctx->lostKeepAlives++;
+    if(!ctx->isSending && ctx->lostKeepAlives > ctx->n) {
+        return SEND_KA;
+    }
+    return DO_NOTHING;
 }
 
 void nc_keep_alive_wait(struct nc_keep_alive_context* ctx)

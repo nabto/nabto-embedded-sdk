@@ -55,9 +55,8 @@ static enum nm_fs_error exists(void* impl, const char* path)
 #endif
     if (ec == 0) {
         return NM_FS_OK;
-    } else {
-        return NM_FS_NO_ENTRY;
     }
+    return NM_FS_NO_ENTRY;
 }
 
 static enum nm_fs_error size(void* impl, const char* path, size_t* fileSize)
@@ -67,9 +66,8 @@ static enum nm_fs_error size(void* impl, const char* path, size_t* fileSize)
     if (f == NULL) {
         if (errno == ENOENT) {
             return NM_FS_NO_ENTRY;
-        } else {
-            return NM_FS_UNKNOWN;
         }
+        return NM_FS_UNKNOWN;
     }
     fseek(f, 0, SEEK_END);
     long fsize = ftell(f);
@@ -92,9 +90,8 @@ static enum nm_fs_error read_file(void* impl, const char* path, void* buffer, si
     if (f == NULL) {
         if (errno == ENOENT) {
             return NM_FS_NO_ENTRY;
-        } else {
-            return NM_FS_UNKNOWN;
         }
+        return NM_FS_UNKNOWN;
     }
 
     enum nm_fs_error status = NM_FS_OK;

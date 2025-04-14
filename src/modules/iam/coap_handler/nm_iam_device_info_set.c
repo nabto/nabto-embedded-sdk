@@ -44,7 +44,8 @@ void handle_request(struct nm_iam_coap_handler* handler, NabtoDeviceCoapRequest*
         if (!nm_iam_cbor_decode_string(&value, &fn) || fn == NULL) {
             nabto_device_coap_error_response(request, 400, "Friendly name missing");
             return;
-        } else if (strlen(fn) > iam->friendlyNameMaxLength) {
+        }
+        if (strlen(fn) > iam->friendlyNameMaxLength) {
             nabto_device_coap_error_response(request, 400, "Friendly name length exceeded");
             nm_iam_free(fn);
             return;

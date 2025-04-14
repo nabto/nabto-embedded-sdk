@@ -204,10 +204,9 @@ np_error_code nm_mdns_server_close_instance(struct nm_mdns_server* server, struc
                                  ep, instance->sendBuffer, (uint16_t)written,
                                  &instance->sendCompletionEvent);
             return NABTO_EC_OPERATION_STARTED;
-        } else {
-            np_free(instance->sendBuffer);
-            instance->sendBuffer = NULL;
         }
+        np_free(instance->sendBuffer);
+        instance->sendBuffer = NULL;
     }
     return NABTO_EC_UNKNOWN;
 }
@@ -296,6 +295,7 @@ void nm_mdns_packet_recv_wait_completed(const np_error_code ecIn, void* userData
         if (recvBuffer == NULL) {
             // Discard udp packet.
             uint8_t dummyBuffer[1];
+            // TODO: returned error code is ignored
             np_udp_recv_from(&instance->server->udp, instance->socket, &instance->recvEp, dummyBuffer, sizeof(dummyBuffer), &recvSize);
             nm_mdns_recv_packet(instance);
             return;
@@ -347,10 +347,9 @@ void nm_mdns_send_packet(struct nm_mdns_server_instance* instance, uint16_t id, 
                                      ep, instance->sendBuffer, (uint16_t)written,
                                      &instance->sendCompletionEvent);
                 return;
-            } else {
-                np_free(instance->sendBuffer);
-                instance->sendBuffer = NULL;
             }
+            np_free(instance->sendBuffer);
+            instance->sendBuffer = NULL;
         }
     }
     nm_mdns_recv_packet(instance);

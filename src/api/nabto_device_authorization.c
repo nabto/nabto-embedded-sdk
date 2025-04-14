@@ -86,9 +86,8 @@ void check_access(struct np_authorization_request* authorizationRequest, np_auth
     if (listener) {
         if (nabto_device_listener_add_event(listener, &authReq->eventListNode, authReq) == NABTO_EC_OK) {
             return;
-        } else {
-            NABTO_LOG_ERROR(LOG, "Authorization request could not be added to listener queue.");
         }
+        NABTO_LOG_ERROR(LOG, "Authorization request could not be added to listener queue.");
     } else {
         NABTO_LOG_ERROR(LOG, "No Authorization listener is set for the device, denying the authorization request");
     }

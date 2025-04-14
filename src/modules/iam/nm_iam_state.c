@@ -267,9 +267,8 @@ struct nm_iam_state* nm_iam_state_copy(struct nm_iam_state* state)
     if (failed) {
         nm_iam_state_free(copy);
         return NULL;
-    } else {
-        return copy;
     }
+    return copy;
 }
 
 

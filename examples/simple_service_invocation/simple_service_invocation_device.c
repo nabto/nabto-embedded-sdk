@@ -124,7 +124,8 @@ void wait_for_device_events(NabtoDevice* device) {
         if (nabto_device_future_wait(fut) != NABTO_DEVICE_EC_OK ||
             event == NABTO_DEVICE_EVENT_CLOSED) {
             break;
-        } else if (event == NABTO_DEVICE_EVENT_ATTACHED) {
+        }
+        if (event == NABTO_DEVICE_EVENT_ATTACHED) {
 
             printf("Attached to the basestation\n");
             service_invocation(device_);

@@ -198,9 +198,8 @@ nabto_device_connection_get_device_fingerprint(NabtoDevice* device, NabtoDeviceC
 
         nabto_device_threads_mutex_unlock(dev->eventMutex);
         return ec;
-    } else {
-        return nabto_device_get_device_fingerprint(device, fingerprint);
     }
+    return nabto_device_get_device_fingerprint(device, fingerprint);
 }
 
 
@@ -349,9 +348,7 @@ nabto_device_virtual_coap_request_get_response_content_format(NabtoDeviceVirtual
         *contentFormat = (uint16_t)cf;
         return NABTO_DEVICE_EC_OK;
     }
-    else {
-        return NABTO_DEVICE_EC_UNKNOWN;
-    }
+    return NABTO_DEVICE_EC_UNKNOWN;
 }
 
 NabtoDeviceError NABTO_DEVICE_API
@@ -369,9 +366,7 @@ nabto_device_virtual_coap_request_get_response_payload(NabtoDeviceVirtualCoapReq
     if (*payload == NULL) {
         return NABTO_DEVICE_EC_UNKNOWN;
     }
-    else {
-        return NABTO_DEVICE_EC_OK;
-    }
+    return NABTO_DEVICE_EC_OK;
 }
 
 void response_handler(np_error_code ec, struct nc_coap_server_request* request, void* userData)

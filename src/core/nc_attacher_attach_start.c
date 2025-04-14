@@ -169,12 +169,12 @@ enum nc_attacher_status coap_attach_start_handle_response(
     if (s == ATTACH_STATUS_ATTACHED) {
         // this will free the request
         return handle_attached(ctx, &root);
-    } else if (s == ATTACH_STATUS_REDIRECT) {
-        return handle_redirect(ctx, &root);
-    } else {
-        NABTO_LOG_ERROR(LOG, "Status recognized");
-        return NC_ATTACHER_STATUS_ERROR;
     }
+    if (s == ATTACH_STATUS_REDIRECT) {
+        return handle_redirect(ctx, &root);
+    }
+    NABTO_LOG_ERROR(LOG, "Status recognized");
+    return NC_ATTACHER_STATUS_ERROR;
 }
 
 enum nc_attacher_status handle_attached(struct nc_attach_context* ctx,

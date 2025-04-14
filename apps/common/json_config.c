@@ -16,9 +16,8 @@ bool json_config_exists(struct nm_fs* fsImpl, const char* fileName)
     enum nm_fs_error ec = fsImpl->file_exists(fsImpl->impl, fileName);
     if (ec == NM_FS_OK) {
         return true;
-    } else {
-        return false;
     }
+    return false;
 }
 
 bool json_config_load(struct nm_fs* fsImpl, const char* path, cJSON** config, struct nn_log* logger)
