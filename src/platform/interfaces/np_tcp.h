@@ -65,10 +65,15 @@ struct np_tcp_functions {
      * The completion event shall be resolved when a result of the
      * operation is available.
      *
+     * Completion event error codes:
+     *   * NABTO_EC_OK: if the data was written to the tcp socket.
+     *   * NABTO_EC_ABORTED: If the socket has been closed by the application.
+     *   * NABTO_EC_*: if an unrecoverable error occured.
+     *
      * @param sock  The socket resource.
      * @param data  The data to write.
      * @param dataLength  The length of the data to write.
-     * @param completionEvent  The event to call when data has been writtem or the write failed.
+     * @param completionEvent  The event to call when data has been written or the write failed.
      */
     void (*async_write)(struct np_tcp_socket* sock, const void* data, size_t dataLength, struct np_completion_event* completionEvent);
 
@@ -77,6 +82,12 @@ struct np_tcp_functions {
      *
      * The completion event shall be resolved when a result of the
      * operation is available.
+     *
+     * Completion event error codes:
+     *   * NABTO_EC_OK: if the read was successful.
+     *   * NABTO_EC_EOF: id the socket has been closed properly by the other end and no more data is available to be read.
+     *   * NABTO_EC_ABORTED: if the socket has been closed by the application.
+     *   * NABTO_EC_*: if an unrecoverable error occurs.
      *
      * @param sock  The socket resource.
      * @param buffer  The buffer to write data to.
