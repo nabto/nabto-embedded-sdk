@@ -54,9 +54,9 @@ struct nm_mdns_udp_bind_functions {
 
 
 // see above struct for documentation.
-void nm_mdns_udp_bind_async_ipv4(struct nm_mdns_udp_bind* mdnsUdpBind, struct np_udp_socket* sock, struct np_completion_event* completionEvent);
+void nm_mdns_udp_bind_async_ipv4(struct nm_mdns_udp_bind* udp, struct np_udp_socket* sock, struct np_completion_event* completionEvent);
 
-void nm_mdns_udp_bind_async_ipv6(struct nm_mdns_udp_bind* mdnsUdpBind, struct np_udp_socket* sock, struct np_completion_event* completionEvent);
+void nm_mdns_udp_bind_async_ipv6(struct nm_mdns_udp_bind* udp, struct np_udp_socket* sock, struct np_completion_event* completionEvent);
 
 
 #endif

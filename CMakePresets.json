@@ -103,7 +103,8 @@
             "inherits": ["base", "unix_base", "vcpkg_base"],
             "cacheVariables": {
                 "CMAKE_BUILD_TYPE": "Debug",
-                "CMAKE_C_CLANG_TIDY": "clang-tidy"
+                "CMAKE_C_CLANG_TIDY": "clang-tidy",
+                "CMAKE_EXPORT_COMPILE_COMMANDS": "ON"
             }
         },
         {

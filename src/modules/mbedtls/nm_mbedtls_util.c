@@ -1,21 +1,19 @@
-#include <nabto/nabto_device_config.h>
 #include "nm_mbedtls_util.h"
+#include <nabto/nabto_device_config.h>
 #if !defined(DEVICE_MBEDTLS_2)
 #include <mbedtls/build_info.h>
 #endif
-#include <mbedtls/sha256.h>
+#include "mbedtls/ctr_drbg.h"
+#include "mbedtls/ecdsa.h"
+#include "mbedtls/entropy.h"
 #include "mbedtls/error.h"
 #include "mbedtls/pk.h"
-#include "mbedtls/ecdsa.h"
-#include "mbedtls/rsa.h"
-#include "mbedtls/error.h"
-#include "mbedtls/entropy.h"
-#include "mbedtls/ctr_drbg.h"
 #include "mbedtls/platform.h"
+#include "mbedtls/rsa.h"
 #include "mbedtls/x509_crt.h"
 #include "mbedtls/x509_csr.h"
-#include "mbedtls/sha256.h"
 #include <mbedtls/debug.h>
+#include <mbedtls/sha256.h>
 
 #include <platform/np_allocator.h>
 #include <platform/np_logging.h>
@@ -25,7 +23,7 @@
 
 #define LOG NABTO_LOG_MODULE_PLATFORM
 
-np_error_code nm_mbedtls_util_fp_from_crt(const mbedtls_x509_crt* crt, uint8_t* hash)
+np_error_code nm_mbedtls_util_fp_from_crt(const mbedtls_x509_crt* crt, uint8_t* fp)
 {
     uint8_t buffer[256];
 
@@ -34,7 +32,7 @@ np_error_code nm_mbedtls_util_fp_from_crt(const mbedtls_x509_crt* crt, uint8_t* 
     if (len <= 0) {
         return NABTO_EC_UNKNOWN;
     }
-    nm_mbedtls_sha256(buffer+sizeof(buffer)-len, len, hash);
+    nm_mbedtls_sha256(buffer+sizeof(buffer)-len, len, fp);
     return NABTO_EC_OK;
 }
 
@@ -49,14 +47,14 @@ struct crt_from_private_key {
 
 static np_error_code nm_dtls_create_crt_from_private_key_inner(struct crt_from_private_key* ctx, const char* privateKey, char** publicKey);
 
-np_error_code nm_mbedtls_create_crt_from_private_key(const char* privateKey, char** publicKey)
+np_error_code nm_mbedtls_create_crt_from_private_key(const char* privateKey, char** crt)
 {
     // 1. load key from pem
     // 2. create crt
     // 3. write to pem string.
     struct crt_from_private_key ctx;
 
-    *publicKey = NULL;
+    *crt = NULL;
 
     mbedtls_pk_init(&ctx.key);
     mbedtls_ctr_drbg_init(&ctx.ctr_drbg);
@@ -64,7 +62,7 @@ np_error_code nm_mbedtls_create_crt_from_private_key(const char* privateKey, cha
     mbedtls_x509write_crt_init(&ctx.crt);
     mbedtls_mpi_init(&ctx.serial);
 
-    np_error_code ec = nm_dtls_create_crt_from_private_key_inner(&ctx, privateKey, publicKey);
+    np_error_code ec = nm_dtls_create_crt_from_private_key_inner(&ctx, privateKey, crt);
 
     mbedtls_x509write_crt_free(&ctx.crt);
     mbedtls_mpi_free(&ctx.serial);
@@ -77,7 +75,7 @@ np_error_code nm_mbedtls_create_crt_from_private_key(const char* privateKey, cha
 
 np_error_code nm_dtls_create_crt_from_private_key_inner(struct crt_from_private_key* ctx, const char* privateKey, char** publicKey)
 {
-    int ret;
+    int ret = 0;
     ret = mbedtls_ctr_drbg_seed(&ctx->ctr_drbg, mbedtls_entropy_func, &ctx->entropy, NULL, 0);
     if (ret != 0) {
         return NABTO_EC_UNKNOWN;
@@ -164,10 +162,10 @@ np_error_code nm_dtls_create_crt_from_private_key_inner(struct crt_from_private_
 }
 
 
-np_error_code nm_mbedtls_get_fingerprint_from_private_key(const char* privateKey, uint8_t* hash)
+np_error_code nm_mbedtls_get_fingerprint_from_private_key(const char* privateKey, uint8_t* fingerprint)
 {
     mbedtls_pk_context key;
-    int ret;
+    int ret = 0;
 
     mbedtls_entropy_context entropy;
     mbedtls_ctr_drbg_context ctr_drbg;
@@ -201,7 +199,7 @@ np_error_code nm_mbedtls_get_fingerprint_from_private_key(const char* privateKey
         if (len <= 0) {
             ec = NABTO_EC_UNKNOWN;
         } else {
-            ret = nm_mbedtls_sha256(buffer+256 - len,  len, hash);
+            ret = nm_mbedtls_sha256(buffer+256 - len,  len, fingerprint);
             if (ret != 0) {
                 ec = NABTO_EC_UNKNOWN;
             }
@@ -300,7 +298,7 @@ int nm_mbedtls_sha256( const unsigned char *input, size_t ilen, unsigned char ou
 
 int nm_mbedtls_recv_data(mbedtls_ssl_context *ssl, uint8_t** data)
 {
-    int ret;
+    int ret = 0;
     uint8_t smallRecvBuffer[16];
     size_t smallRecvBufferSize = sizeof(smallRecvBuffer);
     // first recv 1 byte and then retrieve the rest or discard the data if a packet large enough cannot be allocated.

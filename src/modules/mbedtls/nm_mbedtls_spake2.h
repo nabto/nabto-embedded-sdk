@@ -12,7 +12,6 @@ np_error_code nm_mbedtls_spake2_init(struct np_platform* pl);
 void nm_mbedtls_spake2_deinit(struct np_platform* pl);
 
 np_error_code nm_mbedtls_spake2_calculate_key(
-    struct np_spake2_context* spake,
     struct nc_spake2_password_request* req,
     int (*f_rng)(void *, unsigned char *, size_t),
     void *p_rng,

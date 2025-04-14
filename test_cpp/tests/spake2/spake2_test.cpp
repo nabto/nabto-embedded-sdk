@@ -18,8 +18,6 @@ BOOST_AUTO_TEST_CASE(check_platform_init, * boost::unit_test::timeout(120))
 {
     auto tp = nabto::test::TestPlatform::create();
     np_platform* pl = tp->getPlatform();
-    BOOST_TEST(pl->spake2.create != (void*)NULL);
-    BOOST_TEST(pl->spake2.destroy != (void*)NULL);
     BOOST_TEST(pl->spake2.calculate_key != (void*)NULL);
     BOOST_TEST(pl->spake2.key_confirmation != (void*)NULL);
 }

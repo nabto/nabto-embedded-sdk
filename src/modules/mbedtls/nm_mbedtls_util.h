@@ -1,16 +1,16 @@
 #ifndef NM_MBEDTLS_UTIL_H
 #define NM_MBEDTLS_UTIL_H
 
-#include <platform/np_platform.h>
 #include <platform/np_error_code.h>
+#include <platform/np_platform.h>
 
 #if !defined(DEVICE_MBEDTLS_2)
 #include <mbedtls/build_info.h>
 #endif
-#include <mbedtls/entropy.h>
 #include <mbedtls/ctr_drbg.h>
-#include <mbedtls/x509_crt.h>
+#include <mbedtls/entropy.h>
 #include <mbedtls/ssl.h>
+#include <mbedtls/x509_crt.h>
 
 #ifndef MBEDTLS_PRIVATE
 #define MBEDTLS_PRIVATE(m) m
@@ -41,4 +41,4 @@ int nm_mbedtls_sha256( const unsigned char *input, size_t ilen, unsigned char ou
  */
 int nm_mbedtls_recv_data(mbedtls_ssl_context *ssl, uint8_t** data);
 
-#endif //NM_MBEDTLS_UTIL_H
+#endif // HOME_TFK_SANDBOX_NABTO_EMBEDDED_SDK_SRC_MODULES_MBEDTLS_NM_MBEDTLS_UTIL_H

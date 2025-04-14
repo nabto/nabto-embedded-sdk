@@ -1,32 +1,21 @@
-#include <nabto/nabto_device_config.h>
 #include "nm_mbedtls_srv.h"
-#include "nm_mbedtls_util.h"
-#include "nm_mbedtls_timer.h"
 #include "nm_mbedtls_common.h"
+#include "nm_mbedtls_timer.h"
+#include "nm_mbedtls_util.h"
+#include <nabto/nabto_device_config.h>
 
-#include <platform/np_logging.h>
-#include <platform/np_event_queue_wrapper.h>
-#include <platform/np_completion_event.h>
-#include <platform/np_allocator.h>
 #include <core/nc_version.h>
+#include <platform/np_allocator.h>
+#include <platform/np_completion_event.h>
+#include <platform/np_event_queue_wrapper.h>
+#include <platform/np_logging.h>
 
 #if !defined(DEVICE_MBEDTLS_2)
 #include <mbedtls/build_info.h>
 #endif
-#include <mbedtls/entropy.h>
-#include <mbedtls/ctr_drbg.h>
-#include <mbedtls/x509.h>
-#include <mbedtls/ssl.h>
 //#include <mbedtls/ssl_cookie.h>
-#include <mbedtls/net_sockets.h>
-#include <mbedtls/error.h>
-#include <mbedtls/debug.h>
-#include <mbedtls/timing.h>
-#include <mbedtls/ssl_ciphersuites.h>
 
-#include <string.h>
 
-#include <stdio.h>
 
 #if !defined(NABTO_DEVICE_DTLS_CLIENT_ONLY)
 
@@ -108,16 +97,16 @@ static np_error_code nm_mbedtls_srv_get_fingerprint(struct np_platform* pl, stru
 static np_error_code nm_mbedtls_srv_get_server_fingerprint(struct np_dtls_srv* server, uint8_t* fp);
 
 //static void nm_mbedtls_srv_tls_logger( void *ctx, int level, const char *file, int line, const char *str );
-void nm_mbedtls_srv_connection_send_callback(const np_error_code ec, void* data);
+void nm_mbedtls_srv_connection_send_callback(np_error_code ec, void* data);
 void nm_mbedtls_srv_do_one(void* data);
 void nm_mbedtls_srv_start_send(struct np_dtls_srv_connection* ctx);
 void nm_mbedtls_srv_start_send_deferred(void* data);
 static void nm_mbedtls_srv_do_free_connection(struct np_dtls_srv_connection *conn);
 
 // Function called by mbedtls when data should be sent to the network
-int nm_mbedtls_srv_mbedtls_send(void* ctx, const unsigned char* buffer, size_t bufferSize);
+int nm_mbedtls_srv_mbedtls_send(void* data, const unsigned char* buffer, size_t bufferSize);
 // Function called by mbedtls when it wants data from the network
-int nm_mbedtls_srv_mbedtls_recv(void* ctx, unsigned char* buffer, size_t bufferSize);
+int nm_mbedtls_srv_mbedtls_recv(void* data, unsigned char* buffer, size_t bufferSize);
 
 static void nm_mbedtls_srv_timed_event_do_one(void* userData);
 
@@ -221,7 +210,7 @@ np_error_code nm_mbedtls_srv_create_connection(struct np_dtls_srv* server,
                                             np_dtls_data_handler dataHandler,
                                             np_dtls_event_handler eventHandler, void* data)
 {
-    int ret;
+    int ret = 0;
     struct np_dtls_srv_connection* ctx = (struct np_dtls_srv_connection*)np_calloc(1, sizeof(struct np_dtls_srv_connection));
     if(!ctx) {
         return NABTO_EC_OUT_OF_MEMORY;
@@ -240,8 +229,7 @@ np_error_code nm_mbedtls_srv_create_connection(struct np_dtls_srv* server,
 
     struct np_platform* pl = ctx->pl;
 
-    np_error_code ec;
-    ec = np_event_queue_create_event(&pl->eq, &nm_mbedtls_srv_start_send_deferred, ctx, &ctx->startSendEvent);
+    np_error_code ec = np_event_queue_create_event(&pl->eq, &nm_mbedtls_srv_start_send_deferred, ctx, &ctx->startSendEvent);
     if(ec != NABTO_EC_OK) {
         return ec;
     }
@@ -350,7 +338,7 @@ np_error_code nm_mbedtls_srv_handle_packet(struct np_platform* pl, struct np_dtl
     return NABTO_EC_OK;
 }
 
-static uint64_t uint64_from_bigendian( uint8_t* bytes )
+static uint64_t uint64_from_bigendian( const uint8_t* bytes )
 {
     return( ( (uint64_t) bytes[0] << 56 ) |
             ( (uint64_t) bytes[1] << 48 ) |
@@ -366,7 +354,7 @@ void nm_mbedtls_srv_do_one(void* data)
 {
     struct np_dtls_srv_connection* ctx = (struct np_dtls_srv_connection*)data;
     if (ctx->state == CONNECTING) {
-        int ret;
+        int ret = 0;
         ret = mbedtls_ssl_handshake( &ctx->ssl );
         if (ret == MBEDTLS_ERR_SSL_WANT_READ ||
             ret == MBEDTLS_ERR_SSL_WANT_WRITE)
@@ -387,8 +375,8 @@ void nm_mbedtls_srv_do_one(void* data)
             return;
         }
     } else if (ctx->state == DATA) {
-        int ret;
-        uint8_t* recvBuffer;
+        int ret = 0;
+        uint8_t* recvBuffer = NULL;
         ret = nm_mbedtls_recv_data(&ctx->ssl, &recvBuffer);
         if (ret == 0) {
             // EOF
@@ -520,7 +508,7 @@ np_error_code nm_mbedtls_srv_init_config(struct np_dtls_srv* server,
                                       const unsigned char* privateKeyL, size_t privateKeySize)
 {
     const char *pers = "dtls_server";
-    int ret;
+    int ret = 0;
 
     if( ( ret = mbedtls_ssl_config_defaults( &server->conf,
                                              MBEDTLS_SSL_IS_SERVER,
@@ -547,7 +535,7 @@ np_error_code nm_mbedtls_srv_init_config(struct np_dtls_srv* server,
 
     nm_mbedtls_util_check_logging(&server->conf);
 
-    ret = mbedtls_x509_crt_parse( &server->publicKey, (const unsigned char*)publicKeyL, publicKeySize+1);
+    ret = mbedtls_x509_crt_parse( &server->publicKey, publicKeyL, publicKeySize+1);
     if( ret != 0 )
     {
         NABTO_LOG_ERROR(LOG, "mbedtls_x509_crt_parse returned %d ", ret);

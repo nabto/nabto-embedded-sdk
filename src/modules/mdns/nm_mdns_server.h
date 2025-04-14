@@ -53,7 +53,7 @@ void nm_mdns_server_deinit(struct nm_mdns_server* server);
 
 void nm_mdns_server_close(struct nm_mdns_server* server, struct np_completion_event* closedEvent);
 
-void nm_mdns_server_stop(struct nm_mdns_server* mdns);
+void nm_mdns_server_stop(struct nm_mdns_server* server);
 
 struct np_mdns nm_mdns_server_get_impl(struct nm_mdns_server* server);
 
