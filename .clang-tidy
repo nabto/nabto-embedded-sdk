@@ -1,2 +1,14 @@
-Checks: '*;-readability-identifier-length;-bugprone-easily-swappable-parameters'
+Checks: '
+*,
+-readability-identifier-length,
+-cppcoreguidelines-avoid-non-const-global-variables,
+-readability-magic-numbers,
+-cppcoreguidelines-avoid-magic-numbers,
+-bugprone-easily-swappable-parameters,
+-llvmlibc-restrict-system-libc-headers,
+-altera-*
+'
 WarningsAsErrors: '*'
+CheckOptions:
+  - key: hicpp-signed-bitwise.IgnorePositiveIntegerLiterals
+    value: 'true'
