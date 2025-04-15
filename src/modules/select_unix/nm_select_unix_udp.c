@@ -400,15 +400,23 @@ uint16_t get_local_port(struct np_udp_socket* s)
         struct sockaddr_in6 addr;
         addr.sin6_port = 0;
         socklen_t length = sizeof(struct sockaddr_in6);
-        // TODO handle errors
-        getsockname(s->sock, (struct sockaddr*)(&addr), &length);
+        int status = getsockname(s->sock, (struct sockaddr*)(&addr), &length);
+        if (status < 0) {
+            int err = errno;
+            NABTO_LOG_ERROR(LOG, "getsockname returned an error: '%s'", strerror(err));
+            return 0;
+        }
         return htons(addr.sin6_port);
     }
     struct sockaddr_in addr;
     addr.sin_port = 0;
     socklen_t length = sizeof(struct sockaddr_in);
-    // TODO handle errors
-    getsockname(s->sock, (struct sockaddr*)(&addr), &length);
+    int status = getsockname(s->sock, (struct sockaddr*)(&addr), &length);
+    if (status < 0) {
+        int err = errno;
+        NABTO_LOG_ERROR(LOG, "getsockname returned an error: '%s'", strerror(err));
+        return 0;
+    }
     return htons(addr.sin_port);
 }
 
