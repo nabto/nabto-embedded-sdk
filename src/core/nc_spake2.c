@@ -6,8 +6,8 @@
 #include "nc_client_connection.h"
 #include "nc_connection.h"
 #include "nc_device.h"
-#include <platform/np_logging.h>
 #include <platform/np_allocator.h>
+#include <platform/np_logging.h>
 
 #include <nn/string.h>
 

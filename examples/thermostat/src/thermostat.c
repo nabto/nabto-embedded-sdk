@@ -3,22 +3,22 @@
 #include "thermostat_coap_handler.h"
 #include "thermostat_iam.h"
 
-#include <apps/common/logging.h>
 #include <apps/common/json_config.h>
+#include <apps/common/logging.h>
 #include <apps/common/string_file.h>
 
 #include <modules/iam/nm_iam.h>
-#include <modules/iam/nm_iam_serializer.h>
 #include <modules/iam/nm_iam_configuration.h>
+#include <modules/iam/nm_iam_serializer.h>
 #include <modules/iam/nm_iam_state.h>
 
 #include <nabto/nabto_device.h>
 #include <nabto/nabto_device_experimental.h>
 
+#include <cjson/cJSON.h>
+#include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include <stdbool.h>
-#include <cjson/cJSON.h>
 
 //static const char* LOGM = "thermostat";
 

@@ -1,14 +1,14 @@
 #include "nm_libevent.h"
-#include "nm_libevent_types.h"
 #include "nm_libevent_get_local_ip.h"
+#include "nm_libevent_types.h"
 
-#include <platform/np_logging.h>
-#include <platform/np_completion_event.h>
 #include <platform/np_allocator.h>
+#include <platform/np_completion_event.h>
+#include <platform/np_logging.h>
 
-#include <event2/util.h>
-#include <event2/event.h>
 #include <event.h>
+#include <event2/event.h>
+#include <event2/util.h>
 
 #ifdef HAVE_NETINET_IN_H
 #include <netinet/in.h>

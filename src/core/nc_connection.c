@@ -1,8 +1,8 @@
 #include "nc_connection.h"
-#include "nc_virtual_connection.h"
-#include <platform/np_logging.h>
-#include <platform/np_allocator.h>
 #include "nc_device.h"
+#include "nc_virtual_connection.h"
+#include <platform/np_allocator.h>
+#include <platform/np_logging.h>
 
 #define LOG NABTO_LOG_MODULE_CONNECTION
 

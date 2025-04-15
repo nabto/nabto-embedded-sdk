@@ -1,16 +1,16 @@
 #include "nm_tcp_tunnel.h"
-#include "nm_tcp_tunnel_connection.h"
 #include "nm_tcp_tunnel_coap.h"
+#include "nm_tcp_tunnel_connection.h"
 
 #include <core/nc_device.h>
 #include <core/nc_stream_manager.h>
+#include <platform/np_allocator.h>
 #include <platform/np_logging.h>
 #include <platform/np_util.h>
-#include <platform/np_allocator.h>
 
+#include <limits.h>
 #include <nn/llist.h>
 #include <nn/string.h>
-#include <limits.h>
 
 
 

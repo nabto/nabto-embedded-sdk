@@ -1,5 +1,5 @@
 #include "np_ip_address.h"
 
-#include <string.h>
-#include <stdio.h>
 #include <inttypes.h>
+#include <stdio.h>
+#include <string.h>

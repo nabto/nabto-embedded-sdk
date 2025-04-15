@@ -1,15 +1,15 @@
 
 #include "nm_unix_dns.h"
 
-#include <platform/np_logging.h>
-#include <platform/np_error_code.h>
-#include <platform/np_completion_event.h>
 #include <platform/np_allocator.h>
+#include <platform/np_completion_event.h>
+#include <platform/np_error_code.h>
+#include <platform/np_logging.h>
 
 #include <errno.h>
-#include <string.h>
 #include <netdb.h>
 #include <pthread.h>
+#include <string.h>
 
 
 #include <nn/llist.h>

@@ -2,12 +2,12 @@
 
 #include <platform/np_logging.h>
 
-#include <string.h>
 #include <stdarg.h>
 #include <stdint.h>
-#include <time.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
+#include <time.h>
 
 #define NM_UNIX_LOGGING_FILE_LENGTH 24
 

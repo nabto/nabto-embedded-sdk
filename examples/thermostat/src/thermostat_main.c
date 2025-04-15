@@ -1,10 +1,10 @@
 #include "thermostat.h"
 
 #include <apps/common/device_config.h>
-#include <apps/common/string_file.h>
-#include <apps/common/private_key.h>
 #include <apps/common/logging.h>
+#include <apps/common/private_key.h>
 #include <apps/common/prompt_stdin.h>
+#include <apps/common/string_file.h>
 
 #include <nabto/nabto_device.h>
 #include <nabto/nabto_device_experimental.h>
@@ -12,8 +12,8 @@
 #include <gopt/gopt.h>
 
 #include <signal.h>
-#include <stdlib.h>
 #include <stdio.h>
+#include <stdlib.h>
 
 #if defined(_WIN32)
 #include <direct.h>

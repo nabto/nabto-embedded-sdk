@@ -1,5 +1,5 @@
-#include <api/nabto_device_platform.h>
 #include <api/nabto_device_integration.h>
+#include <api/nabto_device_platform.h>
 
 #include "libevent_event_queue.h"
 
@@ -7,10 +7,10 @@
 #include <modules/libevent/nm_libevent_dns.h>
 #include <modules/libevent/nm_libevent_mdns_udp_bind.h>
 
-#include <modules/timestamp/unix/nm_unix_timestamp.h>
-#include <modules/mdns/nm_mdns_server.h>
-#include <modules/communication_buffer/nm_communication_buffer.h>
 #include <api/nabto_device_threads.h>
+#include <modules/communication_buffer/nm_communication_buffer.h>
+#include <modules/mdns/nm_mdns_server.h>
+#include <modules/timestamp/unix/nm_unix_timestamp.h>
 
 #include <event2/event.h>
 #include <event2/thread.h>

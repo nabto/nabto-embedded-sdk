@@ -1,13 +1,13 @@
 #include "nc_rendezvous.h"
 
-#include <core/nc_packet.h>
 #include <core/nc_client_connection.h>
 #include <core/nc_client_connection_dispatch.h>
+#include <core/nc_packet.h>
 #include <core/nc_udp_dispatch.h>
 
 
-#include <platform/np_logging.h>
 #include <platform/np_completion_event.h>
+#include <platform/np_logging.h>
 
 #include <string.h>
 

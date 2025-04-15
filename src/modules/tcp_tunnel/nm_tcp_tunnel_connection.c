@@ -1,8 +1,8 @@
 #include "nm_tcp_tunnel.h"
 #include <core/nc_stream.h>
+#include <platform/np_allocator.h>
 #include <platform/np_logging.h>
 #include <platform/np_tcp_wrapper.h>
-#include <platform/np_allocator.h>
 
 
 

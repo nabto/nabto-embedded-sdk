@@ -2,8 +2,8 @@
 
 #include <core/nc_cbor.h>
 #include <core/nc_coap.h>
-#include <platform/np_logging.h>
 #include <platform/np_allocator.h>
+#include <platform/np_logging.h>
 
 #include <tinycbor/cbor.h>
 

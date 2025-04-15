@@ -2,11 +2,11 @@
 
 #include "nm_libevent_get_local_ip.h"
 
-#include <platform/np_platform.h>
-#include <platform/np_logging.h>
+#include <event2/dns.h>
 #include <event2/event.h>
 #include <event2/thread.h>
-#include <event2/dns.h>
+#include <platform/np_logging.h>
+#include <platform/np_platform.h>
 
 #if defined(HAVE_WINSOCK2_H)
 #include <winsock2.h>

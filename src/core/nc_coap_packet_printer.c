@@ -1,10 +1,10 @@
 #include "nc_coap_packet_printer.h"
 #include <nabto_coap/nabto_coap.h>
-#include <platform/np_logging.h>
 #include <platform/np_allocator.h>
+#include <platform/np_logging.h>
 
-#include <stdio.h>
 #include <stdarg.h>
+#include <stdio.h>
 
 #define LOG NABTO_LOG_MODULE_COAP
 

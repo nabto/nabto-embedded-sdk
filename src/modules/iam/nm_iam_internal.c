@@ -1,8 +1,8 @@
 #include "nm_iam_internal.h"
-#include "policies/nm_policy.h"
 #include "nm_iam_user.h"
-#include <nn/string_map.h>
+#include "policies/nm_policy.h"
 #include <nn/llist.h>
+#include <nn/string_map.h>
 
 #include <nabto/nabto_device_virtual.h>
 

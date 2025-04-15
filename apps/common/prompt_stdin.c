@@ -1,6 +1,6 @@
 #include "prompt_stdin.h"
-#include <stdarg.h>
 #include <ctype.h>
+#include <stdarg.h>
 
 
 static void to_lowercase(char* buffer, size_t size)

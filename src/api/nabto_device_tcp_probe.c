@@ -1,13 +1,13 @@
 #include <nabto/nabto_device.h>
 #include <nabto/nabto_device_experimental.h>
 
+#include <platform/np_allocator.h>
 #include <platform/np_completion_event.h>
 #include <platform/np_tcp_wrapper.h>
-#include <platform/np_allocator.h>
 
 #include "nabto_device_defines.h"
-#include "nabto_device_future.h"
 #include "nabto_device_error.h"
+#include "nabto_device_future.h"
 
 
 struct nabto_device_tcp_probe_context {

@@ -1,10 +1,10 @@
-#include <nabto/nabto_device_experimental.h>
 #include "nm_iam_coap_handler.h"
+#include <nabto/nabto_device_experimental.h>
 
 #include "../nm_iam.h"
-#include "../nm_iam_user.h"
-#include "../nm_iam_internal.h"
 #include "../nm_iam_allocator.h"
+#include "../nm_iam_internal.h"
+#include "../nm_iam_user.h"
 
 #include <tinycbor/cbor.h>
 

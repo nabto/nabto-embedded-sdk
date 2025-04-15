@@ -2,9 +2,9 @@
 
 #include <platform/np_logging.h>
 
-#include <sys/socket.h>
-#include <netinet/in.h>
 #include <arpa/inet.h>
+#include <netinet/in.h>
+#include <sys/socket.h>
 #include <unistd.h>
 
 #define LOG NABTO_LOG_MODULE_UDP

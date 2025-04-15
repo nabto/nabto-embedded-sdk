@@ -1,15 +1,15 @@
+#include <api/nabto_device_integration.h>
 #include <api/nabto_device_platform.h>
 #include <api/nabto_device_threads.h>
-#include <api/nabto_device_integration.h>
 
-#include <modules/select_unix/nm_select_unix.h>
-#include <modules/select_unix/nm_select_unix_mdns_udp_bind.h>
+#include <modules/communication_buffer/nm_communication_buffer.h>
+#include <modules/dns/unix/nm_unix_dns.h>
 #include <modules/event_queue/thread_event_queue.h>
 #include <modules/mdns/nm_mdns_server.h>
+#include <modules/select_unix/nm_select_unix.h>
+#include <modules/select_unix/nm_select_unix_mdns_udp_bind.h>
 #include <modules/timestamp/unix/nm_unix_timestamp.h>
-#include <modules/dns/unix/nm_unix_dns.h>
 #include <modules/unix/nm_unix_local_ip.h>
-#include <modules/communication_buffer/nm_communication_buffer.h>
 
 #include <stddef.h>
 #include <stdlib.h>

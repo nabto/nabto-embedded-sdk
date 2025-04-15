@@ -1,12 +1,12 @@
 #include "nm_wolfssl_random.h"
 
+#include <platform/np_allocator.h>
 #include <platform/np_error_code.h>
 #include <platform/np_platform.h>
-#include <platform/np_allocator.h>
 
 #include <wolfssl/options.h>
-#include <wolfssl/wolfcrypt/settings.h>
 #include <wolfssl/wolfcrypt/random.h>
+#include <wolfssl/wolfcrypt/settings.h>
 
 
 static np_error_code make_random(struct np_platform* pl, void* buffer, size_t bufferSize);

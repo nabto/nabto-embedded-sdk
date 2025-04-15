@@ -1,9 +1,9 @@
 #include <nabto/nabto_device_test.h>
 
+#include <api/nabto_device_defines.h>
 #include <platform/np_ip_address.h>
 #include <platform/np_local_ip_wrapper.h>
 #include <platform/np_logging.h>
-#include <api/nabto_device_defines.h>
 
 #define LOG NABTO_LOG_MODULE_TEST
 

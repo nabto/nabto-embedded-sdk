@@ -1,8 +1,8 @@
 #include "../nm_fs.h"
 
-#include <string.h>
-#include <stdlib.h>
 #include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
 #if defined(HAVE_UNISTD_H)
 #include <unistd.h>
 #endif

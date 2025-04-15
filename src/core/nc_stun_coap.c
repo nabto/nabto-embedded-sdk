@@ -1,14 +1,14 @@
 #include "nc_stun_coap.h"
 
-#include <platform/np_platform.h>
-#include <core/nc_coap_server.h>
-#include <core/nc_stun.h>
-#include <core/nc_coap.h>
-#include <platform/np_logging.h>
-#include <platform/np_local_ip_wrapper.h>
-#include <platform/np_allocator.h>
-#include <core/nc_packet.h>
 #include <core/nc_cbor.h>
+#include <core/nc_coap.h>
+#include <core/nc_coap_server.h>
+#include <core/nc_packet.h>
+#include <core/nc_stun.h>
+#include <platform/np_allocator.h>
+#include <platform/np_local_ip_wrapper.h>
+#include <platform/np_logging.h>
+#include <platform/np_platform.h>
 
 #include <tinycbor/cbor.h>
 

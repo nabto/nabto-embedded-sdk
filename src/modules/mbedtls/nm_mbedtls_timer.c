@@ -1,8 +1,8 @@
 #include "nm_mbedtls_timer.h"
 
+#include <platform/np_event_queue_wrapper.h>
 #include <platform/np_platform.h>
 #include <platform/np_timestamp_wrapper.h>
-#include <platform/np_event_queue_wrapper.h>
 #include <string.h>
 
 static void timer_cb(void* data);

@@ -1,19 +1,19 @@
 #include "nm_wolfssl_cli.h"
-#include "nm_wolfssl_util.h"
 #include "nm_wolfssl_common.h"
+#include "nm_wolfssl_util.h"
 
-#include <platform/np_logging.h>
-#include <platform/np_event_queue_wrapper.h>
 #include <platform/np_allocator.h>
 #include <platform/np_error_code.h>
+#include <platform/np_event_queue_wrapper.h>
+#include <platform/np_logging.h>
 
-#include <core/nc_version.h>
 #include <core/nc_udp_dispatch.h>
+#include <core/nc_version.h>
 
-#include <wolfssl/options.h>
-#include <wolfssl/wolfcrypt/settings.h>
-#include <wolfssl/ssl.h>
 #include <wolfssl/error-ssl.h>
+#include <wolfssl/options.h>
+#include <wolfssl/ssl.h>
+#include <wolfssl/wolfcrypt/settings.h>
 
 #include <string.h>
 

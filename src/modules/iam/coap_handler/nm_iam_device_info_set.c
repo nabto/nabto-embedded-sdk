@@ -1,9 +1,9 @@
-#include <nabto/nabto_device.h>
 #include "nm_iam_coap_handler.h"
+#include <nabto/nabto_device.h>
 
 #include "../nm_iam.h"
-#include "../nm_iam_internal.h"
 #include "../nm_iam_allocator.h"
+#include "../nm_iam_internal.h"
 
 
 

@@ -1,7 +1,7 @@
 
-#include <apps/common/string_file.h>
 #include <apps/common/json_config.h>
 #include <apps/common/random_string.h>
+#include <apps/common/string_file.h>
 
 
 #include "thermostat_iam.h"

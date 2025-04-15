@@ -1,29 +1,29 @@
-#include <nabto/nabto_device_config.h>
-#include <nabto/nabto_device.h>
-#include <nabto/nabto_device_experimental.h>
-#include <api/nabto_device_defines.h>
-#include <api/nabto_device_stream.h>
-#include <api/nabto_device_coap.h>
-#include <api/nabto_device_future.h>
-#include <api/nabto_device_event_handler.h>
-#include <api/nabto_device_platform.h>
-#include <api/nabto_device_coap.h>
 #include <api/nabto_device_authorization.h>
-#include <api/nabto_device_future_queue.h>
+#include <api/nabto_device_coap.h>
+#include <api/nabto_device_coap.h>
+#include <api/nabto_device_defines.h>
 #include <api/nabto_device_error.h>
+#include <api/nabto_device_event_handler.h>
+#include <api/nabto_device_future.h>
+#include <api/nabto_device_future_queue.h>
 #include <api/nabto_device_logging.h>
-#include <platform/np_error_code.h>
+#include <api/nabto_device_platform.h>
+#include <api/nabto_device_stream.h>
+#include <nabto/nabto_device.h>
+#include <nabto/nabto_device_config.h>
+#include <nabto/nabto_device_experimental.h>
 #include <platform/np_allocator.h>
-
-#include <platform/np_logging.h>
 #include <platform/np_error_code.h>
-#include <core/nc_version.h>
+
 #include <core/nc_client_connection.h>
+#include <core/nc_version.h>
+#include <platform/np_error_code.h>
+#include <platform/np_logging.h>
 
 #if defined(NABTO_DEVICE_MBEDTLS)
+#include <modules/mbedtls/nm_mbedtls_cli.h>
 #include <modules/mbedtls/nm_mbedtls_random.h>
 #include <modules/mbedtls/nm_mbedtls_spake2.h>
-#include <modules/mbedtls/nm_mbedtls_cli.h>
 #ifndef NABTO_DEVICE_DTLS_CLIENT_ONLY
 #include <modules/mbedtls/nm_mbedtls_srv.h>
 #endif

@@ -1,13 +1,13 @@
 
 #include "nc_stream_manager.h"
 
-#include <core/nc_packet.h>
 #include <core/nc_client_connection.h>
 #include <core/nc_connection.h>
+#include <core/nc_packet.h>
 #include <core/nc_virtual_stream.h>
 
-#include <platform/np_logging.h>
 #include <platform/np_allocator.h>
+#include <platform/np_logging.h>
 
 #include <nabto_stream/nabto_stream_log_helper.h>
 

@@ -1,6 +1,6 @@
-#include <nabto/nabto_device_config.h>
 #include "nabto_device_logging.h"
 #include "nabto_device_logging_std_out_callback.h"
+#include <nabto/nabto_device_config.h>
 #include <stdio.h>
 
 #include <platform/np_platform.h>

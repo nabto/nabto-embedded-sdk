@@ -1,10 +1,10 @@
 #include "nc_attacher.h"
-#include "nc_coap.h"
 #include "nc_cbor.h"
+#include "nc_coap.h"
+#include <nabto_coap/nabto_coap_client.h>
+#include <platform/np_allocator.h>
 #include <platform/np_error_code.h>
 #include <platform/np_logging.h>
-#include <platform/np_allocator.h>
-#include <nabto_coap/nabto_coap_client.h>
 
 
 #include "tinycbor/cbor.h"

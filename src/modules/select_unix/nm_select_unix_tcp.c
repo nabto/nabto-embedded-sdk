@@ -1,18 +1,18 @@
 #include "nm_select_unix_tcp.h"
 
-#include <platform/np_util.h>
-#include <platform/np_logging.h>
-#include <platform/np_completion_event.h>
 #include <platform/np_allocator.h>
+#include <platform/np_completion_event.h>
+#include <platform/np_logging.h>
+#include <platform/np_util.h>
 
 
 
-#include <unistd.h>
-#include <sys/socket.h>
 #include <arpa/inet.h>
-#include <fcntl.h>
 #include <errno.h>
+#include <fcntl.h>
 #include <string.h>
+#include <sys/socket.h>
+#include <unistd.h>
 
 #include <netinet/tcp.h>
 

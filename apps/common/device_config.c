@@ -5,8 +5,8 @@
 
 #include <cjson/cJSON.h>
 
-#include <string.h>
 #include <stdlib.h>
+#include <string.h>
 
 #if defined(_WIN32)
 #define NEWLINE "\r\n"

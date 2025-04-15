@@ -1,10 +1,10 @@
 
-#include <nabto/nabto_device_config.h>
 #include <nabto/nabto_device.h>
+#include <nabto/nabto_device_config.h>
 #include <nabto/nabto_device_experimental.h>
 
-#include "nabto_device_threads.h"
 #include "nabto_device_defines.h"
+#include "nabto_device_threads.h"
 #include <api/nabto_device_error.h>
 
 #include <platform/np_allocator.h>

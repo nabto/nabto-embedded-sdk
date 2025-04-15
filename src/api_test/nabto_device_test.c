@@ -2,17 +2,17 @@
 #include <nabto/nabto_device_test.h>
 
 #include <api/nabto_device_defines.h>
-#include <api/nabto_device_threads.h>
-#include <api/nabto_device_platform.h>
 #include <api/nabto_device_future_queue.h>
 #include <api/nabto_device_logging.h>
+#include <api/nabto_device_platform.h>
+#include <api/nabto_device_threads.h>
 
 
 #ifdef NABTO_DEVICE_MBEDTLS
-#include <modules/mbedtls/nm_mbedtls_util.h>
 #include <modules/mbedtls/nm_mbedtls_cli.h>
 #include <modules/mbedtls/nm_mbedtls_random.h>
 #include <modules/mbedtls/nm_mbedtls_spake2.h>
+#include <modules/mbedtls/nm_mbedtls_util.h>
 #ifndef NABTO_DEVICE_DTLS_CLIENT_ONLY
 #include <modules/mbedtls/nm_mbedtls_srv.h>
 #endif
@@ -29,8 +29,8 @@
 
 #include <modules/communication_buffer/nm_communication_buffer.h>
 
-#include <platform/np_logging.h>
 #include <platform/np_allocator.h>
+#include <platform/np_logging.h>
 
 #define LOG NABTO_LOG_MODULE_TEST
 

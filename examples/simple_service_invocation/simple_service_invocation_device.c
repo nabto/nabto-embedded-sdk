@@ -13,9 +13,9 @@
 #define NEWLINE "\n"
 #endif
 
+#include <signal.h>
 #include <stdbool.h>
 #include <stdio.h>
-#include <signal.h>
 #include <stdlib.h>
 
 /**

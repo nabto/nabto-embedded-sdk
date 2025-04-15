@@ -1,9 +1,9 @@
-#include <nabto/nabto_device.h>
-#include <nabto/nabto_device_experimental.h>
+#include <apps/common/string_file.h>
+#include <modules/fs/posix/nm_fs_posix.h>
 #include <modules/iam/nm_iam.h>
 #include <modules/iam/nm_iam_serializer.h>
-#include <modules/fs/posix/nm_fs_posix.h>
-#include <apps/common/string_file.h>
+#include <nabto/nabto_device.h>
+#include <nabto/nabto_device_experimental.h>
 
 #include <cjson/cJSON.h>
 
@@ -15,9 +15,9 @@
 #define NEWLINE "\n"
 #endif
 
+#include <signal.h>
 #include <stdbool.h>
 #include <stdio.h>
-#include <signal.h>
 
 const char* keyFile = "device.key";
 const char* stateFile = "simple_push_state.json";

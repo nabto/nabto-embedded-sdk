@@ -1,18 +1,18 @@
 #include "nm_select_unix.h"
-#include "nm_select_unix_udp.h"
 #include "nm_select_unix_tcp.h"
+#include "nm_select_unix_udp.h"
 
 #include <platform/np_logging.h>
 #include <platform/np_util.h>
 
 
-#include <sys/socket.h>
-#include <netinet/in.h>
-#include <errno.h>
-#include <string.h>
-#include <unistd.h>
-#include <fcntl.h>
 #include <arpa/inet.h>
+#include <errno.h>
+#include <fcntl.h>
+#include <netinet/in.h>
+#include <string.h>
+#include <sys/socket.h>
+#include <unistd.h>
 
 #define LOG NABTO_LOG_MODULE_UDP
 

@@ -1,9 +1,9 @@
 #include "nabto_device_future.h"
-#include "nabto_device_threads.h"
 #include "nabto_device_defines.h"
+#include "nabto_device_threads.h"
 
-#include <platform/np_logging.h>
 #include <platform/np_allocator.h>
+#include <platform/np_logging.h>
 
 #define LOG NABTO_LOG_MODULE_API
 

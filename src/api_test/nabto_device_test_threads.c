@@ -2,8 +2,8 @@
  * Test of threads implementation.
  */
 
-#include <nabto/nabto_device_test.h>
 #include <api/nabto_device_threads.h>
+#include <nabto/nabto_device_test.h>
 
 #include <platform/np_allocator.h>
 

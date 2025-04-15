@@ -1,9 +1,9 @@
 #include "nm_iam_serializer.h"
 
-#include "policies/nm_policies_to_json.h"
-#include "policies/nm_policies_from_json.h"
-#include "nm_iam_to_json.h"
 #include "nm_iam_from_json.h"
+#include "nm_iam_to_json.h"
+#include "policies/nm_policies_from_json.h"
+#include "policies/nm_policies_to_json.h"
 
 #include "nm_iam_allocator.h"
 

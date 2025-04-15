@@ -1,11 +1,11 @@
-#include <nabto/nabto_device_test.h>
 #include <api/nabto_device_defines.h>
+#include <nabto/nabto_device_test.h>
 
-#include <platform/np_mdns_wrapper.h>
 #include <platform/np_allocator.h>
+#include <platform/np_mdns_wrapper.h>
 
-#include <nn/string_set.h>
 #include <nn/string_map.h>
+#include <nn/string_set.h>
 
 void NABTO_DEVICE_API
 nabto_device_test_mdns_publish_service(NabtoDevice* device)

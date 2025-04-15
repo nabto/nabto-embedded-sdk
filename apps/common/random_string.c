@@ -1,12 +1,12 @@
 #include "random_string.h"
 
-#include <mbedtls/entropy.h>
 #include <mbedtls/ctr_drbg.h>
+#include <mbedtls/entropy.h>
 
 #include <stdbool.h>
+#include <stddef.h>
 #include <stdlib.h>
 #include <string.h>
-#include <stddef.h>
 
 // ambigious characters: "B8G6I1l0OQDS5Z2";
 

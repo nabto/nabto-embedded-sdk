@@ -4,9 +4,9 @@
 
 #include <platform/np_logging.h>
 
-#include <winsock2.h>
-#include <windows.h>
 #include <string.h>
+#include <windows.h>
+#include <winsock2.h>
 
 
 
