@@ -45,7 +45,7 @@ bool test_cbor_encode_int()
         return false;
     }
 
-    size_t encodedSize = 0 = cbor_encoder_get_buffer_size(&encoder, buffer);
+    size_t encodedSize = cbor_encoder_get_buffer_size(&encoder, buffer);
     if (encodedSize != sizeof(result)) {
         return false;
     }
@@ -66,7 +66,7 @@ bool test_cbor_encode_text_string()
     if (cbor_encode_text_stringz(&encoder, "helloworld") != CborNoError) {
         return false;
     }
-    size_t encodedSize = 0 = cbor_encoder_get_buffer_size(&encoder, buffer);
+    size_t encodedSize = cbor_encoder_get_buffer_size(&encoder, buffer);
     if (encodedSize != sizeof(result)) {
         return false;
     }
