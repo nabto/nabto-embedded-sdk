@@ -33,9 +33,6 @@ static int hashPoint(mbedtls_md_context_t* mdCtx, mbedtls_ecp_group* grp, mbedtl
 static int hashMpi(mbedtls_md_context_t* mdCtx, mbedtls_mpi* n);
 
 
-static np_error_code mbedtls_spake2_create(struct np_platform* pl,
-    struct np_spake2_context** spake);
-static void mbedtls_spake2_destroy(struct np_spake2_context* spake);
 static np_error_code mbedtls_spake2_calculate_key(
     struct np_spake2_context* spake, struct nc_spake2_password_request* req, const char* password,
     uint8_t* resp, size_t* respLen, uint8_t* spake2Key);
@@ -45,8 +42,6 @@ static np_error_code mbedtls_spake2_key_confirmation(
 
 np_error_code nm_mbedtls_spake2_init(struct np_platform* pl)
 {
-    pl->spake2.create = &mbedtls_spake2_create;
-    pl->spake2.destroy = &mbedtls_spake2_destroy;
     pl->spake2.calculate_key = &mbedtls_spake2_calculate_key;
     pl->spake2.key_confirmation = &mbedtls_spake2_key_confirmation;
     return NABTO_EC_OK;
@@ -57,15 +52,6 @@ void nm_mbedtls_spake2_deinit(struct np_platform* pl)
 
 }
 
-static np_error_code mbedtls_spake2_create(struct np_platform* pl, struct np_spake2_context** spake)
-{
-    return NABTO_EC_NOT_IMPLEMENTED;
-}
-
-static void mbedtls_spake2_destroy(struct np_spake2_context* spake)
-{
-
-}
 // NOLINTBEGIN(hicpp-signed-bitwise)
 
 // T [in] from client
@@ -75,7 +61,6 @@ static void mbedtls_spake2_destroy(struct np_spake2_context* spake)
 // S [out] returned to client
 // Key [out] used in key_confirmation
 np_error_code nm_mbedtls_spake2_calculate_key(
-    struct np_spake2_context* spake,
     struct nc_spake2_password_request* req,
     int (*f_rng)(void *, unsigned char *, size_t),
     void *p_rng,
@@ -225,7 +210,7 @@ static np_error_code mbedtls_spake2_calculate_key(
         return NABTO_EC_FAILED;
     }
 
-    np_error_code ec =  nm_mbedtls_spake2_calculate_key(spake, req, mbedtls_ctr_drbg_random, &ctr_drbg, password, resp, respLen, spake2Key);
+    np_error_code ec =  nm_mbedtls_spake2_calculate_key( req, mbedtls_ctr_drbg_random, &ctr_drbg, password, resp, respLen, spake2Key);
 
     mbedtls_entropy_free(&entropy);
     mbedtls_ctr_drbg_free(&ctr_drbg);
