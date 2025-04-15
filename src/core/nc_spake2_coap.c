@@ -3,10 +3,10 @@
 #if defined(NABTO_DEVICE_PASSWORD_AUTHENTICATION)
 
 #include "nc_spake2.h"
-#include "nc_coap.h"
 #include "nc_cbor.h"
-#include <core/nc_coap_server.h>
+#include "nc_coap.h"
 #include "nc_connection.h"
+#include <core/nc_coap_server.h>
 
 #include <tinycbor/cbor.h>
 

@@ -2,8 +2,8 @@
 
 #include "nabto_device_defines.h"
 #include <api/nabto_device_error.h>
-#include <platform/np_error_code.h>
 #include <modules/tcp_tunnel/nm_tcp_tunnel.h>
+#include <platform/np_error_code.h>
 
 NabtoDeviceError NABTO_DEVICE_API
 nabto_device_add_tcp_tunnel_service(NabtoDevice* device, const char* serviceId, const char* serviceType, const char* host, uint16_t port)

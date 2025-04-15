@@ -2,8 +2,8 @@
 #include "nabto_device_defines.h"
 #include <api/nabto_device_error.h>
 
-#include <platform/np_logging.h>
 #include <platform/np_allocator.h>
+#include <platform/np_logging.h>
 
 #define LOG NABTO_LOG_MODULE_API
 

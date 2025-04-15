@@ -2,9 +2,9 @@
 #include "nm_unix_logging.h"
 #include <platform/np_types.h>
 #include <stdio.h>
-#include <time.h>
-#include <sys/time.h>
 #include <string.h>
+#include <sys/time.h>
+#include <time.h>
 
 #define NM_UNIX_LOGGING_FILE_LENGTH 24
 

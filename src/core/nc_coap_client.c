@@ -2,10 +2,10 @@
 
 #include <core/nc_coap.h>
 
+#include <platform/np_allocator.h>
+#include <platform/np_event_queue_wrapper.h>
 #include <platform/np_logging.h>
 #include <platform/np_timestamp_wrapper.h>
-#include <platform/np_event_queue_wrapper.h>
-#include <platform/np_allocator.h>
 
 #define LOG NABTO_LOG_MODULE_COAP
 

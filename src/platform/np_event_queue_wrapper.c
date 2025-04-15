@@ -1,6 +1,6 @@
 #include "interfaces/np_event_queue.h"
-#include <platform/np_platform.h>
 #include <platform/np_logging.h>
+#include <platform/np_platform.h>
 
 #define LOG NABTO_LOG_MODULE_EVENT_QUEUE
 

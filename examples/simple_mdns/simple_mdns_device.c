@@ -4,8 +4,8 @@
 // example.
 //
 
-#include <nabto/nabto_device.h>
 #include <apps/common/string_file.h>
+#include <nabto/nabto_device.h>
 
 #ifdef _WIN32
 #include <Windows.h>
@@ -15,9 +15,9 @@
 #define NEWLINE "\n"
 #endif
 
+#include <signal.h>
 #include <stdbool.h>
 #include <stdio.h>
-#include <signal.h>
 #include <stdlib.h>
 
 void die(const char* msg) {

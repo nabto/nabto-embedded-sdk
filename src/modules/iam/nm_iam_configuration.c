@@ -1,7 +1,7 @@
 #include "nm_iam_configuration.h"
 #include "nm_iam_role.h"
-#include "policies/nm_policy.h"
 #include "policies/nm_condition.h"
+#include "policies/nm_policy.h"
 #include "policies/nm_statement.h"
 
 #include "nm_iam_allocator.h"

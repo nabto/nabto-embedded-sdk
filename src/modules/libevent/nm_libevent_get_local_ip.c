@@ -1,9 +1,9 @@
 #include "nm_libevent_get_local_ip.h"
-#include "nm_libevent_types.h"
 #include "nm_libevent.h"
+#include "nm_libevent_types.h"
 
-#include <platform/np_logging.h>
 #include <platform/interfaces/np_local_ip.h>
+#include <platform/np_logging.h>
 
 #ifdef HAVE_SYS_SOCKET_H
 #include <sys/socket.h>

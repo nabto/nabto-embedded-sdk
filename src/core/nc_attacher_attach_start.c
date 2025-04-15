@@ -1,12 +1,12 @@
-#include <tinycbor/cbor.h>
 #include <core/nc_cbor.h>
 #include <core/nc_coap.h>
 #include <core/nc_coap_rest_error.h>
-#include <core/nc_version.h>
-#include <core/nc_stun.h>
 #include <core/nc_device.h>
-#include <platform/np_logging.h>
+#include <core/nc_stun.h>
+#include <core/nc_version.h>
 #include <platform/np_allocator.h>
+#include <platform/np_logging.h>
+#include <tinycbor/cbor.h>
 
 #include "nc_attacher.h"
 

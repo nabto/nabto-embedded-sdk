@@ -1,10 +1,10 @@
 #include "libevent_event_queue.h"
 
-#include <api/nabto_device_threads.h>
 #include <api/nabto_device_future.h>
+#include <api/nabto_device_threads.h>
 
-#include <platform/np_logging.h>
 #include <platform/np_allocator.h>
+#include <platform/np_logging.h>
 
 #include <event.h>
 #include <event2/event.h>

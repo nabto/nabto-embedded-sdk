@@ -1,14 +1,14 @@
 #include "nc_udp_dispatch.h"
 
+#include <platform/np_allocator.h>
+#include <platform/np_dtls_cli.h>
 #include <platform/np_logging.h>
 #include <platform/np_udp_wrapper.h>
-#include <platform/np_dtls_cli.h>
-#include <platform/np_allocator.h>
 
-#include <core/nc_client_connection_dispatch.h>
-#include <core/nc_stun.h>
 #include <core/nc_attacher.h>
+#include <core/nc_client_connection_dispatch.h>
 #include <core/nc_rendezvous.h>
+#include <core/nc_stun.h>
 
 #define LOG NABTO_LOG_MODULE_UDP_DISPATCH
 

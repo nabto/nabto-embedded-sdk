@@ -1,9 +1,9 @@
 #include "nm_iam_coap_handler.h"
-#include "../nm_iam_user.h"
 #include "../nm_iam.h"
 #include "../nm_iam_internal.h"
-#include <nn/string_set.h>
+#include "../nm_iam_user.h"
 #include <api/nabto_device_threads.h>
+#include <nn/string_set.h>
 
 #include "../nm_iam_allocator.h"
 
