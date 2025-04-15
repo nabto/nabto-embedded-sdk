@@ -30,7 +30,7 @@ struct np_udp {
  *
  * Each function needs to point to a specific platform dependent implementation.
  *
- * Error handling. The UDP module expects functions to return or resolve
+ * Error handling: The UDP module expects functions to return or resolve
  * completion events in the following manners:
  *
  * Recoverable errors: If an recoverable errors occurs the functions should
@@ -110,12 +110,15 @@ struct np_udp_functions {
      * The completion event resolves with the following error codes:
      *  * NABTO_EC_OK: if the packet was sent.
      *  * NABTO_EC_ABORTED: if the socket has been closed by the application.
-     *  * NABTO_EC_FAILED_TO_SEND_PACKET: if the packet could not be sent but the application should just try again later etc.
+     *  * NABTO_EC_FAILED_TO_SEND_PACKET: if the packet could not be sent but
+     *    the application should just try again later etc.
      *  * NABTO_EC_* if some unrecoverable error occured.
      *
      * @param sock  The socket resource.
-     * @param ep  The endpoint. If the send to is deferred the endpoint has to
-     * be copied.
+     * @param ep  The endpoint. The caller does not keep the endpoint alive
+     *            after the function has returned. If the callee needs the
+     *            endpoint after the async_send_to has returned, the callee
+     *            needs to make a copy of the endpoint.
      * @param buffer  The buffer for data which us to be sent. The caller keeps
      *                the buffer alive until the completion event is resolved
      *                unless abort or destroy has been called.
