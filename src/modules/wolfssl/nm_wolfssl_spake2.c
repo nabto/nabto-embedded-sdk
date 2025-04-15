@@ -259,7 +259,7 @@ static int calculate_key_allocate(struct nc_spake2_password_request* req,
                             ret = wc_InitSha256(&sha);
                             if (ret == 0) {
                                 ret = wolfssl_spake2_calculate_key_ex(
-                                    spake, req, password, resp, respLen,
+                                    req, password, resp, respLen,
                                     spake2Key, T, M, N, K, S, &rng, &Y,
                                     &w, &groupA, &groupOrder, &groupPrime,
                                     &sha);
@@ -292,7 +292,7 @@ static np_error_code wolfssl_spake2_calculate_key(
     struct nc_spake2_password_request* req,
     const char* password, uint8_t* resp, size_t* respLen, uint8_t* spake2Key)
 {
-    int ret = calculate_key_allocate(spake, req, password, resp, respLen, spake2Key);
+    int ret = calculate_key_allocate(req, password, resp, respLen, spake2Key);
 
     if (ret != 0) {
         return NABTO_EC_FAILED;
