@@ -256,6 +256,7 @@ void nm_libevent_mdns_update_ipv4_socket_registration(evutil_socket_t sock)
                 memset(&group, 0, sizeof(struct ip_mreq));
                 group.imr_multiaddr.s_addr = inet_addr("224.0.0.251");
                 //struct sockaddr_in* in = (struct sockaddr_in*)iterator->ifa_addr;
+                // TODO check return value
                 unsigned int index = if_nametoindex(iterator->ifa_name);
                 group.imr_ifindex = (int)index;
                 int status = setsockopt(sock, IPPROTO_IP, IP_ADD_MEMBERSHIP, (char *)&group, sizeof(group));
@@ -289,6 +290,7 @@ void nm_libevent_mdns_update_ipv6_socket_registration(evutil_socket_t sock)
         while (iterator != NULL) {
             if (iterator->ifa_addr != NULL)
             {
+                // TODO check return value
                 unsigned int index = if_nametoindex(iterator->ifa_name);
 
                 struct ipv6_mreq group;

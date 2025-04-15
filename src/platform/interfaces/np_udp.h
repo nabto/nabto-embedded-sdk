@@ -28,8 +28,24 @@ struct np_udp {
  * This struct defines a list of functions which is required for udp
  * communication.
  *
- * Each function needs to point to a specific platform dependent
- * implementation.
+ * Each function needs to point to a specific platform dependent implementation.
+ *
+ * Error handling: The UDP module expects functions to return or resolve
+ * completion events in the following manners:
+ *
+ * Recoverable errors: If an recoverable errors occurs the functions should
+ * return or resolve with NABTO_EC_OK or NABTO_EC_PACKET_NOT_SENT. Recoverable
+ * errors are all those errors which does not mean that we should give up on the
+ * socket. It could be transient errors such as temporary memory issues and
+ * network connectivity issues. Examples: ENOBUFS, ENOMEM, EAGAIN, EWOULDBLOCK,
+ * etc.
+ *
+ * Fatal errors are all those errors which is not recoverable such as EBADFD
+ * EINVAL, etc.
+ *
+ * Since error codes are not specified for all possible errors on all possible
+ * platforms it is recommended to just return NABTO_EC_FAILED and log the error
+ * details in the specific implementation.
  */
 struct np_udp_functions {
     /**
@@ -85,18 +101,27 @@ struct np_udp_functions {
     void (*async_bind_port)(struct np_udp_socket* sock, uint16_t port, struct np_completion_event* completionEvent);
 
     /**
-     * Send packet async. It's the responsibility of the caller to
-     * keep the ep and buffer alive until the completion event is
-     * resolved.
+     * Send packet async. It's the responsibility of the caller to keep the ep
+     * and buffer alive until the completion event is resolved.
      *
-     * The completion event shall be resolved when a result of the
-     * operation is available.
+     * The completion event shall be resolved when a result of the operation is
+     * available.
+     *
+     * The completion event resolves with the following error codes:
+     *  * NABTO_EC_OK: if the packet was sent.
+     *  * NABTO_EC_ABORTED: if the socket has been closed by the application.
+     *  * NABTO_EC_FAILED_TO_SEND_PACKET: if the packet could not be sent but
+     *    the application should just try again later etc.
+     *  * NABTO_EC_* if some unrecoverable error occured.
      *
      * @param sock  The socket resource.
-     * @param ep  The endpoint. If the send to is deferred the endpoint has to be copied.
-     * @param buffer  The buffer for data which us to be sent. The caller
-     *                keeps the buffer alive until the completion event is resolved unless
-     *                abort or destroy has been called.
+     * @param ep  The endpoint. The caller does not keep the endpoint alive
+     *            after the function has returned. If the callee needs the
+     *            endpoint after the async_send_to has returned, the callee
+     *            needs to make a copy of the endpoint.
+     * @param buffer  The buffer for data which us to be sent. The caller keeps
+     *                the buffer alive until the completion event is resolved
+     *                unless abort or destroy has been called.
      * @param bufferSize  The size of the buffer.
      * @param completionEvent  The completion event, which is resolved when the
      */
@@ -123,6 +148,11 @@ struct np_udp_functions {
      * The completion event shall be resolved when a result of the
      * operation is available.
      *
+     * Completion event resolve error codes:
+     *   * NABTO_EC_OK: if a packet is ready to be read.
+     *   * NABTO_EC_ABORTED: if the socket has been closed by the application.
+     *   * NABTO_EC_*: is some unrecoverable error occurs.
+     *
      * @param sock  The socket resource
      * @param completionEvent  The completion event to be resolved
      *                         when data is ready to be received from the socket.
@@ -142,8 +172,9 @@ struct np_udp_functions {
      * @param recvSize    The actual amount of data received.
      * @return NABTO_EC_OK iff a packet was ready and put into the recv buffer.
      *         NABTO_EC_AGAIN if the socket does not have ready data or the
-     *         retrieval would have blocked. NABTO_EC_EOF if no more data can be
-     *         received from the socket.
+     *         retrieval would have blocked. In this case recv_wait should be called again.
+     *         NABTO_EC_ABORTED if the socket has been closed by the application.
+     *         NABTO_EC_* if some unrecoverable error occurs.
      */
     np_error_code (*recv_from)(struct np_udp_socket* sock, struct np_udp_endpoint* ep, uint8_t* buffer, size_t bufferSize, size_t* recvSize);
 

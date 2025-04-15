@@ -15,6 +15,7 @@
 np_error_code nc_client_connection_async_send_to_udp(uint8_t channelId,
                                                      uint8_t* buffer, uint16_t bufferSize,
                                                      struct np_completion_event* cb, void* listenerData);
+// TODO remove unused MTU discovery code.
 void nc_client_connection_mtu_discovered(const np_error_code ec, uint16_t mtu, void* data);
 
 void nc_client_connection_handle_event(enum np_dtls_event event, void* data);
@@ -327,7 +328,11 @@ void nc_client_connection_send_to_udp_cb(const np_error_code ec, void* data)
     }
     struct np_completion_event* cb = conn->sentCb;
     conn->sentCb = NULL;
-    np_completion_event_resolve(cb, ec);
+    if (ec == NABTO_EC_OK || ec == NABTO_EC_FAILED_TO_SEND_PACKET) {
+        np_completion_event_resolve(cb, NABTO_EC_OK);
+    } else {
+        np_completion_event_resolve(cb, ec);
+    }
 }
 
 np_error_code nc_client_connection_async_send_to_udp(uint8_t channel,
