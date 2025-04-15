@@ -36,6 +36,9 @@ static int hashData(wc_Sha256* mdCtx, uint8_t* data, size_t dataLength);
 static int hashPoint(wc_Sha256* mdCtx, const int grp, ecc_point* p);
 static int hashMpi(wc_Sha256* mdCtx, mp_int* n);
 
+static np_error_code wolfssl_spake2_create(struct np_platform* pl,
+    struct np_spake2_context** spake);
+static void wolfssl_spake2_destroy(struct np_spake2_context* spake);
 static np_error_code wolfssl_spake2_calculate_key(
     struct np_spake2_context* spake, struct nc_spake2_password_request* req, const char* password,
     uint8_t* resp, size_t* respLen, uint8_t* spake2Key);
@@ -49,12 +52,26 @@ static int calculate_K(mp_int* groupA, mp_int* groupOrder, mp_int* modulus, mp_i
 
 np_error_code nm_wolfssl_spake2_init(struct np_platform* pl)
 {
+    pl->spake2.create = &wolfssl_spake2_create;
+    pl->spake2.destroy = &wolfssl_spake2_destroy;
     pl->spake2.calculate_key = &wolfssl_spake2_calculate_key;
     pl->spake2.key_confirmation = &wolfssl_spake2_key_confirmation;
+    pl->spake2.get_fingerprint_from_private_key = &nm_wolfssl_get_fingerprint_from_private_key;
     return NABTO_EC_OK;
 }
 
 void nm_wolfssl_spake2_deinit(struct np_platform* pl)
+{
+
+}
+
+static np_error_code wolfssl_spake2_create(struct np_platform* pl, struct np_spake2_context** spake)
+{
+    *spake = NULL;
+    return NABTO_EC_OK;
+}
+
+static void wolfssl_spake2_destroy(struct np_spake2_context* spake)
 {
 
 }

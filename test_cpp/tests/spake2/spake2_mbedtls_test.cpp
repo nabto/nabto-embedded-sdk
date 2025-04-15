@@ -62,7 +62,7 @@ BOOST_AUTO_TEST_CASE(calculate_mbedtls_key_deterministically, * boost::unit_test
     size_t SLen = sizeof(S);
     uint8_t key[32];
 
-    BOOST_TEST(nm_mbedtls_spake2_calculate_key(req, dummyRandom, NULL, password.c_str(), S, &SLen, key) == NABTO_EC_OK);
+    BOOST_TEST(nm_mbedtls_spake2_calculate_key(NULL, req, dummyRandom, NULL, password.c_str(), S, &SLen, key) == NABTO_EC_OK);
 
     // this reference output was calculated with mbedtls + dummyRandom
 
