@@ -350,10 +350,9 @@ np_error_code udp_recv_from(struct np_udp_socket* sock, struct np_udp_endpoint* 
             // expected
             // wait for next event to check for data.
             return NABTO_EC_AGAIN;
-        } else {
-            NABTO_LOG_ERROR(LOG,"ERROR: (%d) '%s' in udp_recv_from", status, strerror(status));
-            return NABTO_EC_UDP_SOCKET_ERROR;
         }
+        NABTO_LOG_ERROR(LOG,"ERROR: (%d) '%s' in udp_recv_from", status, strerror(status));
+        return NABTO_EC_UDP_SOCKET_ERROR;
     }
     *readLength = recvLength;
     return NABTO_EC_OK;
@@ -383,9 +382,8 @@ np_error_code bind_port(struct np_udp_socket* s, uint16_t port)
 
     if (status == 0) {
         return NABTO_EC_OK;
-    } else {
-        return NABTO_EC_UDP_SOCKET_CREATION_ERROR;
     }
+    return NABTO_EC_UDP_SOCKET_CREATION_ERROR;
 }
 
 uint16_t get_local_port(struct np_udp_socket* s)
@@ -396,13 +394,12 @@ uint16_t get_local_port(struct np_udp_socket* s)
         socklen_t length = sizeof(struct sockaddr_in6);
         getsockname(s->sock, (struct sockaddr*)(&addr), &length);
         return htons(addr.sin6_port);
-    } else {
-        struct sockaddr_in addr;
-        addr.sin_port = 0;
-        socklen_t length = sizeof(struct sockaddr_in);
-        getsockname(s->sock, (struct sockaddr*)(&addr), &length);
-        return htons(addr.sin_port);
     }
+    struct sockaddr_in addr;
+    addr.sin_port = 0;
+    socklen_t length = sizeof(struct sockaddr_in);
+    getsockname(s->sock, (struct sockaddr*)(&addr), &length);
+    return htons(addr.sin_port);
 }
 
 np_error_code create_socket_any(struct np_udp_socket* s)
@@ -414,10 +411,9 @@ np_error_code create_socket_any(struct np_udp_socket* s)
             int e = errno;
             NABTO_LOG_ERROR(LOG, "Unable to create socket: (%i) '%s'.", e, strerror(e));
             return NABTO_EC_UDP_SOCKET_CREATION_ERROR;
-        } else {
-            NABTO_LOG_WARN(LOG, "IPv4 socket opened since IPv6 socket creation failed");
-            s->type = NABTO_IPV4;
         }
+        NABTO_LOG_WARN(LOG, "IPv4 socket opened since IPv6 socket creation failed");
+        s->type = NABTO_IPV4;
     } else {
         int no = 0;
         s->type = NABTO_IPV6;

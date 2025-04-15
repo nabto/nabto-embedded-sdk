@@ -55,9 +55,8 @@ static char encodeChar(uint8_t val)
 {
     if (val <= 9) {
         return '0' + val;
-    } else {
-        return 'a' + (val - 10);
     }
+    return 'a' + (val - 10);
 }
 
 void np_data_to_hex(uint8_t* data, size_t dataLength, char* output)

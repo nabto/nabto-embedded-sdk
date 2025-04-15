@@ -63,12 +63,12 @@ bool nm_condition_parse_bool(const char* value, bool* out)
     if (strcmp(value, "true") == 0) {
         *out = true;
         return true;
-    } else if (strcmp(value, "false") == 0) {
+    }
+    if (strcmp(value, "false") == 0) {
         *out = false;
         return true;
-    } else {
-        return false;
     }
+    return false;
 }
 
 bool nm_condition_parse_numeric(const char* value, double* out)
@@ -85,9 +85,8 @@ static enum nm_condition_result status(bool s)
 {
     if (s) {
         return NM_CONDITION_RESULT_MATCH;
-    } else {
-        return NM_CONDITION_RESULT_NO_MATCH;
     }
+    return NM_CONDITION_RESULT_NO_MATCH;
 }
 
 enum nm_condition_result nm_condition_numeric_operator(enum nm_iam_condition_operator op, const char* lhs, const char* rhs)

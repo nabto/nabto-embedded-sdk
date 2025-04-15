@@ -37,7 +37,7 @@ static int hashPoint(wc_Sha256* mdCtx, const int grp, ecc_point* p);
 static int hashMpi(wc_Sha256* mdCtx, mp_int* n);
 
 static np_error_code wolfssl_spake2_create(struct np_platform* pl,
-                                           struct np_spake2_context** spake);
+    struct np_spake2_context** spake);
 static void wolfssl_spake2_destroy(struct np_spake2_context* spake);
 static np_error_code wolfssl_spake2_calculate_key(
     struct np_spake2_context* spake, struct nc_spake2_password_request* req, const char* password,

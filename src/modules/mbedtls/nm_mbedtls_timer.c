@@ -56,14 +56,13 @@ int nm_mbedtls_timer_get_delay(void* data)
     if (ctx->armed) {
         if (ctx->expired) {
             return 2;
-        } else if (np_timestamp_passed_or_now(ts, ctx->intermediateTp)) {
-            return 1;
-        } else {
-            return 0;
         }
-    } else {
-        return -1;
+        if (np_timestamp_passed_or_now(ts, ctx->intermediateTp)) {
+            return 1;
+        }
+        return 0;
     }
+    return -1;
 }
 
 void timer_cb(void* data)

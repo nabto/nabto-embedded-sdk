@@ -68,10 +68,9 @@ bool nm_iam_pairing_is_local_initial_possible(struct nm_iam* iam, NabtoDeviceCon
     struct nm_iam_user* initialUser = nm_iam_internal_find_user_by_username(iam, initialUserUsername);
     if (initialUser == NULL) {
         return false;
-    } else {
-        if (nm_iam_pairing_is_user_paired(initialUser)) {
-            return false;
-        }
+    }
+    if (nm_iam_pairing_is_user_paired(initialUser)) {
+        return false;
     }
     return true;
 }

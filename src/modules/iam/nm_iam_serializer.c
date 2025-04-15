@@ -227,7 +227,8 @@ bool nm_iam_serializer_state_load_json(struct nm_iam_state* state, const char* i
         NN_LOG_ERROR(logger, LOGM, "missing version in iam state");
         cJSON_Delete(root);
         return false;
-    } else if (version->valueint > 2) {
+    }
+    if (version->valueint > 2) {
         NN_LOG_ERROR(logger, LOGM, "Unsupported IAM state version: %d", version->valueint);
         return false;
     }

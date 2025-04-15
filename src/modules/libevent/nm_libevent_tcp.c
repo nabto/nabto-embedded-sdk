@@ -1,14 +1,14 @@
 #include "nm_libevent.h"
 
+#include <platform/interfaces/np_tcp.h>
+#include <platform/np_allocator.h>
+#include <platform/np_completion_event.h>
+#include <platform/np_error_code.h>
 #include <platform/np_logging.h>
 #include <platform/np_platform.h>
-#include <platform/np_error_code.h>
-#include <platform/interfaces/np_tcp.h>
-#include <platform/np_completion_event.h>
-#include <platform/np_allocator.h>
 
-#include <event2/bufferevent.h>
 #include <event2/buffer.h>
+#include <event2/bufferevent.h>
 #include <event2/event.h>
 
 #include <stddef.h>
@@ -92,7 +92,9 @@ np_error_code tcp_create(struct np_tcp* obj, struct np_tcp_socket** sock)
     struct nm_libevent_context* ctx = obj->data;
 
     s->aborted = false;
-    s->bev = bufferevent_socket_new(ctx->eventBase, -1, BEV_OPT_CLOSE_ON_FREE | BEV_OPT_THREADSAFE);
+
+    // NOLINTNEXTLINE(hicpp-signed-bitwise)
+    s->bev = bufferevent_socket_new(ctx->eventBase, -1, (BEV_OPT_CLOSE_ON_FREE | BEV_OPT_THREADSAFE));
     if (s->bev == NULL) {
         np_free(s);
         return NABTO_EC_OUT_OF_MEMORY;
@@ -103,19 +105,20 @@ np_error_code tcp_create(struct np_tcp* obj, struct np_tcp_socket** sock)
     return NABTO_EC_OK;
 }
 
-static void tcp_eof(void* userData);
+
 static void tcp_error(void* userData);
 
 void tcp_bufferevent_event(struct bufferevent* bev, short event, void* userData)
 {
     (void)bev;
+    uint16_t ev = (uint16_t)event;
     struct np_tcp_socket* sock = userData;
     NABTO_LOG_TRACE(LOG, "bufferevent event %i", event);
-    if (event & BEV_EVENT_CONNECTED) {
+    if (ev & BEV_EVENT_CONNECTED) {
         resolve_tcp_connect(sock, NABTO_EC_OK);
-    } else if (event & BEV_EVENT_EOF) {
+    } else if (ev & BEV_EVENT_EOF) {
         tcp_eof(sock);
-    } else if (event & BEV_EVENT_ERROR) {
+    } else if (ev & BEV_EVENT_ERROR) {
         tcp_error(sock);
     }
 }
@@ -261,18 +264,16 @@ void tcp_async_write(struct np_tcp_socket* sock, const void* data, size_t dataLe
         return;
     }
     sock->write.completionEvent = completionEvent;
-    int status;
+    int status = 0;
     status = bufferevent_enable(sock->bev, EV_WRITE);
     if (status == 0) {
         status = bufferevent_write(sock->bev, data, dataLength);
     }
     if (status == 0) {
         return;
-    } else {
-        sock->write.completionEvent = NULL;
-        np_completion_event_resolve(completionEvent, NABTO_EC_UNKNOWN);
-        return;
     }
+    sock->write.completionEvent = NULL;
+    np_completion_event_resolve(completionEvent, NABTO_EC_UNKNOWN);
 }
 
 void tcp_async_read(struct np_tcp_socket* sock, void* buffer, size_t bufferLength, size_t* readLength, struct np_completion_event* completionEvent)
@@ -298,8 +299,7 @@ void tcp_async_read(struct np_tcp_socket* sock, void* buffer, size_t bufferLengt
     } else {
         bufferevent_enable(sock->bev, EV_READ);
     }
-    return;
-}
+    }
 
 void tcp_shutdown(struct np_tcp_socket* sock)
 {

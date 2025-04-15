@@ -9,6 +9,7 @@ NABTO_DEVICE_ERROR_CODE_MAPPING(XX_ERROR)
 
 const char* NABTO_DEVICE_API nabto_device_error_get_message(NabtoDeviceError ec)
 {
+// NOLINTNEXTLINE(readability-else-after-return)
 #define XX_ERROR(name) if (ec == NABTO_DEVICE_EC_##name) { return np_error_code_to_string(NABTO_EC_##name); } else
     NABTO_DEVICE_ERROR_CODE_MAPPING(XX_ERROR)
 #undef XX_ERROR

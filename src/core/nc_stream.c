@@ -167,25 +167,25 @@ void nc_stream_handle_wait(struct nc_stream_context* ctx)
     if (nextStamp.type == NABTO_STREAM_STAMP_NOW) {
         NABTO_LOG_ERROR(LOG, "Next event should not be now");
         return;
-    } else if ( nextStamp.type == NABTO_STREAM_STAMP_INFINITE) {
+    }
+    if ( nextStamp.type == NABTO_STREAM_STAMP_INFINITE) {
         return;
-    } else {
-        if (nabto_stream_stamp_less(nextStamp, ctx->currentExpiry)) {
-            ctx->currentExpiry = nextStamp;
-            int32_t diff = nabto_stream_stamp_diff_now(&ctx->stream, nextStamp);
-            if (diff < 0) {
-                ctx->negativeCount += 1;
-                if (ctx->negativeCount > 1000) {
-                    NABTO_LOG_ERROR(LOG, "next timeout has been negative %u times, this is a problem.", ctx->negativeCount);
-                    // mitigate problem until underlying cause is fixed
-                    diff = 100;
-                }
-            } else {
-                ctx->negativeCount = 0;
+    }
+    if (nabto_stream_stamp_less(nextStamp, ctx->currentExpiry)) {
+        ctx->currentExpiry = nextStamp;
+        int32_t diff = nabto_stream_stamp_diff_now(&ctx->stream, nextStamp);
+        if (diff < 0) {
+            ctx->negativeCount += 1;
+            if (ctx->negativeCount > 1000) {
+                NABTO_LOG_ERROR(LOG, "next timeout has been negative %u times, this is a problem.", ctx->negativeCount);
+                // mitigate problem until underlying cause is fixed
+                diff = 100;
             }
-            diff += 2; // make sure that we have passed the timestamp inside the module.
-            np_event_queue_post_timed_event(&ctx->pl->eq, ctx->timer, diff);
+        } else {
+            ctx->negativeCount = 0;
         }
+        diff += 2; // make sure that we have passed the timestamp inside the module.
+        np_event_queue_post_timed_event(&ctx->pl->eq, ctx->timer, diff);
     }
 }
 
@@ -549,7 +549,8 @@ void nc_stream_do_write_all(struct nc_stream_context* stream)
         if (written == 0) {
             // would block
             return;
-        } else if (written == stream->writeBufferLength) {
+        }
+        if (written == stream->writeBufferLength) {
             np_completion_event_resolve(stream->writeEv, NABTO_EC_OK);
             stream->writeEv = NULL;
         } else {
@@ -572,11 +573,11 @@ np_error_code nc_stream_handle_close(struct nc_stream_context* stream)
     nabto_stream_status status = nabto_stream_close(&stream->stream);
     if (status == NABTO_STREAM_STATUS_OK) {
         return NABTO_EC_OK;
-    } else if (status == NABTO_STREAM_STATUS_CLOSED) {
-        return NABTO_EC_CLOSED;
-    } else {
-        return nc_stream_status_to_ec(status);
     }
+    if (status == NABTO_STREAM_STATUS_CLOSED) {
+        return NABTO_EC_CLOSED;
+    }
+    return nc_stream_status_to_ec(status);
 }
 
 void nc_stream_application_event_callback(nabto_stream_application_event_type eventType, void* data)

@@ -1,17 +1,11 @@
 #include "nm_mbedtls_spake2.h"
 #include "nm_mbedtls_util.h"
+#include <string.h>
 
 #if !defined(DEVICE_MBEDTLS_2)
 #include <mbedtls/build_info.h>
 #endif
-#include <mbedtls/sha256.h>
-#include <mbedtls/md.h>
-#include <mbedtls/ctr_drbg.h>
-#include <mbedtls/entropy.h>
-#include <mbedtls/bignum.h>
-#include <mbedtls/ecp.h>
 
-#include <string.h>
 
 /**
  * Definitions of the curve points M and N, which is used in the
@@ -40,7 +34,7 @@ static int hashMpi(mbedtls_md_context_t* mdCtx, mbedtls_mpi* n);
 
 
 static np_error_code mbedtls_spake2_create(struct np_platform* pl,
-                                           struct np_spake2_context** spake);
+    struct np_spake2_context** spake);
 static void mbedtls_spake2_destroy(struct np_spake2_context* spake);
 static np_error_code mbedtls_spake2_calculate_key(
     struct np_spake2_context* spake, struct nc_spake2_password_request* req, const char* password,
@@ -72,6 +66,7 @@ static void mbedtls_spake2_destroy(struct np_spake2_context* spake)
 {
 
 }
+// NOLINTBEGIN(hicpp-signed-bitwise)
 
 // T [in] from client
 // CliFP [in] from client cert
@@ -212,12 +207,12 @@ np_error_code nm_mbedtls_spake2_calculate_key(
 
     if (status == 0) {
         return NABTO_EC_OK;
-    } else {
-        return NABTO_EC_FAILED;
     }
+    return NABTO_EC_FAILED;
 }
 
 static np_error_code mbedtls_spake2_calculate_key(
+    // NOLINTNEXTLINE(misc-unused-parameters)
     struct np_spake2_context* spake, struct nc_spake2_password_request* req, const char* password,
     uint8_t* resp, size_t* respLen, uint8_t* spake2Key)
 {
@@ -237,6 +232,7 @@ static np_error_code mbedtls_spake2_calculate_key(
     return ec;
 }
 
+// NOLINTNEXTLINE(misc-unused-parameters)
 static np_error_code mbedtls_spake2_key_confirmation(struct np_spake2_context* spake, uint8_t* payload, size_t payloadLen, uint8_t* key, size_t keyLen, uint8_t* hash1, size_t hash1Len)
 {
     if(payloadLen != 32 || keyLen != 32 || hash1Len != 32) {
@@ -247,9 +243,8 @@ static np_error_code mbedtls_spake2_key_confirmation(struct np_spake2_context* s
     nm_mbedtls_sha256(hash1, 32, hash2);
     if (memcmp(payload, hash2, 32) != 0) {
         return NABTO_EC_ACCESS_DENIED;
-    } else {
-        return NABTO_EC_OK;
     }
+    return NABTO_EC_OK;
 }
 
 
@@ -274,7 +269,7 @@ int hashData(mbedtls_md_context_t* mdCtx, uint8_t* data, size_t dataLength)
 
 int hashPoint(mbedtls_md_context_t* mdCtx, mbedtls_ecp_group* grp, mbedtls_ecp_point* p)
 {
-    size_t olen;
+    size_t olen = 0;
     uint8_t buffer[256];
     int status = 0;
     status |= mbedtls_ecp_point_write_binary (grp, p, MBEDTLS_ECP_PF_UNCOMPRESSED, &olen, buffer, sizeof(buffer));
@@ -294,3 +289,4 @@ int hashMpi(mbedtls_md_context_t* mdCtx, mbedtls_mpi* n)
     status |= hashData(mdCtx, buffer, s);
     return status;
 }
+// NOLINTEND(hicpp-signed-bitwise)

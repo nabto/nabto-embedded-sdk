@@ -96,9 +96,8 @@ void nc_coap_server_event(struct nc_coap_server_context* ctx)
             // we are waiting for an async operation before doing the next
             // thing
             return;
-        } else {
-            nc_coap_server_event_deferred(ctx);
         }
+        nc_coap_server_event_deferred(ctx);
     } else if (nextEvent == NABTO_COAP_SERVER_NEXT_EVENT_WAIT) {
         nc_coap_server_handle_wait(ctx);
         return;
@@ -435,10 +434,9 @@ void* nc_coap_server_request_get_connection(struct nc_coap_server_request* reque
 {
     if (request->isVirtual) {
         return request->virRequest->connection;
-    } else {
-        struct nc_client_connection* cliConn = nabto_coap_server_request_get_connection(request->request);
-        return nc_connections_connection_from_client_connection(&request->device->connections, cliConn);
     }
+    struct nc_client_connection* cliConn = nabto_coap_server_request_get_connection(request->request);
+    return nc_connections_connection_from_client_connection(&request->device->connections, cliConn);
 }
 
 uint64_t nc_coap_server_request_get_connection_ref(struct nc_coap_server_request* request)
@@ -462,12 +460,10 @@ const char* nc_coap_server_request_get_parameter(struct nc_coap_server_request* 
         struct nn_string_map_iterator it = nn_string_map_get(&request->virRequest->parameters, parameter);
         if (nn_string_map_is_end(&it)) {
             return NULL;
-        } else {
-            return nn_string_map_value(&it);
         }
-    } else {
-        return nabto_coap_server_request_get_parameter(request->request, parameter);
+        return nn_string_map_value(&it);
     }
+    return nabto_coap_server_request_get_parameter(request->request, parameter);
 }
 
 
@@ -519,9 +515,8 @@ int32_t nc_coap_server_response_get_content_format(struct nc_coap_server_request
         request->virRequest == NULL ||
         !request->virRequest->responseReady) {
         return -1;
-    } else {
-        return request->virRequest->respContentFormat;
     }
+    return request->virRequest->respContentFormat;
 }
 
 bool nc_coap_server_response_get_payload(struct nc_coap_server_request* request, void** payload, size_t* payloadLength)
@@ -530,11 +525,10 @@ bool nc_coap_server_response_get_payload(struct nc_coap_server_request* request,
         request->virRequest == NULL ||
         !request->virRequest->responseReady) {
         return false;
-    } else {
-        *payload = request->virRequest->respPayload;
-        *payloadLength = request->virRequest->respPayloadSize;
-        return true;
     }
+    *payload = request->virRequest->respPayload;
+    *payloadLength = request->virRequest->respPayloadSize;
+    return true;
 
 }
 
@@ -545,11 +539,10 @@ np_error_code nc_coap_server_response_get_code_human(struct nc_coap_server_reque
         !request->virRequest->responseReady)
     {
         return NABTO_EC_INVALID_STATE;
-    } else {
-        uint8_t compactCode = request->virRequest->respStatusCode;
-        *code = ((compactCode >> 5)) * 100 + (compactCode & 0x1f);
-        return NABTO_EC_OK;
     }
+    uint8_t compactCode = request->virRequest->respStatusCode;
+    *code = ((compactCode >> 5)) * 100 + (compactCode & 0x1f);
+    return NABTO_EC_OK;
 }
 
 void nc_coap_server_resolve_virtual(np_error_code ec, struct nc_coap_server_request* request)

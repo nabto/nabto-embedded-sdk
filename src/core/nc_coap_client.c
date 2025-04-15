@@ -117,14 +117,13 @@ np_error_code nc_coap_client_handle_send(struct nc_coap_client_context* ctx)
         pl->buf.free(ctx->sendBuffer);
         ctx->sendBuffer = NULL;
         return NABTO_EC_UNKNOWN;
-    } else {
-        size_t used = ptr - sendCtx->buffer;
-        sendCtx->bufferSize = (uint16_t)used;
-
-        struct np_dtls_cli_connection* dtls = connection;
-        ctx->pl->dtlsC.async_send_data(dtls, sendCtx);
-        return NABTO_EC_OPERATION_STARTED;
     }
+    size_t used = ptr - sendCtx->buffer;
+    sendCtx->bufferSize = (uint16_t)used;
+
+    struct np_dtls_cli_connection* dtls = connection;
+    ctx->pl->dtlsC.async_send_data(dtls, sendCtx);
+    return NABTO_EC_OPERATION_STARTED;
 }
 
 void nc_coap_client_handle_wait(struct nc_coap_client_context* ctx)
@@ -170,15 +169,15 @@ void nc_coap_client_event(struct nc_coap_client_context* ctx)
     if (nextEvent == NABTO_COAP_CLIENT_NEXT_EVENT_CALLBACK) {
         nc_coap_client_handle_callback(ctx);
         return;
-    } else if (nextEvent == NABTO_COAP_CLIENT_NEXT_EVENT_SEND) {
+    }
+    if (nextEvent == NABTO_COAP_CLIENT_NEXT_EVENT_SEND) {
         np_error_code ec = nc_coap_client_handle_send(ctx);
         if (ec == NABTO_EC_OPERATION_IN_PROGRESS ||
             ec == NABTO_EC_OPERATION_STARTED) {
             return;
-        } else {
-            // a packet was not sent,
-            nc_coap_client_event_deferred(ctx);
         }
+        // a packet was not sent,
+        nc_coap_client_event_deferred(ctx);
     } else if (nextEvent == NABTO_COAP_CLIENT_NEXT_EVENT_WAIT) {
         nc_coap_client_handle_wait(ctx);
         return;

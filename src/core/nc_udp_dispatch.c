@@ -100,6 +100,7 @@ void async_recv_wait_complete(const np_error_code ec, void* userData)
         // the system stack requirement large. We need to receive the packet but
         // we do it with a small buffer such that it will be discarded.
         uint8_t smallBuffer[1];
+        // TODO: returned error code is ignored
         np_udp_recv_from(
             &ctx->pl->udp, ctx->sock, &ep, smallBuffer, sizeof(smallBuffer), &recvLength);
         NABTO_LOG_ERROR(LOG, "out of memory, discarding udp packet");
@@ -117,7 +118,8 @@ void async_recv_wait_complete(const np_error_code ec, void* userData)
 
     if (recvEc == NABTO_EC_ABORTED) {
         return;
-    } else if (recvEc == NABTO_EC_OK || recvEc == NABTO_EC_AGAIN) {
+    }
+    if (recvEc == NABTO_EC_OK || recvEc == NABTO_EC_AGAIN) {
         start_recv(ctx);
     } else {
         NABTO_LOG_ERROR(LOG, "udp recv from returned unexpected error: %d" )

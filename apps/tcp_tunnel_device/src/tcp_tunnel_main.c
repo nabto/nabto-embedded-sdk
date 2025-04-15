@@ -401,9 +401,8 @@ int main(int argc, char** argv)
 
     if (status) {
         return 0;
-    } else {
-        return 1;
     }
+    return 1;
 }
 
 bool handle_main(struct args* args, struct tcp_tunnel* tunnel)
@@ -411,7 +410,8 @@ bool handle_main(struct args* args, struct tcp_tunnel* tunnel)
     if (args->showHelp) {
         print_help();
         return true;
-    } else if (args->showVersion) {
+    }
+    if (args->showVersion) {
         print_version();
         return true;
     }
@@ -477,30 +477,28 @@ bool handle_main(struct args* args, struct tcp_tunnel* tunnel)
         if (!success) {
             printf("Init of the configuration and state failed" NEWLINE);
             return false;
-        } else {
-            char* deviceFingerprint;
-            nabto_device_get_device_fingerprint(tunnel->device, &deviceFingerprint);
-            printf("The configuration and state has been initialized" NEWLINE);
-            printf("The Fingerprint must be configured for this device in the Nabto Cloud Console before it will be allowed to attach to the Basestation. If you want to reuse an already configured fingerprint, you can copy the corresponding private key to %s" NEWLINE, tunnel->privateKeyFile);
-            printf("The device Fingerprint is: %s" NEWLINE, deviceFingerprint);
-            return true;
         }
-    } else {
-        // check that all files exists
-        if (!string_file_exists(&tunnel->fsImpl, tunnel->deviceConfigFile)) {
-            printf("Missing device config %s, initialize it with --init or --demo-init" NEWLINE, tunnel->deviceConfigFile);
-            return false;
-        }
+        char* deviceFingerprint;
+        nabto_device_get_device_fingerprint(tunnel->device, &deviceFingerprint);
+        printf("The configuration and state has been initialized" NEWLINE);
+        printf("The Fingerprint must be configured for this device in the Nabto Cloud Console before it will be allowed to attach to the Basestation. If you want to reuse an already configured fingerprint, you can copy the corresponding private key to %s" NEWLINE, tunnel->privateKeyFile);
+        printf("The device Fingerprint is: %s" NEWLINE, deviceFingerprint);
+        return true;
+    }
+    // check that all files exists
+    if (!string_file_exists(&tunnel->fsImpl, tunnel->deviceConfigFile)) {
+        printf("Missing device config %s, initialize it with --init or --demo-init" NEWLINE, tunnel->deviceConfigFile);
+        return false;
+    }
 
-        if(!string_file_exists(&tunnel->fsImpl, tunnel->iamConfigFile)) {
-            printf("Missing IAM configuration file %s, create it with --init or --demo-init" NEWLINE, tunnel->iamConfigFile);
-            return false;
-        }
+    if(!string_file_exists(&tunnel->fsImpl, tunnel->iamConfigFile)) {
+        printf("Missing IAM configuration file %s, create it with --init or --demo-init" NEWLINE, tunnel->iamConfigFile);
+        return false;
+    }
 
-        if (!string_file_exists(&tunnel->fsImpl, tunnel->stateFile)) {
-            printf("Missing IAM state file %s, create it with --init or --demo-init" NEWLINE, tunnel->stateFile);
-            return false;
-        }
+    if (!string_file_exists(&tunnel->fsImpl, tunnel->stateFile)) {
+        printf("Missing IAM state file %s, create it with --init or --demo-init" NEWLINE, tunnel->stateFile);
+        return false;
     }
 
     /**

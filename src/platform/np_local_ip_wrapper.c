@@ -10,7 +10,6 @@ size_t np_local_ip_get_local_ips(struct np_local_ip* obj,  struct np_ip_address 
     if (obj->mptr == NULL) {
         NABTO_LOG_ERROR(LOG, "Missing local ip implementation");
         return 0;
-    } else {
-        return obj->mptr->get_local_ips(obj, addrs, addrsSize);
     }
+    return obj->mptr->get_local_ips(obj, addrs, addrsSize);
 }

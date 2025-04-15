@@ -213,24 +213,23 @@ struct nc_stream_context* nc_stream_manager_accept_stream(struct nc_stream_manag
 {
     if ( (streamId % 2) == 1) {
         return NULL;
-    } else {
-        struct nc_stream_context* stream = nc_stream_manager_alloc_stream(ctx);
-        if (stream == NULL) {
-            return NULL;
-        }
-
-        uint64_t nonce = nc_stream_manager_get_next_nonce(ctx);
-
-        np_error_code ec;
-        ec = nc_stream_init(ctx->pl, stream, streamId, nonce, conn->parent, ctx, conn->parent->connectionRef, ctx->logger);
-        if (ec != NABTO_EC_OK) {
-            nc_stream_manager_free_stream(stream);
-            return NULL;
-        }
-        nn_llist_append(&ctx->streams, &stream->streamsNode, stream);
-        nc_stream_ref_count_inc(stream);
-        return stream;
     }
+    struct nc_stream_context* stream = nc_stream_manager_alloc_stream(ctx);
+    if (stream == NULL) {
+        return NULL;
+    }
+
+    uint64_t nonce = nc_stream_manager_get_next_nonce(ctx);
+
+    np_error_code ec;
+    ec = nc_stream_init(ctx->pl, stream, streamId, nonce, conn->parent, ctx, conn->parent->connectionRef, ctx->logger);
+    if (ec != NABTO_EC_OK) {
+        nc_stream_manager_free_stream(stream);
+        return NULL;
+    }
+    nn_llist_append(&ctx->streams, &stream->streamsNode, stream);
+    nc_stream_ref_count_inc(stream);
+    return stream;
 }
 
 struct nc_stream_context* nc_stream_manager_accept_virtual_stream(struct nc_stream_manager_context* streamManager, struct nc_connection* connection, uint32_t port, struct np_completion_event* openedEv)
@@ -380,9 +379,8 @@ uint64_t nc_stream_manager_get_connection_ref(struct nc_stream_manager_context* 
             struct nc_connection* connection = stream->conn;
             if (connection == NULL) {
                 return 0;
-            } else {
-                return connection->connectionRef;
             }
+            return connection->connectionRef;
         }
     }
     return 0;

@@ -328,7 +328,6 @@ void nabto_device_stream_core_callback(np_error_code ec, struct nc_stream_contex
             nabto_device_stream_free_internal(str);
         }
         return;
-    } else {
-        nabto_device_listener_set_error_code(listenerContext->listener, ec);
     }
+    nabto_device_listener_set_error_code(listenerContext->listener, ec);
 }

@@ -104,10 +104,12 @@ struct nm_iam_user* nm_iam_user_from_json(const cJSON* json, int version)
     }
 
     if (cJSON_IsString(fcmToken)) {
+        // NOLINTNEXTLINE(clang-analyzer-core.NullDereference)
         nm_iam_user_set_fcm_token(user, fcmToken->valuestring);
     }
 
     if (cJSON_IsString(fcmProjectId)) {
+        // NOLINTNEXTLINE(clang-analyzer-core.NullDereference)
         nm_iam_user_set_fcm_project_id(user, fcmProjectId->valuestring);
     }
 
