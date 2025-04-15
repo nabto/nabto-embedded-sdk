@@ -36,15 +36,12 @@ static int hashData(wc_Sha256* mdCtx, uint8_t* data, size_t dataLength);
 static int hashPoint(wc_Sha256* mdCtx, const int grp, ecc_point* p);
 static int hashMpi(wc_Sha256* mdCtx, mp_int* n);
 
-static np_error_code wolfssl_spake2_create(struct np_platform* pl,
-    struct np_spake2_context** spake);
-static void wolfssl_spake2_destroy(struct np_spake2_context* spake);
 static np_error_code wolfssl_spake2_calculate_key(
-    struct np_spake2_context* spake, struct nc_spake2_password_request* req, const char* password,
+    struct nc_spake2_password_request* req, const char* password,
     uint8_t* resp, size_t* respLen, uint8_t* spake2Key);
 
 static np_error_code wolfssl_spake2_key_confirmation(
-    struct np_spake2_context* spake, uint8_t* payload, size_t payloadLen,
+    uint8_t* payload, size_t payloadLen,
     uint8_t* key, size_t keyLen, uint8_t* hash1, size_t hash1Len);
 
 static int calculate_S(mp_int* groupA, mp_int* modulus, ecc_point* N, mp_int* w, ecc_point* Y, ecc_point* S);
@@ -52,26 +49,12 @@ static int calculate_K(mp_int* groupA, mp_int* groupOrder, mp_int* modulus, mp_i
 
 np_error_code nm_wolfssl_spake2_init(struct np_platform* pl)
 {
-    pl->spake2.create = &wolfssl_spake2_create;
-    pl->spake2.destroy = &wolfssl_spake2_destroy;
     pl->spake2.calculate_key = &wolfssl_spake2_calculate_key;
     pl->spake2.key_confirmation = &wolfssl_spake2_key_confirmation;
-    pl->spake2.get_fingerprint_from_private_key = &nm_wolfssl_get_fingerprint_from_private_key;
     return NABTO_EC_OK;
 }
 
 void nm_wolfssl_spake2_deinit(struct np_platform* pl)
-{
-
-}
-
-static np_error_code wolfssl_spake2_create(struct np_platform* pl, struct np_spake2_context** spake)
-{
-    *spake = NULL;
-    return NABTO_EC_OK;
-}
-
-static void wolfssl_spake2_destroy(struct np_spake2_context* spake)
 {
 
 }
@@ -117,7 +100,7 @@ static int password_to_mpi(const char* password, mp_int* w, WC_RNG* rng)
 // Key [out] used in key_confirmation
 
 static int wolfssl_spake2_calculate_key_ex(
-    struct np_spake2_context* spake, struct nc_spake2_password_request* req,
+    struct nc_spake2_password_request* req,
     const char* password, uint8_t* resp, size_t* respLen, uint8_t* spake2Key,
     ecc_point* T, ecc_point* M, ecc_point* N, ecc_point* K, ecc_point* S,
     WC_RNG* rng, ecc_key* Y,
@@ -234,7 +217,7 @@ static int wolfssl_spake2_calculate_key_ex(
     return 0;
 }
 
-static int calculate_key_allocate(struct np_spake2_context* spake, struct nc_spake2_password_request* req,
+static int calculate_key_allocate(struct nc_spake2_password_request* req,
     const char* password, uint8_t* resp, size_t* respLen, uint8_t* spake2Key)
 {
     int ret;
@@ -276,7 +259,7 @@ static int calculate_key_allocate(struct np_spake2_context* spake, struct nc_spa
                             ret = wc_InitSha256(&sha);
                             if (ret == 0) {
                                 ret = wolfssl_spake2_calculate_key_ex(
-                                    spake, req, password, resp, respLen,
+                                    req, password, resp, respLen,
                                     spake2Key, T, M, N, K, S, &rng, &Y,
                                     &w, &groupA, &groupOrder, &groupPrime,
                                     &sha);
@@ -306,10 +289,10 @@ static int calculate_key_allocate(struct np_spake2_context* spake, struct nc_spa
 }
 
 static np_error_code wolfssl_spake2_calculate_key(
-    struct np_spake2_context* spake, struct nc_spake2_password_request* req,
+    struct nc_spake2_password_request* req,
     const char* password, uint8_t* resp, size_t* respLen, uint8_t* spake2Key)
 {
-    int ret = calculate_key_allocate(spake, req, password, resp, respLen, spake2Key);
+    int ret = calculate_key_allocate(req, password, resp, respLen, spake2Key);
 
     if (ret != 0) {
         return NABTO_EC_FAILED;
@@ -439,7 +422,7 @@ static int sha256_hash(uint8_t* buffer, size_t bufferSize, uint8_t* hash)
 }
 
 static np_error_code wolfssl_spake2_key_confirmation(
-    struct np_spake2_context* spake, uint8_t* payload, size_t payloadLen,
+    uint8_t* payload, size_t payloadLen,
     uint8_t* key, size_t keyLen, uint8_t* hash1, size_t hash1Len)
 {
     if (payloadLen != 32 || keyLen != 32 || hash1Len != 32) {

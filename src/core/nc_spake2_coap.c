@@ -145,7 +145,7 @@ void nc_spake2_handle_coap_2(struct nc_coap_server_request* request, void* data)
             nc_coap_server_send_error_response(request, (nabto_coap_code)NABTO_COAP_CODE(4,00), NULL);
         } else {
             uint8_t responseData[32];
-            if (spake2->pl->spake2.key_confirmation(NULL, payload, payloadLength, connection->spake2Key, 32, responseData, 32) != NABTO_EC_OK) {
+            if (spake2->pl->spake2.key_confirmation(payload, payloadLength, connection->spake2Key, 32, responseData, 32) != NABTO_EC_OK) {
                 nc_coap_server_send_error_response(request, (nabto_coap_code)NABTO_COAP_CODE(4,01), NULL);
                 nc_spake2_spend_token(spake2);
             } else {
