@@ -120,7 +120,7 @@ static int wolfssl_spake2_calculate_key_ex(
     if (curveIdx < 0) {
         return curveIdx;
     }
-    const ecc_set_type* curveParams = NULL = wc_ecc_get_curve_params(curveIdx);
+    const ecc_set_type* curveParams = wc_ecc_get_curve_params(curveIdx);
 
     // read T from a buffer. The point is encoded as 0x04 and the X, y
     // coordinate. 0x04 means the point is uncompressed.
@@ -532,7 +532,7 @@ bool test_calculate_S()
 
     int ret = 0;
     int curveIdx = wc_ecc_get_curve_idx(ECC_SECP256R1);
-    const ecc_set_type* curveParams = NULL = wc_ecc_get_curve_params(curveIdx);
+    const ecc_set_type* curveParams = wc_ecc_get_curve_params(curveIdx);
     mp_int groupA;
     mp_int groupPrime;
     ret = mp_init(&groupA);
@@ -586,7 +586,7 @@ bool test_calculate_K()
 
     int ret = 0;
     int curveIdx = wc_ecc_get_curve_idx(ECC_SECP256R1);
-    const ecc_set_type* curveParams = NULL = wc_ecc_get_curve_params(curveIdx);
+    const ecc_set_type* curveParams = wc_ecc_get_curve_params(curveIdx);
     mp_int groupA;
     mp_int groupPrime;
     mp_int groupOrder;
