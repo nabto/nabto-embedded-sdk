@@ -19,7 +19,7 @@ bool parse_response(const uint8_t* buffer, size_t bufferSize, struct nc_attacher
 static const char* coapPath[] = { "device", "ice-servers" };
 
 static void ice_server_clean(struct nc_attacher_ice_server* server) {
-        void* url;
+        void* url = NULL;
         NN_VECTOR_FOREACH(&url, &server->urls) {
             np_free(url);
         }
@@ -39,7 +39,7 @@ void nc_attacher_ice_servers_ctx_init(struct nc_attacher_request_ice_servers_con
 }
 
 void nc_attacher_ice_servers_ctx_deinit(struct nc_attacher_request_ice_servers_context* ctx) {
-    void* elm;
+    void* elm = NULL;
     NN_VECTOR_FOREACH_REFERENCE(elm, &ctx->iceServers) {
         ice_server_clean((struct nc_attacher_ice_server*)elm);
     }
@@ -55,7 +55,7 @@ np_error_code nc_attacher_request_ice_servers(struct nc_attacher_request_ice_ser
 
     nabto_coap_client_request_set_content_format(ctx->coapRequest, NABTO_COAP_CONTENT_FORMAT_APPLICATION_CBOR);
 
-    size_t bufferSize;
+    size_t bufferSize = 0;
 
     {
         CborEncoder encoder;

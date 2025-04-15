@@ -105,7 +105,7 @@ void nm_iam_stop(struct nm_iam* iam)
 
 bool nm_iam_check_access(struct nm_iam* iam, NabtoDeviceConnectionRef ref, const char* action, const struct nn_string_map* attributesIn)
 {
-    bool status;
+    bool status = 0;
     nm_iam_lock(iam);
     status = nm_iam_internal_check_access(iam, ref, action, attributesIn);
     nm_iam_unlock(iam);
@@ -124,7 +124,7 @@ void nm_iam_set_state_changed_callback(struct nm_iam* iam, nm_iam_state_changed 
 
 bool nm_iam_load_configuration(struct nm_iam* iam, struct nm_iam_configuration* conf)
 {
-    bool status;
+    bool status = 0;
     nm_iam_lock(iam);
     status = nm_iam_internal_load_configuration(iam, conf);
     nm_iam_unlock(iam);
@@ -133,7 +133,7 @@ bool nm_iam_load_configuration(struct nm_iam* iam, struct nm_iam_configuration* 
 
 bool nm_iam_load_state(struct nm_iam* iam, struct nm_iam_state* state)
 {
-    bool status;
+    bool status = 0;
     nm_iam_lock(iam);
     status = nm_iam_internal_load_state(iam, state);
     nm_iam_unlock(iam);
@@ -152,7 +152,7 @@ enum nm_iam_error nm_iam_set_notification_categories(struct nm_iam* iam, struct 
 {
     nm_iam_lock(iam);
     nn_string_set_clear(&iam->notificationCategories);
-    const char* s;
+    const char* s = NULL;
     NN_STRING_SET_FOREACH(s, categories) {
         if (!nn_string_set_insert(&iam->notificationCategories, s)) {
             nn_string_set_clear(&iam->notificationCategories);

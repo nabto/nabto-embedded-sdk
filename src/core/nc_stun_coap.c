@@ -119,7 +119,7 @@ void nc_rendezvous_endpoints_completed(const np_error_code ec, const struct nabt
         }
     }
 
-    size_t bufferSize;
+    size_t bufferSize = 0;
     {
         CborEncoder encoder;
         cbor_encoder_init(&encoder, NULL, 0, 0);

@@ -65,7 +65,7 @@ bool handle_rendezvous_payload(struct nc_rendezvous_coap_context* ctx, struct nc
         if (cbor_value_is_map(&ep)) {
             CborValue ip;
             CborValue port;
-            uint64_t p;
+            uint64_t p = 0;
 
             if (cbor_value_map_find_value(&ep, "Ip", &ip) != CborNoError ||
                 cbor_value_map_find_value(&ep, "Port", &port) != CborNoError ||
@@ -76,7 +76,7 @@ bool handle_rendezvous_payload(struct nc_rendezvous_coap_context* ctx, struct nc
             }
             packet.ep.port = (uint16_t)p;
 
-            size_t ipLength;
+            size_t ipLength = 0;
             if (cbor_value_get_string_length(&ip, &ipLength) != CborNoError) {
                 return false;
             }
@@ -119,8 +119,8 @@ void nc_rendezvous_handle_coap_p2p_rendezvous(struct nc_coap_server_request* req
         return;
     }
 
-    uint8_t* payload;
-    size_t payloadLength;
+    uint8_t* payload = NULL;
+    size_t payloadLength = 0;
     nc_coap_server_request_get_payload(request, (void**)&payload, &payloadLength);
     if (payload == NULL) {
         nc_coap_server_send_error_response(request, (nabto_coap_code)NABTO_COAP_CODE(4,00), NULL);

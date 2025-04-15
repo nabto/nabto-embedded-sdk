@@ -26,7 +26,7 @@ static size_t encode_roles(struct nm_iam* iam, void* buffer, size_t bufferSize)
     }
 
     struct nn_llist* roles = &iam->conf->roles;
-    struct nm_iam_role* role;
+    struct nm_iam_role* role = NULL;
     NN_LLIST_FOREACH(role, roles) {
         err = cbor_encode_text_stringz(&array, role->id);
         if (err != CborNoError) {

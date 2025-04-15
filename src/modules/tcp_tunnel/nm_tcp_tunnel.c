@@ -261,7 +261,7 @@ struct nm_tcp_tunnel_service* nm_tcp_tunnels_find_service(struct nm_tcp_tunnels*
         return NULL;
     }
 
-    struct nm_tcp_tunnel_service* service;
+    struct nm_tcp_tunnel_service* service = NULL;
     NN_LLIST_FOREACH(service, &tunnels->services)
     {
         if (strcmp(service->id, id) == 0) {
@@ -272,7 +272,7 @@ struct nm_tcp_tunnel_service* nm_tcp_tunnels_find_service(struct nm_tcp_tunnels*
 }
 struct nm_tcp_tunnel_service* nm_tcp_tunnels_find_service_by_weak_ptr(struct nm_tcp_tunnels* tunnels, void* weakPtr)
 {
-    struct nm_tcp_tunnel_service* service;
+    struct nm_tcp_tunnel_service* service = NULL;
     NN_LLIST_FOREACH(service, &tunnels->services)
     {
         if (service->weakPtr == weakPtr) {
@@ -285,7 +285,7 @@ struct nm_tcp_tunnel_service* nm_tcp_tunnels_find_service_by_weak_ptr(struct nm_
 size_t nm_tcp_tunnel_connections_by_type(struct nm_tcp_tunnels* tunnels, const char* type)
 {
     size_t connections = 0;
-    struct nm_tcp_tunnel_service* service;
+    struct nm_tcp_tunnel_service* service = NULL;
     NN_LLIST_FOREACH(service, &tunnels->services)
     {
         if (strcmp(service->type, type) == 0) {

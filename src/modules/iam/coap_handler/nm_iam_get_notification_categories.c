@@ -20,7 +20,7 @@ static CborError encode_categories(struct nm_iam* iam, CborEncoder* encoder)
 
     NM_IAM_CBOR_ERROR_RETURN_EXCEPT_OOM(cbor_encoder_create_array(encoder, &array, CborIndefiniteLength));
 
-    const char* s;
+    const char* s = NULL;
     NN_STRING_SET_FOREACH(s, &iam->notificationCategories) {
         NM_IAM_CBOR_ERROR_RETURN_EXCEPT_OOM(cbor_encode_text_stringz(&array, s));
     }
@@ -35,7 +35,7 @@ void handle_request(struct nm_iam_coap_handler* handler, NabtoDeviceCoapRequest*
         return;
     }
 
-    size_t payloadSize;
+    size_t payloadSize = 0;
     {
         CborEncoder encoder;
         cbor_encoder_init(&encoder, NULL, 0, 0);

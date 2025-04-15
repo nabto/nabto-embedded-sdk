@@ -511,7 +511,7 @@ void nc_stream_do_read(struct nc_stream_context* stream)
         // data available but no one wants it
         NABTO_LOG_TRACE(LOG, "Stream do read with no read future");
     } else if (!stream->isVirtual) {
-        size_t readen;
+        size_t readen = 0;
         nabto_stream_status status = nabto_stream_read_buffer(&stream->stream, (uint8_t*)stream->readBuffer, stream->readBufferLength, &readen);
         if (status == NABTO_STREAM_STATUS_OK) {
             if (readen == 0) {
@@ -543,7 +543,7 @@ void nc_stream_do_read(struct nc_stream_context* stream)
 }
 void nc_stream_do_write_all(struct nc_stream_context* stream)
 {
-    size_t written;
+    size_t written = 0;
     nabto_stream_status status = nabto_stream_write_buffer(&stream->stream, stream->writeBuffer, stream->writeBufferLength, &written);
     if (status == NABTO_STREAM_STATUS_OK) {
         if (written == 0) {

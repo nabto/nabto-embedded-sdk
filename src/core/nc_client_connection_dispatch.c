@@ -84,7 +84,7 @@ void nc_client_connection_dispatch_handle_packet(struct nc_client_connection_dis
     if (bufferSize < 17) {
         return; // this is not a valid packet with atleast a nabto connection id header and a dtls packet type
     }
-    uint8_t* id;
+    uint8_t* id = NULL;
     id = buffer;
 
     struct nc_connection* connection = nc_connections_connection_from_id(ctx->connections, id);

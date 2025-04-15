@@ -370,7 +370,7 @@ size_t nc_stun_convert_ep_list(struct np_ip_address* ips, size_t ipsSize,
                                struct nn_endpoint* eps, size_t epsSize,
                                uint16_t port)
 {
-    size_t i;
+    size_t i = 0;
     for (i = 0; i < ipsSize && i < epsSize; i++)
     {
         nc_stun_set_endpoint(&eps[i], &ips[i], port);

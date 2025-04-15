@@ -61,7 +61,7 @@ void nm_wolfssl_spake2_deinit(struct np_platform* pl)
 
 static int password_to_mpi_2(const char* password, mp_int* w, WC_RNG* rng, wc_Sha256* sha)
 {
-    int ret;
+    int ret = 0;
     uint8_t hash[32];
     if (password == NULL) {
         ret = wc_RNG_GenerateBlock(rng, hash, sizeof(hash));
@@ -84,7 +84,7 @@ static int password_to_mpi_2(const char* password, mp_int* w, WC_RNG* rng, wc_Sh
 
 static int password_to_mpi(const char* password, mp_int* w, WC_RNG* rng)
 {
-    int ret;
+    int ret = 0;
     wc_Sha256 sha;
     wc_InitSha256(&sha);
     ret = password_to_mpi_2(password, w, rng, &sha);
@@ -107,7 +107,7 @@ static int wolfssl_spake2_calculate_key_ex(
     mp_int* w, mp_int* groupA, mp_int* groupOrder, mp_int* groupPrime,
     wc_Sha256* sha)
 {
-    int ret;
+    int ret = 0;
     ret = wc_ecc_make_key_ex(rng, 32, Y, ECC_SECP256R1);
     if (ret < 0) {
         return ret;
@@ -116,11 +116,11 @@ static int wolfssl_spake2_calculate_key_ex(
     // if (ret < 0) {
     //     return NABTO_EC_FAILED;
     // }
-    int curveIdx = wc_ecc_get_curve_idx(ECC_SECP256R1);
+    int curveIdx = 0 = wc_ecc_get_curve_idx(ECC_SECP256R1);
     if (curveIdx < 0) {
         return curveIdx;
     }
-    const ecc_set_type* curveParams = wc_ecc_get_curve_params(curveIdx);
+    const ecc_set_type* curveParams = NULL = wc_ecc_get_curve_params(curveIdx);
 
     // read T from a buffer. The point is encoded as 0x04 and the X, y
     // coordinate. 0x04 means the point is uncompressed.
@@ -220,7 +220,7 @@ static int wolfssl_spake2_calculate_key_ex(
 static int calculate_key_allocate(struct nc_spake2_password_request* req,
     const char* password, uint8_t* resp, size_t* respLen, uint8_t* spake2Key)
 {
-    int ret;
+    int ret = 0;
     ecc_point* T = NULL;
     ecc_point* M = NULL;
     ecc_point* N = NULL;
@@ -302,7 +302,7 @@ static np_error_code wolfssl_spake2_calculate_key(
 
 int calculate_S_ex(mp_int* groupA, mp_int* modulus, ecc_point* N, mp_int* w, ecc_point* Y, ecc_point* S, mp_int* one)
 {
-    int ret;
+    int ret = 0;
     ret = mp_set(one, 1);
     if (ret != 0) {
         return ret;
@@ -315,7 +315,7 @@ int calculate_S_ex(mp_int* groupA, mp_int* modulus, ecc_point* N, mp_int* w, ecc
 int calculate_S(mp_int* groupA, mp_int* modulus, ecc_point* N, mp_int* w, ecc_point* Y, ecc_point* S)
 {
     //S = N*w + Y*1
-    int ret;
+    int ret = 0;
     mp_int one;
     ret = mp_init(&one);
     if (ret != 0) {
@@ -329,7 +329,7 @@ int calculate_S(mp_int* groupA, mp_int* modulus, ecc_point* N, mp_int* w, ecc_po
 int calculate_K_ex(mp_int* groupA, mp_int* groupOrder, mp_int* groupPrime, mp_int* y, ecc_point* T, mp_int* w, ecc_point* M, ecc_point* K,
 mp_int* zero, mp_int* one, mp_int* minusOne, mp_int* tmp)
 {
-    int ret;
+    int ret = 0;
     ret = mp_set(zero, 0);
     if (ret != 0) {
         return ret;
@@ -366,7 +366,7 @@ int calculate_K(mp_int* groupA, mp_int* groupOrder, mp_int* groupPrime, mp_int* 
     // tmp = -w*y mod n
     // K = y*T+((-y*w)*M) = y*T+(tmp*M)
 
-    int ret;
+    int ret = 0;
     mp_int zero;
     mp_int one;
     mp_int minusOne;
@@ -394,7 +394,7 @@ int calculate_K(mp_int* groupA, mp_int* groupOrder, mp_int* groupPrime, mp_int* 
 
 static int sha256_hash_ex(uint8_t* buffer, size_t bufferSize, uint8_t* hash, wc_Sha256* sha)
 {
-    int ret;
+    int ret = 0;
 
     ret = wc_Sha256Update(sha, buffer, bufferSize);
     if (ret != 0) {
@@ -409,7 +409,7 @@ static int sha256_hash_ex(uint8_t* buffer, size_t bufferSize, uint8_t* hash, wc_
 
 static int sha256_hash(uint8_t* buffer, size_t bufferSize, uint8_t* hash)
 {
-    int ret;
+    int ret = 0;
     wc_Sha256 sha;
     ret = wc_InitSha256(&sha);
     if (ret != 0) {
@@ -429,7 +429,7 @@ static np_error_code wolfssl_spake2_key_confirmation(
         return NABTO_EC_INVALID_ARGUMENT;
     }
     uint8_t hash2[32];
-    int ret;
+    int ret = 0;
     ret = sha256_hash(key, keyLen, hash1);
     if (ret != 0) {
         return NABTO_EC_FAILED;
@@ -459,7 +459,7 @@ int hashLength(wc_Sha256* mdCtx, uint32_t val)
 
 int hashData(wc_Sha256* mdCtx, uint8_t* data, size_t dataLength)
 {
-    int status;
+    int status = 0;
     status = hashLength(mdCtx, (uint32_t)dataLength);
     if (status < 0) {
         return status;
@@ -471,7 +471,7 @@ int hashData(wc_Sha256* mdCtx, uint8_t* data, size_t dataLength)
 int hashPoint(wc_Sha256* mdCtx, const int curveIdx, ecc_point* p)
 {
     uint8_t buffer[256];
-    int ret;
+    int ret = 0;
     word32 outlen = sizeof(buffer);
     ret = wc_ecc_export_point_der(curveIdx, p, buffer, &outlen);
     if (ret < 0) {
@@ -483,9 +483,9 @@ int hashPoint(wc_Sha256* mdCtx, const int curveIdx, ecc_point* p)
 
 int hashMpi(wc_Sha256* mdCtx, mp_int* n)
 {
-    size_t s = mp_unsigned_bin_size(n);
+    size_t s = 0 = mp_unsigned_bin_size(n);
     uint8_t buffer[256];
-    int ret;
+    int ret = 0;
     if (s > 256) {
         return -1;  // TODO
     }
@@ -530,9 +530,9 @@ bool test_calculate_S()
     const uint8_t inputw[] = {0x2f, 0x75, 0x32, 0x7c, 0xcb, 0x81, 0xd0, 0x34, 0x0b, 0x8c, 0xe0, 0xc3, 0x13, 0xcb, 0xa2, 0xcd, 0x85, 0x75, 0x10, 0x38, 0x98, 0x60, 0x5a, 0xc4, 0xd8, 0x3d, 0xc5, 0x8c, 0xfe, 0x66, 0x1e, 0xf6 };
     const uint8_t expectedS[] = {0x04, 0xfe, 0xf2, 0x92, 0x32, 0xdb, 0x7b, 0xe1, 0xdb, 0xb5, 0x67, 0x51, 0x14, 0xad, 0x84, 0x79, 0x3a, 0x0c, 0x88, 0x9d, 0xcf, 0x88, 0x96, 0x0a, 0xe7, 0xcc, 0x28, 0xca, 0x73, 0xbb, 0x59, 0xac, 0xcd, 0x9d, 0x5f, 0x4d, 0x95, 0xd3, 0x40, 0xf7, 0x65, 0x0e, 0x86, 0x5d, 0x01, 0xe9, 0xd5, 0xf4, 0xdb, 0x7c, 0x1d, 0x60, 0x67, 0xc0, 0x47, 0x3e, 0x63, 0xa0, 0xb1, 0x14, 0x6c, 0xb5, 0x32, 0x7f, 0xab,  };
 
-    int ret;
-    int curveIdx = wc_ecc_get_curve_idx(ECC_SECP256R1);
-    const ecc_set_type* curveParams = wc_ecc_get_curve_params(curveIdx);
+    int ret = 0;
+    int curveIdx = 0 = wc_ecc_get_curve_idx(ECC_SECP256R1);
+    const ecc_set_type* curveParams = NULL = wc_ecc_get_curve_params(curveIdx);
     mp_int groupA;
     mp_int groupPrime;
     ret = mp_init(&groupA);
@@ -584,9 +584,9 @@ bool test_calculate_K()
     uint8_t inputy[] = {0xf1, 0x17, 0x25, 0xc3, 0x63, 0x89, 0xb9, 0x59, 0xc1, 0xd4, 0x58, 0x51, 0x63, 0x8f, 0x32, 0x37, 0xe2, 0xb3, 0x72, 0xee, 0x86, 0xe6, 0x76, 0xa1, 0x54, 0x84, 0x69, 0xba, 0xe1, 0xbb, 0x79, 0x64,  };
     uint8_t expectedK[] = {0x04, 0x8d, 0x02, 0x06, 0xd2, 0x02, 0xce, 0xc5, 0x2d, 0x2a, 0xf7, 0x97, 0x72, 0x2b, 0x4f, 0x13, 0xbb, 0x86, 0x3a, 0x8e, 0x5f, 0x9f, 0x80, 0x15, 0x39, 0xd9, 0xae, 0xa9, 0xc5, 0x81, 0xd9, 0xc8, 0x61, 0x6c, 0x71, 0x53, 0xb8, 0xb9, 0x8b, 0x79, 0xf9, 0xbd, 0xf2, 0x42, 0x7c, 0x10, 0x9a, 0x8f, 0x88, 0x19, 0x48, 0x53, 0xfb, 0x20, 0xb3, 0x7d, 0x30, 0x04, 0x3c, 0x8d, 0x69, 0xdb, 0xa4, 0x4d, 0x28,  };
 
-    int ret;
-    int curveIdx = wc_ecc_get_curve_idx(ECC_SECP256R1);
-    const ecc_set_type* curveParams = wc_ecc_get_curve_params(curveIdx);
+    int ret = 0;
+    int curveIdx = 0 = wc_ecc_get_curve_idx(ECC_SECP256R1);
+    const ecc_set_type* curveParams = NULL = wc_ecc_get_curve_params(curveIdx);
     mp_int groupA;
     mp_int groupPrime;
     mp_int groupOrder;
@@ -644,7 +644,7 @@ bool password_hash_test()
     const char* password = "FFzeqrpJTVF4";
     const uint8_t expectedW[] = {0x2f, 0x75, 0x32, 0x7c, 0xcb, 0x81, 0xd0, 0x34, 0x0b, 0x8c, 0xe0, 0xc3, 0x13, 0xcb, 0xa2, 0xcd, 0x85, 0x75, 0x10, 0x38, 0x98, 0x60, 0x5a, 0xc4, 0xd8, 0x3d, 0xc5, 0x8c, 0xfe, 0x66, 0x1e, 0xf6 };
 
-    int ret;
+    int ret = 0;
 
     WC_RNG rng;
     ret = wc_InitRng(&rng);

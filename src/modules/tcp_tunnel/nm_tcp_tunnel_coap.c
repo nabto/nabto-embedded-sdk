@@ -103,7 +103,7 @@ static size_t encode_services_list(struct nm_tcp_tunnels* tunnels, uint8_t* buff
         return 0;
     }
 
-    struct nm_tcp_tunnel_service* service;
+    struct nm_tcp_tunnel_service* service = NULL;
     NN_LLIST_FOREACH(service, &tunnels->services)
     {
         if (cbor_err_not_oom(cbor_encode_text_stringz(&array, service->id))) {

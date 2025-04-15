@@ -420,7 +420,7 @@ np_error_code nm_wolfssl_connect(struct np_dtls_cli_connection* conn)
 void event_do_one(void* data)
 {
     struct np_dtls_cli_connection* conn = data;
-    int ret;
+    int ret = 0;
     if(conn->state == CONNECTING) {
         ret = wolfSSL_connect(conn->ssl);
         if (ret != WOLFSSL_SUCCESS) {

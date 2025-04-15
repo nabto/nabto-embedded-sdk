@@ -75,7 +75,7 @@ void nabto_device_logging_std_out_callback(NabtoDeviceLogMessage* msg, void* dat
     if(fileLen > NM_API_LOGGING_FILE_LENGTH) {
         fileTmp = msg->file + fileLen - NM_API_LOGGING_FILE_LENGTH;
     }
-    const char* level;
+    const char* level = NULL;
     switch(msg->severity) {
         case NABTO_DEVICE_LOG_ERROR:
             level = "ERROR";

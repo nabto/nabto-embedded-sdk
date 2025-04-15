@@ -183,7 +183,7 @@ void nc_client_connection_handle_data(uint8_t channelId, uint64_t sequence,
                                       uint8_t* buffer, uint16_t bufferSize, void* data)
 {
     struct nc_client_connection* conn = (struct nc_client_connection*)data;
-    uint8_t applicationType;
+    uint8_t applicationType = 0;
 
     applicationType = *(buffer);
 
@@ -241,8 +241,8 @@ void nc_client_connection_keep_alive_event(void* data)
     struct nc_client_connection* ctx = (struct nc_client_connection*)data;
     struct np_platform* pl = ctx->pl;
 
-    uint32_t recvCount;
-    uint32_t sentCount;
+    uint32_t recvCount = 0;
+    uint32_t sentCount = 0;
 
 #if defined(NABTO_DEVICE_DTLS_CLIENT_ONLY)
     pl->dtlsC.get_packet_count(ctx->dtls, &recvCount, &sentCount);

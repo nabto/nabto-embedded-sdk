@@ -282,7 +282,7 @@ evutil_socket_t nm_libevent_udp_create_nonblocking_socket(int domain, int type)
 
 np_error_code udp_send_to(struct np_udp_socket* s, const struct np_udp_endpoint* ep, const uint8_t* buffer, uint16_t bufferSize)
 {
-    ssize_type res;
+    ssize_type res = 0;
 
     struct np_ip_address sendIp;
 
@@ -337,7 +337,7 @@ np_error_code udp_send_to(struct np_udp_socket* s, const struct np_udp_endpoint*
 
 np_error_code udp_recv_from(struct np_udp_socket* sock, struct np_udp_endpoint* ep, uint8_t* buffer, size_t bufferSize, size_t* readLength)
 {
-    ssize_type recvLength;
+    ssize_type recvLength = 0;
     if (sock->type == NABTO_IPV6) {
         struct sockaddr_in6 sa;
         socklen_type addrlen = sizeof(sa);
@@ -372,7 +372,7 @@ np_error_code udp_recv_from(struct np_udp_socket* sock, struct np_udp_endpoint* 
 
 np_error_code udp_bind_port(struct np_udp_socket* s, uint16_t port)
 {
-    int status;
+    int status = 0;
 
     if (s->type == NABTO_IPV6) {
         struct sockaddr_in6 si_me6;

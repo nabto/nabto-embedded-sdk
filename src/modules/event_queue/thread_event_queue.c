@@ -138,7 +138,7 @@ void post_event(struct np_event* event)
 bool post_event_maybe_double(struct np_event* event)
 {
     struct thread_event_queue* queue = event->queue;
-    bool status;
+    bool status = 0;
     nabto_device_threads_mutex_lock(queue->queueMutex);
     status = nm_event_queue_post_event_maybe_double(&queue->eventQueue, &event->event);
     nabto_device_threads_cond_signal(queue->condition);
@@ -169,7 +169,7 @@ void post_timed_event(struct np_event* event, uint32_t milliseconds)
 
 bool thread_event_queue_do_one(struct thread_event_queue* queue)
 {
-    uint32_t nextEvent;
+    uint32_t nextEvent = 0;
     uint32_t now = np_timestamp_now_ms(&queue->ts);
     struct nm_event_queue_event* event = NULL;
 
@@ -202,7 +202,7 @@ void* queue_thread(void* data)
 {
     struct thread_event_queue* queue = data;
     while(true) {
-        uint32_t nextEvent;
+        uint32_t nextEvent = 0;
         uint32_t now = np_timestamp_now_ms(&queue->ts);
         struct nm_event_queue_event* event = NULL;
 

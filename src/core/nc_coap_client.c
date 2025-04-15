@@ -97,7 +97,7 @@ np_error_code nc_coap_client_handle_send(struct nc_coap_client_context* ctx)
         return NABTO_EC_OPERATION_IN_PROGRESS;
     }
     uint32_t ts = np_timestamp_now_ms(&ctx->pl->timestamp);
-    void* connection;
+    void* connection = NULL;
 
     ctx->sendBuffer = pl->buf.allocate();
     if (ctx->sendBuffer == NULL) {
@@ -128,7 +128,7 @@ np_error_code nc_coap_client_handle_send(struct nc_coap_client_context* ctx)
 
 void nc_coap_client_handle_wait(struct nc_coap_client_context* ctx)
 {
-    uint32_t nextStamp;
+    uint32_t nextStamp = 0;
     uint32_t now = np_timestamp_now_ms(&ctx->pl->timestamp);
     nextStamp = nabto_coap_client_get_next_timeout(&ctx->client, now);
     if (nabto_coap_is_stamp_less(nextStamp, ctx->currentExpiry)) {

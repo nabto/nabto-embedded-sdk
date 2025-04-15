@@ -19,8 +19,8 @@ void nm_logging_unix_init()
 void nm_unix_log (uint32_t severity, uint32_t module, uint32_t line, const char* file, const char* fmt, va_list args)
 {
     if(((NABTO_LOG_SEVERITY_FILTER & severity) && ((NABTO_LOG_MODULE_FILTER & module) || module == 0))) {
-        time_t sec;
-        unsigned int ms;
+        time_t sec = 0;
+        unsigned int ms = 0;
         struct timeval tv;
         struct tm tm;
         gettimeofday(&tv, NULL);

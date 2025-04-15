@@ -31,7 +31,7 @@ np_error_code nc_attacher_service_invoke_execute(struct nc_attach_context *attac
                                                               serviceInvokeContext, attacher->dtls);
     nabto_coap_client_request_set_content_format(serviceInvokeContext->coapRequest, NABTO_COAP_CONTENT_FORMAT_APPLICATION_CBOR);
 
-    size_t bufferSize;
+    size_t bufferSize = 0;
     {
         CborEncoder encoder;
         cbor_encoder_init(&encoder, NULL, 0, 0);
@@ -149,7 +149,7 @@ bool parse_response(const uint8_t* buffer, size_t bufferSize, struct nc_attacher
     CborValue statusCode;
     CborValue message;
     CborValue messageFormat;
-    int tmp;
+    int tmp = 0;
     if (cbor_value_map_find_value(&map, "StatusCode", &statusCode) != CborNoError ||
         cbor_value_map_find_value(&map, "Message", &message) != CborNoError ||
         cbor_value_map_find_value(&map, "MessageFormat", &messageFormat) != CborNoError ||

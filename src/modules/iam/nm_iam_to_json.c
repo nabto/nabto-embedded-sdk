@@ -11,7 +11,7 @@ cJSON* nm_iam_role_to_json(struct nm_iam_role* role)
     cJSON_AddItemToObject(root, "Id", cJSON_CreateString(role->id));
 
     cJSON* policies = cJSON_CreateArray();
-    const char* str;
+    const char* str = NULL;
     NN_STRING_SET_FOREACH(str, &role->policies) {
         cJSON_AddItemToArray(policies, cJSON_CreateString(str));
     }
@@ -66,7 +66,7 @@ cJSON* nm_iam_user_to_json(struct nm_iam_user* user)
 
     if (!nn_string_set_empty(&user->notificationCategories)) {
         cJSON* notificationCategories = cJSON_CreateArray();
-        const char* s;
+        const char* s = NULL;
         NN_STRING_SET_FOREACH(s, &user->notificationCategories) {
             cJSON_AddItemToArray(notificationCategories, cJSON_CreateString(s));
         }

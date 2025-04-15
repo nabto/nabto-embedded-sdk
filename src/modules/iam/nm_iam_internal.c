@@ -12,7 +12,7 @@ static const char* LOGM = "iam";
 
 bool nm_iam_internal_check_access(struct nm_iam* iam, NabtoDeviceConnectionRef ref, const char* action, const struct nn_string_map* attributesIn)
 {
-    NabtoDeviceError ec;
+    NabtoDeviceError ec = 0;
     char* fingerprint = NULL;
     ec = nabto_device_connection_get_client_fingerprint(iam->device, ref, &fingerprint);
     if (ec && !nabto_device_connection_is_virtual(iam->device, ref)) {
@@ -65,7 +65,7 @@ bool nm_iam_internal_check_access(struct nm_iam* iam, NabtoDeviceConnectionRef r
     }
 
     const char* roleStr = iam->conf->unpairedRole; // default if no user is found.
-    const char* username;
+    const char* username = NULL;
     if (user) {
         nn_string_map_insert(&attributes, "Connection:Username", user->username);
         roleStr = user->role;
@@ -99,7 +99,7 @@ enum nm_iam_effect nm_iam_internal_check_access_role(struct nm_iam* iam, struct 
     struct nm_policy_eval_state state;
     nm_policy_eval_init(&state);
 
-    const char* policyStr;
+    const char* policyStr = NULL;
     NN_STRING_SET_FOREACH(policyStr, &role->policies)
     {
         struct nm_iam_policy* policy = nm_iam_internal_find_policy(iam, policyStr);
@@ -120,9 +120,9 @@ struct nm_iam_user* nm_iam_internal_find_user_by_fingerprint(struct nm_iam* iam,
     if (fingerprint == NULL) {
         return NULL;
     }
-    struct nm_iam_user* user;
+    struct nm_iam_user* user = NULL;
     NN_LLIST_FOREACH(user, &iam->state->users) {
-        struct nm_iam_user_fingerprint* fp;
+        struct nm_iam_user_fingerprint* fp = NULL;
         NN_LLIST_FOREACH(fp, &user->fingerprints) {
             if (fp->fingerprint != NULL && strcmp(fp->fingerprint, fingerprint) == 0) {
                 return user;
@@ -142,7 +142,7 @@ struct nm_iam_role* nm_iam_internal_find_role(struct nm_iam* iam, const char* ro
     if (roleStr == NULL) {
         return NULL;
     }
-    struct nm_iam_role* role;
+    struct nm_iam_role* role = NULL;
     NN_LLIST_FOREACH(role, &iam->conf->roles)
     {
         if (strcmp(role->id, roleStr) == 0) {
@@ -157,7 +157,7 @@ struct nm_iam_policy* nm_iam_internal_find_policy(struct nm_iam* iam, const char
     if (policyStr == NULL) {
         return NULL;
     }
-    struct nm_iam_policy* policy;
+    struct nm_iam_policy* policy = NULL;
     NN_LLIST_FOREACH(policy, &iam->conf->policies)
     {
         if (strcmp(policy->id, policyStr) == 0) {
@@ -231,8 +231,8 @@ char* nm_iam_internal_get_fingerprint_from_coap_request(struct nm_iam* iam, Nabt
 {
     NabtoDeviceConnectionRef ref = nabto_device_coap_request_get_connection_ref(request);
 
-    NabtoDeviceError ec;
-    char* fingerprint;
+    NabtoDeviceError ec = 0;
+    char* fingerprint = NULL;
     ec = nabto_device_connection_get_client_fingerprint(iam->device, ref, &fingerprint);
     if (ec != NABTO_DEVICE_EC_OK) {
         return NULL;
@@ -258,7 +258,7 @@ struct nm_iam_user* nm_iam_internal_find_user(struct nm_iam* iam, const char* us
 
 bool nm_iam_internal_get_users(struct nm_iam* iam, struct nn_string_set* usernames)
 {
-    struct nm_iam_user* user;
+    struct nm_iam_user* user = NULL;
     NN_LLIST_FOREACH(user, &iam->state->users)
     {
         nn_string_set_insert(usernames, user->username);
@@ -273,8 +273,8 @@ void nm_iam_internal_state_has_changed(struct nm_iam* iam)
 
 void nm_iam_internal_do_callbacks(struct nm_iam* iam)
 {
-    nm_iam_state_changed cb;
-    void* userData;
+    nm_iam_state_changed cb = NULL;
+    void* userData = NULL;
     bool doit = false;
     {
         nm_iam_lock(iam);
@@ -296,7 +296,7 @@ bool validate_role_in_config(struct nm_iam_configuration* conf, const char* role
      if (roleStr == NULL) {
         return true;
     }
-    struct nm_iam_role* role;
+    struct nm_iam_role* role = NULL;
     NN_LLIST_FOREACH(role, &conf->roles)
     {
         if (strcmp(role->id, roleStr) == 0) {
@@ -367,7 +367,7 @@ bool validate_state(struct nm_iam* iam, struct nm_iam_state* state) {
         return false;
     }
 
-    struct nm_iam_user* user;
+    struct nm_iam_user* user = NULL;
     NN_LLIST_FOREACH(user, &state->users) {
         if (strlen(user->username) > iam->usernameMaxLength ||
             !check_length(0, iam->displayNameMaxLength, user->displayName) ||
@@ -392,7 +392,7 @@ bool validate_state(struct nm_iam* iam, struct nm_iam_state* state) {
                          strlen_check_null(user->oauthSubject), iam->oauthSubjectMaxLength);
             return false;
         }
-        const char* s;
+        const char* s = NULL;
         NN_STRING_SET_FOREACH(s, &user->notificationCategories) {
             if (!nn_string_set_contains(&iam->notificationCategories, s)) {
                 return false;
@@ -420,7 +420,7 @@ bool nm_iam_internal_load_state(struct nm_iam* iam, struct nm_iam_state* state)
         return false;
     }
 
-    struct nm_iam_user* user;
+    struct nm_iam_user* user = NULL;
     NN_LLIST_FOREACH(user, &state->users) {
         if (user->sct != NULL && nabto_device_add_server_connect_token(iam->device, user->sct) != NABTO_DEVICE_EC_OK) {
             NN_LOG_ERROR(iam->logger, LOGM, "Failed to add user SCT");
@@ -559,7 +559,7 @@ enum nm_iam_error nm_iam_internal_create_user(struct nm_iam* iam, const char* us
     if (nn_llist_size(&iam->state->users) >= iam->maxUsers) {
         return NM_IAM_ERROR_INTERNAL;
     }
-    struct nm_iam_user* user;
+    struct nm_iam_user* user = NULL;
     user = nm_iam_internal_find_user_by_username(iam, username);
     if (user != NULL) {
         return NM_IAM_ERROR_USER_EXISTS;
@@ -569,7 +569,7 @@ enum nm_iam_error nm_iam_internal_create_user(struct nm_iam* iam, const char* us
     if (user == NULL) {
         return NM_IAM_ERROR_INTERNAL;
     }
-    char* sct;
+    char* sct = NULL;
     if (nabto_device_create_server_connect_token(iam->device, &sct) != NABTO_DEVICE_EC_OK ||
         !nm_iam_user_set_sct(user, sct))
     {
@@ -756,7 +756,7 @@ enum nm_iam_error nm_iam_internal_set_user_notification_categories(struct nm_iam
         return NM_IAM_ERROR_NO_SUCH_USER;
     }
 
-    const char* s;
+    const char* s = NULL;
     NN_STRING_SET_FOREACH(s, categories) {
         if (!nn_string_set_contains(&iam->notificationCategories, s)) {
             return NM_IAM_ERROR_NO_SUCH_CATEGORY;

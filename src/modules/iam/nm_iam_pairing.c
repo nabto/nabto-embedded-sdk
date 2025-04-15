@@ -77,8 +77,8 @@ bool nm_iam_pairing_is_local_initial_possible(struct nm_iam* iam, NabtoDeviceCon
 
 bool nm_iam_pairing_pair_user(struct nm_iam* iam, struct nm_iam_user* user, NabtoDeviceConnectionRef ref, const char* fpName)
 {
-    NabtoDeviceError ec;
-    char* fingerprint;
+    NabtoDeviceError ec = 0;
+    char* fingerprint = NULL;
     ec = nabto_device_connection_get_client_fingerprint(iam->device, ref, &fingerprint);
     if (ec) {
         return false;

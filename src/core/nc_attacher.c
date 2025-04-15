@@ -850,8 +850,8 @@ void keep_alive_event(void* data)
     struct nc_attach_context* ctx = (struct nc_attach_context*)data;
     struct np_platform* pl = ctx->pl;
 
-    uint32_t recvCount;
-    uint32_t sentCount;
+    uint32_t recvCount = 0;
+    uint32_t sentCount = 0;
 
     pl->dtlsC.get_packet_count(ctx->dtls, &recvCount, &sentCount);
     enum nc_keep_alive_action action = nc_keep_alive_should_send(&ctx->keepAlive, recvCount, sentCount);

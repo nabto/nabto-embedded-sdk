@@ -36,7 +36,7 @@ np_error_code nc_attacher_attach_start_request(
         return NABTO_EC_OPERATION_IN_PROGRESS;
     }
 
-    size_t bufferSize;
+    size_t bufferSize = 0;
     {
         CborEncoder encoder;
         cbor_encoder_init(&encoder, NULL, 0, 0);
@@ -53,7 +53,7 @@ np_error_code nc_attacher_attach_start_request(
         return NABTO_EC_OUT_OF_MEMORY;
     }
 
-    struct nabto_coap_client_request* req;
+    struct nabto_coap_client_request* req = NULL;
     req = nabto_coap_client_request_new(
         nc_coap_client_get_client(ctx->coapClient), NABTO_COAP_METHOD_POST, 2,
         attachStartPath, &coap_attach_start_handler, ctx, ctx->dtls);
@@ -145,8 +145,8 @@ enum nc_attacher_status coap_attach_start_handle_response(
         nc_coap_rest_error_deinit(&error);
         return ec;
     }
-    const uint8_t* payload;
-    size_t payloadSize;
+    const uint8_t* payload = NULL;
+    size_t payloadSize = 0;
     if (!nabto_coap_client_response_get_payload(res, &payload, &payloadSize)) {
         NABTO_LOG_ERROR(LOG, "No payload in CoAP response");
         return NC_ATTACHER_STATUS_ERROR;
@@ -155,7 +155,7 @@ enum nc_attacher_status coap_attach_start_handle_response(
     CborParser parser;
     CborValue root;
     CborValue status;
-    uint64_t s;
+    uint64_t s = 0;
 
     if (cbor_parser_init(payload, payloadSize, 0, &parser, &root) != CborNoError ||
         !cbor_value_is_map(&root) ||
@@ -196,7 +196,7 @@ enum nc_attacher_status handle_attached(struct nc_attach_context* ctx,
                    cbor_value_is_unsigned_integer(&retryInterval) &&
                    cbor_value_is_unsigned_integer(&maxRetries))
         {
-            uint64_t i, ri, mr;
+            uint64_t i = 0, ri = 0, mr = 0;
             if (cbor_value_get_uint64(&interval, &i) != CborNoError ||
                 cbor_value_get_uint64(&retryInterval, &ri) != CborNoError ||
                 cbor_value_get_uint64(&maxRetries, &mr) != CborNoError) {
@@ -222,8 +222,8 @@ enum nc_attacher_status handle_attached(struct nc_attach_context* ctx,
             cbor_value_map_find_value(&stun, "Port", &port) == CborNoError &&
             cbor_value_is_text_string(&host) &&
             cbor_value_is_unsigned_integer(&port)) {
-            uint64_t p;
-            size_t stringLength;
+            uint64_t p = 0;
+            size_t stringLength = 0;
             if (cbor_value_calculate_string_length(&host, &stringLength) != CborNoError || stringLength > 255) {
                 NABTO_LOG_ERROR(LOG,
                                 "Basestation reported invalid STUN host, STUN "
@@ -271,8 +271,8 @@ enum nc_attacher_status handle_redirect(struct nc_attach_context* ctx,
         cbor_value_is_unsigned_integer(&port) &&
         cbor_value_is_byte_string(&fingerprint))
     {
-        uint64_t p;
-        size_t hostLength;
+        uint64_t p = 0;
+        size_t hostLength = 0;
         if (cbor_value_get_string_length(&host, &hostLength) != CborNoError ||
             cbor_value_get_uint64(&port, &p) != CborNoError ) {
             NABTO_LOG_ERROR(LOG, "Failed to get host/port from Cbor");
