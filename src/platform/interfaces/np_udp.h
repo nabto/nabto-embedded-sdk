@@ -34,17 +34,18 @@ struct np_udp {
  * completion events in the following manners:
  *
  * Recoverable errors: If an recoverable errors occurs the functions should
- * return or resolve with NABTO_EC_OK. If a socket was closed by the application
- * the functions should return or resolve with NABTO_EC_ABORTED. If an
- * unrecoverable error occurs the functions should return something else such as NABTO_EC_UDP_SOCKET_ERROR,
- *
- * Non fatal errors are all those errors which does not mean that we should give
- * up on the socket. It could be transient errors such as temporary memory
- * issues and network connectivity issues. Examples: ENOBUFS, ENOMEM, EAGAIN,
- * EWOULDBLOCK, etc.
+ * return or resolve with NABTO_EC_OK or NABTO_EC_PACKET_NOT_SENT. Recoverable
+ * errors are all those errors which does not mean that we should give up on the
+ * socket. It could be transient errors such as temporary memory issues and
+ * network connectivity issues. Examples: ENOBUFS, ENOMEM, EAGAIN, EWOULDBLOCK,
+ * etc.
  *
  * Fatal errors are all those errors which is not recoverable such as EBADFD
  * EINVAL, etc.
+ *
+ * Since error codes are not specified for all possible errors on all possible
+ * platforms it is recommended to just return NABTO_EC_FAILED and log the error
+ * details in the specific implementation.
  */
 struct np_udp_functions {
     /**
@@ -107,9 +108,10 @@ struct np_udp_functions {
      * available.
      *
      * The completion event resolves with the following error codes:
-     *  * NABTO_EC_OK: if the packet was sent or an recoverable error occured.
+     *  * NABTO_EC_OK: if the packet was sent.
      *  * NABTO_EC_ABORTED: if the socket has been closed by the application.
-     *  * NABTO_EC_*: if some unrecoverable error occured,
+     *  * NABTO_EC_FAILED_TO_SEND_PACKET: if the packet could not be sent but the application should just try again later etc.
+     *  * NABTO_EC_* if some unrecoverable error occured.
      *
      * @param sock  The socket resource.
      * @param ep  The endpoint. If the send to is deferred the endpoint has to

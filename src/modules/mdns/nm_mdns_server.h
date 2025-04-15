@@ -27,6 +27,8 @@ struct nm_mdns_server_instance {
     struct np_completion_event openedCompletionEvent;
     struct np_completion_event recvWaitCompletionEvent;
     struct np_completion_event sendCompletionEvent;
+    // Set when closing the instance.
+    struct np_completion_event* closeCompletionEvent;
 };
 
 struct nm_mdns_server {
@@ -44,6 +46,10 @@ struct nm_mdns_server {
 
     struct nm_mdns_server_instance v4;
     struct nm_mdns_server_instance v6;
+    // This event is used when calling close on the instances.
+    struct np_completion_event instanceCloseCompletionEvent;
+    // This event is coming from the application calling close on the mdns
+    // server.
     struct np_completion_event* closedCompletionEvent;
 };
 

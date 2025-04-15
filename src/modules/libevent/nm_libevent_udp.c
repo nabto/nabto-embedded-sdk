@@ -362,7 +362,7 @@ np_error_code udp_recv_from(struct np_udp_socket* sock, struct np_udp_endpoint* 
             return NABTO_EC_AGAIN;
         } else {
             NABTO_LOG_ERROR(LOG,"ERROR: (%d) '%s' in udp_recv_from", status, evutil_socket_error_to_string(status));
-            return NABTO_EC_UDP_SOCKET_ERROR;
+            return NABTO_EC_FAILED;
         }
     }
     *readLength = recvLength;
