@@ -9,7 +9,7 @@ jobs:
   build:
     strategy:
       matrix:
-        os: [windows-2022, ubuntu-20.04, macos-15]
+        os: [windows-2022, ubuntu-22.04, macos-15]
         include:
           - os: windows-2022
             exe_postfix: .zip
@@ -17,7 +17,7 @@ jobs:
             workflow: windows_vcpkg_static
             generate_extra_options: -DNABTO_DEVICE_USE_VCPKG=ON -DNABTO_DEVICE_PREFER_SYSTEM_LIBS=ON
             build_command: cmake --build build-dir --parallel --target install --config Release
-          - os: ubuntu-20.04
+          - os: ubuntu-22.04
             workflow: linux_vcpkg
             exe_postfix:
             friendly_name: linux_x86_64
@@ -51,7 +51,7 @@ jobs:
             core.exportVariable('ACTIONS_CACHE_URL', process.env.ACTIONS_CACHE_URL || '');
             core.exportVariable('ACTIONS_RUNTIME_TOKEN', process.env.ACTIONS_RUNTIME_TOKEN || '');
 
-      - if: matrix.os == 'ubuntu-20.04'
+      - if: matrix.os == 'ubuntu-22.04'
         name: Install Ninja
         run: sudo apt-get update && sudo apt-get install -y ninja-build
 
