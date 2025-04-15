@@ -193,7 +193,7 @@ bool nm_iam_user_set_fcm_project_id(struct nm_iam_user* user, const char* projec
 bool nm_iam_user_set_notification_categories(struct nm_iam_user* user, struct nn_string_set* categories)
 {
     nn_string_set_clear(&user->notificationCategories);
-    const char* s;
+    const char* s = NULL;
     NN_STRING_SET_FOREACH(s, categories) {
         nn_string_set_insert(&user->notificationCategories, s);
     }
@@ -330,7 +330,7 @@ struct nm_iam_user* nm_iam_user_copy(struct nm_iam_user* user)
         }
     }
 
-    const char* p;
+    const char* p = NULL;
     NN_STRING_SET_FOREACH(p, &user->notificationCategories) {
         if (!nn_string_set_insert(&copy->notificationCategories, p)) {
             failed = true;

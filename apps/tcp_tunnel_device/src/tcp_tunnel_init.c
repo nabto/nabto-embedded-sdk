@@ -115,10 +115,10 @@ bool create_state_interactive(struct nm_fs* fsImpl, const char* file)
 
 bool create_state_interactive_custom(struct nm_fs* fsImpl, const char* file) {
     const char* roles[] = {"Unpaired", "Guest", "Standard", "Administrator"};
-    bool enableLocalInitialPairing;
-    bool enableLocalOpenPairing;
-    bool enablePasswordInvitePairing;
-    bool enablePasswordOpenPairing;
+    bool enableLocalInitialPairing = 0;
+    bool enableLocalOpenPairing = 0;
+    bool enablePasswordInvitePairing = 0;
+    bool enablePasswordOpenPairing = 0;
     uint8_t pickedRole = 1; // Default = Guest
 
     enableLocalInitialPairing = prompt_yes_no("Enable Local Initial Pairing");
@@ -217,7 +217,7 @@ bool createService(cJSON* root)
 {
     char id[20] = {0};
     char host[20] = {0};
-    uint16_t port;
+    uint16_t port = 0;
 
     prompt_repeating("Service ID (max 20 characters)", id, ARRAY_SIZE(id));
     prompt_repeating("Service Host (max 20 characters)", host, ARRAY_SIZE(host));
@@ -333,7 +333,7 @@ bool tcp_tunnel_demo_config(struct tcp_tunnel* tcpTunnel)
         );
 
         const char* message = "Enter a valid number";
-        uint8_t choice;
+        uint8_t choice = 0;
         if (numServices == 0) {
             choice = (uint8_t)prompt_uint16_default(message, 3, 1);
         } else {

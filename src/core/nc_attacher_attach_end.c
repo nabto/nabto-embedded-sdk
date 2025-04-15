@@ -12,7 +12,7 @@ np_error_code nc_attacher_attach_end_request(struct nc_attach_context* ctx, nc_a
         return NABTO_EC_OPERATION_IN_PROGRESS;
     }
 
-    struct nabto_coap_client_request* req;
+    struct nabto_coap_client_request* req = NULL;
     req = nabto_coap_client_request_new(nc_coap_client_get_client(ctx->coapClient),
                                         NABTO_COAP_METHOD_POST,
                                         2, attachEndPath,

@@ -17,9 +17,8 @@ void print_dns_results(struct nc_dns_multi_resolver_context* ctx, np_error_code 
 np_error_code nc_dns_multi_resolver_init(struct np_platform* pl, struct nc_dns_multi_resolver_context* ctx)
 {
     ctx->pl = pl;
-    np_error_code ec;
     struct np_event_queue* eq = &pl->eq;
-    ec = np_completion_event_init(eq, &ctx->v4CompletionEvent, &dns_resolved_callback_v4, ctx);
+    np_error_code ec = np_completion_event_init(eq, &ctx->v4CompletionEvent, &dns_resolved_callback_v4, ctx);
     if (ec != NABTO_EC_OK) {
         return ec;
     }

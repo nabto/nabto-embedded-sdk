@@ -65,8 +65,7 @@ np_error_code nc_stun_init(struct nc_stun_context* ctx,
     ctx->stunModule.get_stamp = &nc_stun_get_stamp;
     ctx->stunModule.logger = &device->moduleLogger;
     ctx->stunModule.get_rand = &nc_stun_get_rand;
-    np_error_code ec;
-    ec = np_event_queue_create_event(eq, &nc_stun_handle_timeout, ctx, &ctx->toEv);
+    np_error_code ec = np_event_queue_create_event(eq, &nc_stun_handle_timeout, ctx, &ctx->toEv);
     if (ec != NABTO_EC_OK) {
         return ec;
     }
@@ -370,7 +369,7 @@ size_t nc_stun_convert_ep_list(struct np_ip_address* ips, size_t ipsSize,
                                struct nn_endpoint* eps, size_t epsSize,
                                uint16_t port)
 {
-    size_t i;
+    size_t i = 0;
     for (i = 0; i < ipsSize && i < epsSize; i++)
     {
         nc_stun_set_endpoint(&eps[i], &ips[i], port);

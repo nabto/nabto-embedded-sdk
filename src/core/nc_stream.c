@@ -57,8 +57,7 @@ np_error_code nc_stream_init(struct np_platform* pl, struct nc_stream_context* c
     nc_stream_module.free_recv_segment = &nc_stream_free_recv_segment;
     nc_stream_module.notify_event = &nc_stream_event_callback;
 
-    np_error_code ec;
-    ec = np_event_queue_create_event(&pl->eq, &nc_stream_event_queue_callback, ctx, &ctx->ev);
+    np_error_code ec = np_event_queue_create_event(&pl->eq, &nc_stream_event_queue_callback, ctx, &ctx->ev);
     if (ec != NABTO_EC_OK) {
         return ec;
     }
@@ -511,7 +510,7 @@ void nc_stream_do_read(struct nc_stream_context* stream)
         // data available but no one wants it
         NABTO_LOG_TRACE(LOG, "Stream do read with no read future");
     } else if (!stream->isVirtual) {
-        size_t readen;
+        size_t readen = 0;
         nabto_stream_status status = nabto_stream_read_buffer(&stream->stream, (uint8_t*)stream->readBuffer, stream->readBufferLength, &readen);
         if (status == NABTO_STREAM_STATUS_OK) {
             if (readen == 0) {
@@ -543,7 +542,7 @@ void nc_stream_do_read(struct nc_stream_context* stream)
 }
 void nc_stream_do_write_all(struct nc_stream_context* stream)
 {
-    size_t written;
+    size_t written = 0;
     nabto_stream_status status = nabto_stream_write_buffer(&stream->stream, stream->writeBuffer, stream->writeBufferLength, &written);
     if (status == NABTO_STREAM_STATUS_OK) {
         if (written == 0) {

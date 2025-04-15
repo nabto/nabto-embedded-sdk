@@ -42,8 +42,7 @@ struct np_authorization_request* create_request(struct np_platform* pl, uint64_t
     request->module = pl->authorizationData;
     request->refCount = 0;
 
-    np_error_code ec;
-    ec = np_event_queue_create_event(&pl->eq, handle_verdict, request, &request->verdictEvent);
+    np_error_code ec = np_event_queue_create_event(&pl->eq, handle_verdict, request, &request->verdictEvent);
     if (ec != NABTO_EC_OK) {
         np_free(request);
         return NULL;
@@ -233,7 +232,7 @@ nabto_device_authorization_request_get_attributes_size(NabtoDeviceAuthorizationR
 {
     struct nabto_device_authorization_request* authReq = (struct nabto_device_authorization_request*)request;
     struct nabto_device_context* dev = authReq->module->device;
-    size_t attributesSize;
+    size_t attributesSize = 0;
     nabto_device_threads_mutex_lock(dev->eventMutex);
     attributesSize = get_attributes_size(authReq);
     nabto_device_threads_mutex_unlock(dev->eventMutex);
@@ -249,7 +248,7 @@ nabto_device_authorization_request_get_attribute_name(NabtoDeviceAuthorizationRe
     struct nabto_device_authorization_request* authReq = (struct nabto_device_authorization_request*)request;
     struct nabto_device_context* dev = authReq->module->device;
 
-    const char* ret;
+    const char* ret = NULL;
     nabto_device_threads_mutex_lock(dev->eventMutex);
     struct nabto_device_authorization_request_attribute* attribute = get_attribute(authReq, index);
     ret = attribute->key;
@@ -266,7 +265,7 @@ nabto_device_authorization_request_get_attribute_value(NabtoDeviceAuthorizationR
     struct nabto_device_authorization_request* authReq = (struct nabto_device_authorization_request*)request;
     struct nabto_device_context* dev = authReq->module->device;
 
-    const char* ret;
+    const char* ret = NULL;
     nabto_device_threads_mutex_lock(dev->eventMutex);
 
     struct nabto_device_authorization_request_attribute* attribute = get_attribute(authReq, index);

@@ -37,7 +37,7 @@ void handle_request(struct nm_iam_coap_handler* handler, NabtoDeviceCoapRequest*
         return;
     }
 
-    char* username;
+    char* username = NULL;
 
     if (nabto_device_connection_get_password_authentication_username(iam->device, ref, &username) != NABTO_DEVICE_EC_OK) {
         nabto_device_coap_error_response(request, 500, "Server error");
@@ -46,7 +46,7 @@ void handle_request(struct nm_iam_coap_handler* handler, NabtoDeviceCoapRequest*
         if (user == NULL) {
             nabto_device_coap_error_response(request, 500, "Server error");
         } else {
-            char* fp;
+            char* fp = NULL;
             if (nabto_device_connection_get_client_fingerprint(iam->device, ref, &fp) != NABTO_DEVICE_EC_OK) {
                 nabto_device_coap_error_response(request, 500, "Server error");
             } else {

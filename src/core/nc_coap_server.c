@@ -44,8 +44,7 @@ np_error_code nc_coap_server_init(struct np_platform* pl, struct nc_device_conte
     ctx->pl = pl;
     ctx->device = device;
     nc_coap_server_set_infinite_stamp(ctx);
-    np_error_code ec;
-    ec = np_event_queue_create_event(&pl->eq, &nc_coap_server_notify_event_callback, ctx, &ctx->ev);
+    np_error_code ec = np_event_queue_create_event(&pl->eq, &nc_coap_server_notify_event_callback, ctx, &ctx->ev);
     if (ec != NABTO_EC_OK) {
         return ec;
     }
@@ -154,7 +153,7 @@ np_error_code nc_coap_server_handle_send(struct nc_coap_server_context* ctx)
 
 void nc_coap_server_handle_wait(struct nc_coap_server_context* ctx)
 {
-    uint32_t nextStamp;
+    uint32_t nextStamp = 0;
     nabto_coap_server_get_next_timeout(&ctx->requests, &nextStamp);
     if (nabto_coap_is_stamp_less(nextStamp, ctx->currentExpiry)) {
         ctx->currentExpiry = nextStamp;
@@ -191,7 +190,7 @@ void nc_coap_server_remove_connection(struct nc_coap_server_context* ctx, struct
 {
     if (connection->isVirtual) {
         struct nc_virtual_connection* virConn = connection->connectionImplCtx;
-        struct nc_coap_server_request* request;
+        struct nc_coap_server_request* request = NULL;
         NN_LLIST_FOREACH(request, &virConn->coapRequests) {
             request->virRequest->connectionClosed = true;
             nc_coap_server_resolve_virtual(NABTO_EC_STOPPED, request);
@@ -288,7 +287,7 @@ void nc_coap_server_remove_resource(struct nc_coap_server_resource* resource)
     if (resource->resource != NULL) {
         nabto_coap_server_remove_resource(resource->resource);
     }
-    struct nc_coap_server_request* req;
+    struct nc_coap_server_request* req = NULL;
     struct nn_llist_iterator it = nn_llist_begin(&resource->virtualRequests);
     while(!nn_llist_is_end(&it)) {
         req = nn_llist_get_item(&it);

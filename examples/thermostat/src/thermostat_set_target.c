@@ -1,6 +1,7 @@
 #include "thermostat_coap_handler.h"
 #include "thermostat.h"
 
+#include <math.h>
 #include <tinycbor/cbor.h>
 #include "cbor_extra.h"
 
@@ -35,7 +36,7 @@ void handle_request(struct thermostat_coap_handler* handler, NabtoDeviceCoapRequ
         return;
     }
 
-    double target;
+    double target = NAN;
     if (cbor_value_get_floating_point(&value, &target) != CborNoError) {
         nabto_device_coap_error_response(request, 400, "Bad request");
         return;

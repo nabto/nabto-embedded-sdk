@@ -12,7 +12,7 @@ bool string_file_exists(struct nm_fs* fsImpl, const char* fileName)
 
 bool string_file_load(struct nm_fs* fsImpl, const char* fileName, char** content)
 {
-    size_t fileSize;
+    size_t fileSize = 0;
     enum nm_fs_error ec = fsImpl->file_size(fsImpl->impl, fileName, &fileSize);
     if (ec != NM_FS_OK) {
         return false;
@@ -22,7 +22,7 @@ bool string_file_load(struct nm_fs* fsImpl, const char* fileName, char** content
         return false;
     }
 
-    size_t readLength;
+    size_t readLength = 0;
     ec = fsImpl->read_file(fsImpl->impl, fileName, output, fileSize+1, &readLength);
     if (ec != NM_FS_OK) {
         free(output);

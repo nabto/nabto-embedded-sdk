@@ -27,7 +27,7 @@ np_error_code nc_attacher_sct_upload(struct nc_attach_context* attacher, nc_atta
         return NABTO_EC_OPERATION_IN_PROGRESS;
     }
 
-    size_t bufferSize;
+    size_t bufferSize = 0;
     {
         CborEncoder encoder;
         cbor_encoder_init(&encoder, NULL, 0, 0);
@@ -52,7 +52,7 @@ np_error_code nc_attacher_sct_upload(struct nc_attach_context* attacher, nc_atta
         }
     }
 
-    struct nabto_coap_client_request* req;
+    struct nabto_coap_client_request* req = NULL;
     req = nabto_coap_client_request_new(nc_coap_client_get_client(attacher->coapClient),
                                         NABTO_COAP_METHOD_PUT,
                                         2, sctUploadPath,
@@ -84,7 +84,7 @@ void sct_request_handler(struct nabto_coap_client_request* request, void* userDa
     struct nc_attacher_sct_context* sctCtx = userData;
     nc_attacher_sct_callback cb = sctCtx->callback;
     void* cbUserData = sctCtx->callbackUserData;
-    np_error_code status;
+    np_error_code status = NABTO_EC_FAILED;
     struct nabto_coap_client_response* res = nabto_coap_client_request_get_response(request);
     uint16_t resCode = nabto_coap_client_response_get_code(res);
     if (nc_coap_is_status_ok(resCode)) {
@@ -106,7 +106,7 @@ CborError encode_scts(CborEncoder* encoder, struct nn_string_set* scts)
     CborEncoder array;
     NC_CBOR_CHECK_FOR_ERROR_EXCEPT_OOM(cbor_encoder_create_array(encoder, &array, CborIndefiniteLength));
 
-    const char* str;
+    const char* str = NULL;
     NN_STRING_SET_FOREACH(str, scts) {
         NC_CBOR_CHECK_FOR_ERROR_EXCEPT_OOM(cbor_encode_text_stringz(&array, str));
     }

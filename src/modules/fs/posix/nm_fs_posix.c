@@ -47,7 +47,7 @@ static enum nm_fs_error create_directory(void* impl, const char* path)
 
 static enum nm_fs_error exists(void* impl, const char* path)
 {
-    int ec;
+    int ec = 0;
 #if defined(HAVE_IO_H)
     ec = _access( path, 0 );
 #else
@@ -62,7 +62,7 @@ static enum nm_fs_error exists(void* impl, const char* path)
 static enum nm_fs_error size(void* impl, const char* path, size_t* fileSize)
 {
     FILE* f = fopen(path, "rb");
-    enum nm_fs_error status;
+    enum nm_fs_error status = NM_FS_UNKNOWN;
     if (f == NULL) {
         if (errno == ENOENT) {
             return NM_FS_NO_ENTRY;

@@ -113,7 +113,7 @@ np_error_code nabto_device_listener_init_future(struct nabto_device_listener* li
 NabtoDeviceError NABTO_DEVICE_API nabto_device_listener_stop(NabtoDeviceListener* deviceListener)
 {
     struct nabto_device_listener* listener = (struct nabto_device_listener*)deviceListener;
-    np_error_code ec;
+    np_error_code ec = NABTO_EC_FAILED;
     nabto_device_threads_mutex_lock(listener->dev->eventMutex);
     ec = nabto_device_listener_stop_internal(listener);
     nabto_device_threads_mutex_unlock(listener->dev->eventMutex);

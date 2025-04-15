@@ -51,8 +51,7 @@ np_error_code nm_select_unix_async_bind_mdns_ipv4_ec(struct np_udp_socket* sock)
         return NABTO_EC_ABORTED;
     }
 
-    np_error_code ec;
-    ec = create_socket_ipv4(sock);
+    np_error_code ec = create_socket_ipv4(sock);
 
     if (ec != NABTO_EC_OK) {
         return ec;

@@ -101,7 +101,7 @@ const char* coapOptionToString(uint16_t option)
 static char* safeWrite(char* buffer, char* end, const char* format, ...)
 {
     va_list args;
-    int written;
+    int written = 0;
     if (buffer == NULL) {
         return NULL;
     }
@@ -145,7 +145,7 @@ np_error_code nc_coap_packet_print(const char* header, const uint8_t* packet, si
         ptr = safeWrite(ptr, end, ", Options:");
         while (iterator != NULL) {
             size_t optionDataLength = iterator->optionDataEnd - iterator->optionDataBegin;
-            uint32_t value;
+            uint32_t value = 0;
             if (iterator->option == NABTO_COAP_OPTION_URI_PATH) {
                 ptr = safeWrite(ptr, end, ", Uri-Path: %.*s", optionDataLength, iterator->optionDataBegin);
             } else if (iterator->option == NABTO_COAP_OPTION_URI_HOST) {

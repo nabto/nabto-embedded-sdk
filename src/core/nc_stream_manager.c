@@ -43,7 +43,7 @@ void nc_stream_manager_resolve_listener(struct nc_stream_listener* listener, str
 void nc_stream_manager_deinit(struct nc_stream_manager_context* ctx)
 {
     if (ctx->pl != NULL) { // if init was called
-        struct nc_stream_listener* listener;
+        struct nc_stream_listener* listener = NULL;
         NN_LLIST_FOREACH(listener, &ctx->listeners)
         {
             nc_stream_manager_resolve_listener(listener, NULL, NABTO_EC_ABORTED);
@@ -54,7 +54,7 @@ void nc_stream_manager_deinit(struct nc_stream_manager_context* ctx)
 
 bool nc_stream_manager_port_in_use(struct nc_stream_manager_context* ctx, uint32_t type)
 {
-    struct nc_stream_listener* listener;
+    struct nc_stream_listener* listener = NULL;
     NN_LLIST_FOREACH(listener, &ctx->listeners)
     {
         if (listener->type == type) {
@@ -66,10 +66,9 @@ bool nc_stream_manager_port_in_use(struct nc_stream_manager_context* ctx, uint32
 
 np_error_code nc_stream_manager_add_listener(struct nc_stream_manager_context* ctx, struct nc_stream_listener* listener, uint32_t type, nc_stream_manager_listen_callback cb, void* data)
 {
-    np_error_code ec;
     if (type == 0) {
         // get ephemeral port number
-        ec = nc_stream_manager_get_ephemeral_stream_port(ctx, &type);
+        np_error_code ec = nc_stream_manager_get_ephemeral_stream_port(ctx, &type);
         if (ec) {
             return ec;
         }
@@ -99,7 +98,7 @@ void nc_stream_manager_handle_packet(struct nc_stream_manager_context* ctx, stru
     uint64_t streamId = 0;
     uint8_t streamIdLen = 0;
     uint8_t flags = 0;
-    struct nc_stream_context* stream;
+    struct nc_stream_context* stream = NULL;
 
     NABTO_LOG_TRACE(LOG, "stream manager handling packet. AT: %u", *start);
 
@@ -148,14 +147,14 @@ void nc_stream_manager_ready_for_accept(struct nc_stream_manager_context* ctx, s
                              // application or this function to call
                              // nc_stream_destroy
 
-    uint32_t type;
+    uint32_t type = 0;
     if (stream->isVirtual) {
         type = stream->virt.port;
     } else {
         type = nabto_stream_get_content_type(&stream->stream);
     }
     NABTO_LOG_INFO(LOG, "New stream ready for accept. Looking for listener");
-    struct nc_stream_listener* listener;
+    struct nc_stream_listener* listener = NULL;
     NN_LLIST_FOREACH(listener, &ctx->listeners) {
         if (listener->type == type) {
             nc_stream_manager_resolve_listener(listener, stream, NABTO_EC_OK);
@@ -169,7 +168,7 @@ void nc_stream_manager_ready_for_accept(struct nc_stream_manager_context* ctx, s
 
 struct nc_stream_context* nc_stream_manager_find_stream(struct nc_stream_manager_context* ctx, uint64_t streamId, struct nc_connection* conn)
 {
-    struct nc_stream_context* stream;
+    struct nc_stream_context* stream = NULL;
     NN_LLIST_FOREACH(stream, &ctx->streams) {
         if (stream->streamId == streamId && stream->conn == conn) {
             return stream;
@@ -221,8 +220,7 @@ struct nc_stream_context* nc_stream_manager_accept_stream(struct nc_stream_manag
 
     uint64_t nonce = nc_stream_manager_get_next_nonce(ctx);
 
-    np_error_code ec;
-    ec = nc_stream_init(ctx->pl, stream, streamId, nonce, conn->parent, ctx, conn->parent->connectionRef, ctx->logger);
+    np_error_code ec = nc_stream_init(ctx->pl, stream, streamId, nonce, conn->parent, ctx, conn->parent->connectionRef, ctx->logger);
     if (ec != NABTO_EC_OK) {
         nc_stream_manager_free_stream(stream);
         return NULL;
@@ -256,9 +254,9 @@ void nc_stream_manager_send_rst_client_connection(struct nc_stream_manager_conte
 
 void nc_stream_manager_send_rst(struct nc_stream_manager_context* ctx, struct nc_client_connection* conn, uint64_t streamId)
 {
-    uint8_t* start;
-    uint8_t* ptr;
-    size_t ret;
+    uint8_t* start = NULL;
+    uint8_t* ptr = NULL;
+    size_t ret = 0;
     NABTO_LOG_TRACE(LOG, "Sending RST to streamId: %u", streamId);
     if (ctx->rstBuf != NULL) {
         NABTO_LOG_INFO(LOG, "RST is sending dropping to send a new rst");
@@ -356,7 +354,7 @@ void nc_stream_manager_free_recv_segment(struct nc_stream_manager_context* ctx, 
 
 void nc_stream_manager_remove_connection(struct nc_stream_manager_context* ctx, struct nc_connection* connection)
 {
-    struct nc_stream_context* stream;
+    struct nc_stream_context* stream = NULL;
     struct nn_llist_iterator it = nn_llist_begin(&ctx->streams);
     while (!nn_llist_is_end(&it)) {
         stream = nn_llist_get_item(&it);
@@ -373,7 +371,7 @@ void nc_stream_manager_remove_connection(struct nc_stream_manager_context* ctx, 
 
 uint64_t nc_stream_manager_get_connection_ref(struct nc_stream_manager_context* ctx, struct nabto_stream* nabtoStream)
 {
-    struct nc_stream_context* stream;
+    struct nc_stream_context* stream = NULL;
     NN_LLIST_FOREACH(stream, &ctx->streams) {
         if (&stream->stream == nabtoStream) {
             struct nc_connection* connection = stream->conn;
@@ -391,7 +389,7 @@ uint64_t nc_stream_manager_get_connection_ref(struct nc_stream_manager_context* 
  */
 np_error_code nc_stream_manager_get_ephemeral_stream_port(struct nc_stream_manager_context* ctx, uint32_t* port)
 {
-    int i;
+    int i = 0;
     for (i = 0; i < 10; i++) {
         uint32_t base = 0x80000000;
 

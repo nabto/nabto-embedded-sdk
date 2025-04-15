@@ -38,7 +38,7 @@ NabtoDevice* NABTO_DEVICE_API nabto_device_test_new()
 {
 
     struct nabto_device_context* dev = np_calloc(1, sizeof(struct nabto_device_context));
-    np_error_code ec;
+    np_error_code ec = NABTO_EC_FAILED;
     if (dev == NULL) {
         return NULL;
     }

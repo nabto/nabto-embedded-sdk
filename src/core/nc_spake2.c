@@ -83,7 +83,7 @@ void nc_spake2_password_ready(struct nc_spake2_password_request* req, const char
         nc_connection_get_client_fingerprint(connection, req->clientFingerprint);
         nc_connection_get_device_fingerprint(connection, req->deviceFingerprint);
 
-        size_t olen;
+        size_t olen = 0;
         uint8_t buffer[256];
         olen = sizeof(buffer);
         if (req->pl->spake2.calculate_key(req, password, buffer, &olen,

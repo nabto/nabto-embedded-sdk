@@ -93,7 +93,7 @@ void async_recv_wait_complete(const np_error_code ec, void* userData)
     struct np_udp_endpoint ep;
     size_t bufferLength = 1500;
     uint8_t* recvBuffer = np_calloc(1, bufferLength);
-    size_t recvLength;
+    size_t recvLength = 0;
     if (recvBuffer == NULL) {
         // We cannot allocate a sufficient large buffer for receiving the
         // packet, we do not want to stack allocate the large buffer as it makes

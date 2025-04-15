@@ -40,8 +40,8 @@ void handle_request(struct nm_iam_coap_handler* handler,
         return;
     }
 
-    NabtoDeviceError ec;
-    char* fingerprint;
+    NabtoDeviceError ec = 0;
+    char* fingerprint = NULL;
     ec = nabto_device_connection_get_client_fingerprint(handler->device, ref,
                                                         &fingerprint);
     if (ec) {

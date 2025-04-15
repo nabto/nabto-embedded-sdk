@@ -13,15 +13,15 @@
 
 bool nc_coap_rest_error_decode_response(struct nabto_coap_client_response* response, struct nc_coap_rest_error* error)
 {
-    uint16_t contentFormat;
+    uint16_t contentFormat = 0;
     error->message = NULL;
     error->nabtoErrorCode = 0; // not a valid nabto error code
     error->coapResponseCode = nabto_coap_client_response_get_code(response);
 
     if (nabto_coap_client_response_get_content_format(response, &contentFormat)) {
         if (contentFormat == NABTO_COAP_CONTENT_FORMAT_APPLICATION_CBOR) {
-            const uint8_t* payload;
-            size_t payloadLength;
+            const uint8_t* payload = NULL;
+            size_t payloadLength = 0;
             if (nabto_coap_client_response_get_payload(response, &payload,
                                                        &payloadLength)) {
                 CborParser parser;
@@ -48,8 +48,8 @@ bool nc_coap_rest_error_decode_response(struct nabto_coap_client_response* respo
         }
     } else {
         // no content format if there is a body it should be treated as an utf8 string.
-        const uint8_t* payload;
-        size_t payloadLength;
+        const uint8_t* payload = NULL;
+        size_t payloadLength = 0;
         if(nabto_coap_client_response_get_payload(response, &payload, &payloadLength)) {
             if (payloadLength < 1024) {
                 error->message = np_calloc(1, payloadLength+1);

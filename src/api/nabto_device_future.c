@@ -93,7 +93,7 @@ void NABTO_DEVICE_API nabto_device_future_set_callback(NabtoDeviceFuture* future
 NabtoDeviceError NABTO_DEVICE_API nabto_device_future_wait(NabtoDeviceFuture* future)
 {
     struct nabto_device_future* fut = (struct nabto_device_future*)future;
-    NabtoDeviceError ec;
+    NabtoDeviceError ec = 0;
 
     nabto_device_threads_mutex_lock(fut->mutex);
     if (!fut->ready) {
@@ -108,7 +108,7 @@ NabtoDeviceError NABTO_DEVICE_API nabto_device_future_timed_wait(NabtoDeviceFutu
 {
     struct nabto_device_future* fut = (struct nabto_device_future*)future;
 
-    NabtoDeviceError ec;
+    NabtoDeviceError ec = 0;
     nabto_device_threads_mutex_lock(fut->mutex);
     if (fut->ready) {
         ec = fut->ec;
@@ -130,7 +130,7 @@ NabtoDeviceError NABTO_DEVICE_API nabto_device_future_error_code(NabtoDeviceFutu
 {
     struct nabto_device_future* fut = (struct nabto_device_future*)future;
 
-    NabtoDeviceError ec;
+    NabtoDeviceError ec = 0;
     nabto_device_threads_mutex_lock(fut->mutex);
     if (!fut->ready) {
         ec = NABTO_DEVICE_EC_FUTURE_NOT_RESOLVED;

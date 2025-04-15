@@ -98,9 +98,7 @@ np_error_code nm_select_unix_udp_async_bind_port_ec(struct np_udp_socket* sock, 
         return NABTO_EC_ABORTED;
     }
 
-    np_error_code ec;
-
-    ec = create_socket_any(sock);
+    np_error_code ec = create_socket_any(sock);
     if (ec != NABTO_EC_OK) {
         return ec;
     }
@@ -219,7 +217,7 @@ void nm_select_unix_udp_free_socket(struct np_udp_socket* sock)
 
 void nm_select_unix_udp_build_fd_sets(struct nm_select_unix* ctx)
 {
-    struct np_udp_socket* s;
+    struct np_udp_socket* s = NULL;
     nm_select_unix_lock(ctx);
     NN_LLIST_FOREACH(s, &ctx->udpSockets)
     {
@@ -234,7 +232,7 @@ void nm_select_unix_udp_build_fd_sets(struct nm_select_unix* ctx)
 void nm_select_unix_udp_handle_select(struct nm_select_unix* ctx, int nfds)
 {
     (void)nfds;
-    struct np_udp_socket* s;
+    struct np_udp_socket* s = NULL;
 
     nm_select_unix_lock(ctx);
     NN_LLIST_FOREACH(s, &ctx->udpSockets)
@@ -277,7 +275,7 @@ int nm_select_unix_udp_nonblocking_socket(int domain, int type)
 
 np_error_code udp_send_to(struct np_udp_socket* s, const struct np_udp_endpoint* ep, const uint8_t* buffer, uint16_t bufferSize)
 {
-    ssize_t res;
+    ssize_t res = 0;
 
     struct np_ip_address sendIp;
 
@@ -338,7 +336,7 @@ np_error_code udp_send_to(struct np_udp_socket* s, const struct np_udp_endpoint*
 
 np_error_code udp_recv_from(struct np_udp_socket* sock, struct np_udp_endpoint* ep, uint8_t* buffer, size_t bufferSize, size_t* readLength)
 {
-    ssize_t recvLength;
+    ssize_t recvLength = 0;
     if (sock->type == NABTO_IPV6) {
         struct sockaddr_in6 sa;
         socklen_t addrlen = sizeof(sa);
@@ -370,7 +368,7 @@ np_error_code udp_recv_from(struct np_udp_socket* sock, struct np_udp_endpoint* 
 
 np_error_code bind_port(struct np_udp_socket* s, uint16_t port)
 {
-    int status;
+    int status = 0;
 
     if (s->type == NABTO_IPV6) {
         struct sockaddr_in6 si_me6;

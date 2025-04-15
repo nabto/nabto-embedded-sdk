@@ -114,7 +114,7 @@ struct nm_iam_user* nm_iam_user_from_json(const cJSON* json, int version)
     }
 
     if (cJSON_IsArray(notificationCategories)) {
-        cJSON* element;
+        cJSON* element = NULL;
         struct nn_string_set cs;
         nn_string_set_init(&cs, nm_iam_allocator_get());
         cJSON_ArrayForEach(element, notificationCategories) {

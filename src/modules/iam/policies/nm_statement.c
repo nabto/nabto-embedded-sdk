@@ -75,7 +75,7 @@ bool nm_statement_add_condition(struct nm_iam_statement* statement, struct nm_ia
 
 enum nm_condition_result match_conditions(const struct nm_iam_statement* statement, const struct nn_string_map* attributes)
 {
-    const struct nm_iam_condition* condition;
+    const struct nm_iam_condition* condition = NULL;
     NN_LLIST_FOREACH(condition, &statement->conditions)
     {
         enum nm_condition_result r = nm_condition_matches(condition, attributes);

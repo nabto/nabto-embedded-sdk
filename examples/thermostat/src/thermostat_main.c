@@ -227,7 +227,7 @@ bool run_thermostat_device(NabtoDevice* dev, struct thermostat* thermostat, stru
     NabtoDeviceFuture* fut = nabto_device_future_new(dev);
     nabto_device_start(dev, fut);
 
-    NabtoDeviceError ec;
+    NabtoDeviceError ec = 0;
     ec = nabto_device_future_wait(fut);
     nabto_device_future_free(fut);
 
@@ -236,7 +236,7 @@ bool run_thermostat_device(NabtoDevice* dev, struct thermostat* thermostat, stru
         return false;
     }
 
-    char* deviceFingerprint;
+    char* deviceFingerprint = NULL;
     nabto_device_get_device_fingerprint(dev, &deviceFingerprint);
 
     char* pairingString = thermostat_iam_create_pairing_string(
@@ -264,7 +264,7 @@ bool run_thermostat_device(NabtoDevice* dev, struct thermostat* thermostat, stru
             NabtoDeviceListener* listener = nabto_device_listener_new(dev);
             NabtoDeviceFuture* future = nabto_device_future_new(dev);
             nabto_device_device_events_init_listener(device, listener);
-            NabtoDeviceEvent event;
+            NabtoDeviceEvent event = 0;
 
             nabto_device_duration_t tickInterval = 30;
 
@@ -357,7 +357,7 @@ bool parse_args(int argc, char** argv, struct args* args)
         args->init = true;
     }
 
-    const char* logLevel;
+    const char* logLevel = NULL;
     if (gopt_arg(options, OPTION_LOG_LEVEL, &logLevel)) {
         args->logLevel = strdup(logLevel);
     } else {

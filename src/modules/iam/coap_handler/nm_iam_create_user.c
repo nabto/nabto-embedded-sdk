@@ -69,7 +69,7 @@ void handle_request(struct nm_iam_coap_handler* handler, NabtoDeviceCoapRequest*
         return;
     }
 
-    char* sct;
+    char* sct = NULL;
     if (nabto_device_create_server_connect_token(handler->iam->device, &sct) != NABTO_DEVICE_EC_OK ||
         sct == NULL ||
         strlen(sct) > handler->iam->sctMaxLength ||

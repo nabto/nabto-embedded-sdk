@@ -105,7 +105,7 @@ void nm_iam_stop(struct nm_iam* iam)
 
 bool nm_iam_check_access(struct nm_iam* iam, NabtoDeviceConnectionRef ref, const char* action, const struct nn_string_map* attributesIn)
 {
-    bool status;
+    bool status = 0;
     nm_iam_lock(iam);
     status = nm_iam_internal_check_access(iam, ref, action, attributesIn);
     nm_iam_unlock(iam);
@@ -124,7 +124,7 @@ void nm_iam_set_state_changed_callback(struct nm_iam* iam, nm_iam_state_changed 
 
 bool nm_iam_load_configuration(struct nm_iam* iam, struct nm_iam_configuration* conf)
 {
-    bool status;
+    bool status = 0;
     nm_iam_lock(iam);
     status = nm_iam_internal_load_configuration(iam, conf);
     nm_iam_unlock(iam);
@@ -133,7 +133,7 @@ bool nm_iam_load_configuration(struct nm_iam* iam, struct nm_iam_configuration* 
 
 bool nm_iam_load_state(struct nm_iam* iam, struct nm_iam_state* state)
 {
-    bool status;
+    bool status = 0;
     nm_iam_lock(iam);
     status = nm_iam_internal_load_state(iam, state);
     nm_iam_unlock(iam);
@@ -152,7 +152,7 @@ enum nm_iam_error nm_iam_set_notification_categories(struct nm_iam* iam, struct 
 {
     nm_iam_lock(iam);
     nn_string_set_clear(&iam->notificationCategories);
-    const char* s;
+    const char* s = NULL;
     NN_STRING_SET_FOREACH(s, categories) {
         if (!nn_string_set_insert(&iam->notificationCategories, s)) {
             nn_string_set_clear(&iam->notificationCategories);
@@ -261,7 +261,7 @@ void nm_iam_set_local_initial_pairing(struct nm_iam* iam, bool enabled)
  */
 enum nm_iam_error nm_iam_create_user(struct nm_iam* iam, const char* username)
 {
-    enum nm_iam_error ec;
+    enum nm_iam_error ec = NM_IAM_ERROR_INTERNAL;
     nm_iam_lock(iam);
     ec = nm_iam_internal_create_user(iam, username);
     nm_iam_unlock(iam);
@@ -270,7 +270,7 @@ enum nm_iam_error nm_iam_create_user(struct nm_iam* iam, const char* username)
 
 enum nm_iam_error nm_iam_set_user_fingerprint(struct nm_iam* iam, const char* username, const char* fingerprint)
 {
-    enum nm_iam_error ec;
+    enum nm_iam_error ec = NM_IAM_ERROR_INTERNAL;
     nm_iam_lock(iam);
     ec = nm_iam_internal_set_user_fingerprint(iam, username, fingerprint);
     nm_iam_unlock(iam);
@@ -279,7 +279,7 @@ enum nm_iam_error nm_iam_set_user_fingerprint(struct nm_iam* iam, const char* us
 
 enum nm_iam_error nm_iam_add_user_fingerprint(struct nm_iam* iam, const char* username, const char* fingerprint, const char* fingerprintName)
 {
-    enum nm_iam_error ec;
+    enum nm_iam_error ec = NM_IAM_ERROR_INTERNAL;
     nm_iam_lock(iam);
     ec = nm_iam_internal_add_user_fingerprint(iam, username, fingerprint, fingerprintName);
     nm_iam_unlock(iam);
@@ -288,7 +288,7 @@ enum nm_iam_error nm_iam_add_user_fingerprint(struct nm_iam* iam, const char* us
 
 enum nm_iam_error nm_iam_remove_user_fingerprint(struct nm_iam* iam, const char* username, const char* fingerprint)
 {
-    enum nm_iam_error ec;
+    enum nm_iam_error ec = NM_IAM_ERROR_INTERNAL;
     nm_iam_lock(iam);
     ec = nm_iam_internal_remove_user_fingerprint(iam, username, fingerprint);
     nm_iam_unlock(iam);
@@ -297,7 +297,7 @@ enum nm_iam_error nm_iam_remove_user_fingerprint(struct nm_iam* iam, const char*
 
 enum nm_iam_error nm_iam_set_user_sct(struct nm_iam* iam, const char* username, const char* sct)
 {
-    enum nm_iam_error ec;
+    enum nm_iam_error ec = NM_IAM_ERROR_INTERNAL;
     nm_iam_lock(iam);
     ec = nm_iam_internal_set_user_sct(iam, username, sct);
     nm_iam_unlock(iam);
@@ -306,7 +306,7 @@ enum nm_iam_error nm_iam_set_user_sct(struct nm_iam* iam, const char* username, 
 
 enum nm_iam_error nm_iam_set_user_password(struct nm_iam* iam, const char* username, const char* password)
 {
-    enum nm_iam_error ec;
+    enum nm_iam_error ec = NM_IAM_ERROR_INTERNAL;
     nm_iam_lock(iam);
     ec = nm_iam_internal_set_user_password(iam, username, password);
     nm_iam_unlock(iam);
@@ -315,7 +315,7 @@ enum nm_iam_error nm_iam_set_user_password(struct nm_iam* iam, const char* usern
 
 enum nm_iam_error nm_iam_set_user_role(struct nm_iam* iam, const char* username, const char* role)
 {
-    enum nm_iam_error ec;
+    enum nm_iam_error ec = NM_IAM_ERROR_INTERNAL;
     nm_iam_lock(iam);
     ec = nm_iam_internal_set_user_role(iam, username, role);
     nm_iam_unlock(iam);
@@ -324,7 +324,7 @@ enum nm_iam_error nm_iam_set_user_role(struct nm_iam* iam, const char* username,
 
 enum nm_iam_error nm_iam_set_user_display_name(struct nm_iam* iam, const char* username, const char* displayName)
 {
-    enum nm_iam_error ec;
+    enum nm_iam_error ec = NM_IAM_ERROR_INTERNAL;
     nm_iam_lock(iam);
     ec = nm_iam_internal_set_user_display_name(iam, username, displayName);
     nm_iam_unlock(iam);
@@ -333,7 +333,7 @@ enum nm_iam_error nm_iam_set_user_display_name(struct nm_iam* iam, const char* u
 
 enum nm_iam_error nm_iam_set_user_fcm_token(struct nm_iam* iam, const char* username, const char* token)
 {
-    enum nm_iam_error ec;
+    enum nm_iam_error ec = NM_IAM_ERROR_INTERNAL;
     nm_iam_lock(iam);
     ec = nm_iam_internal_set_user_fcm_token(iam, username, token);
     nm_iam_unlock(iam);
@@ -342,7 +342,7 @@ enum nm_iam_error nm_iam_set_user_fcm_token(struct nm_iam* iam, const char* user
 
 enum nm_iam_error nm_iam_set_user_fcm_project_id(struct nm_iam* iam, const char* username, const char* id)
 {
-    enum nm_iam_error ec;
+    enum nm_iam_error ec = NM_IAM_ERROR_INTERNAL;
     nm_iam_lock(iam);
     ec = nm_iam_internal_set_user_fcm_project_id(iam, username, id);
     nm_iam_unlock(iam);
@@ -351,7 +351,7 @@ enum nm_iam_error nm_iam_set_user_fcm_project_id(struct nm_iam* iam, const char*
 
 enum nm_iam_error nm_iam_set_user_notification_categories(struct nm_iam* iam, const char* username, struct nn_string_set* categories)
 {
-    enum nm_iam_error ec;
+    enum nm_iam_error ec = NM_IAM_ERROR_INTERNAL;
     nm_iam_lock(iam);
     ec = nm_iam_internal_set_user_notification_categories(iam, username, categories);
     nm_iam_unlock(iam);
@@ -360,7 +360,7 @@ enum nm_iam_error nm_iam_set_user_notification_categories(struct nm_iam* iam, co
 
 enum nm_iam_error nm_iam_set_user_oauth_subject(struct nm_iam* iam, const char* username, const char* subject)
 {
-    enum nm_iam_error ec;
+    enum nm_iam_error ec = NM_IAM_ERROR_INTERNAL;
     nm_iam_lock(iam);
     ec = nm_iam_internal_set_user_oauth_subject(iam, username, subject);
     nm_iam_unlock(iam);
@@ -371,7 +371,7 @@ enum nm_iam_error nm_iam_set_user_oauth_subject(struct nm_iam* iam, const char* 
 
 enum nm_iam_error nm_iam_delete_user(struct nm_iam* iam, const char* username)
 {
-    enum nm_iam_error ec;
+    enum nm_iam_error ec = NM_IAM_ERROR_INTERNAL;
     nm_iam_lock(iam);
     ec = nm_iam_internal_delete_user(iam, username);
     nm_iam_unlock(iam);
@@ -380,7 +380,7 @@ enum nm_iam_error nm_iam_delete_user(struct nm_iam* iam, const char* username)
 
 enum nm_iam_error nm_iam_authorize_connection(struct nm_iam* iam, NabtoDeviceConnectionRef ref, const char* username)
 {
-    enum nm_iam_error ec;
+    enum nm_iam_error ec = NM_IAM_ERROR_INTERNAL;
     nm_iam_lock(iam);
     ec = nm_iam_internal_authorize_connection(iam, ref, username);
     nm_iam_unlock(iam);

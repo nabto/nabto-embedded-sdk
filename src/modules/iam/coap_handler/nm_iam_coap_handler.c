@@ -108,14 +108,14 @@ void nm_iam_coap_handler_async_request_end(struct nm_iam_coap_handler* handler)
 
 enum nm_iam_cbor_error nm_iam_cbor_init_parser(NabtoDeviceCoapRequest* request, CborParser* parser, CborValue* cborValue)
 {
-    uint16_t contentFormat;
-    NabtoDeviceError ec;
+    uint16_t contentFormat = 0;
+    NabtoDeviceError ec = 0;
     ec = nabto_device_coap_request_get_content_format(request, &contentFormat);
     if (ec || contentFormat != NABTO_DEVICE_COAP_CONTENT_FORMAT_APPLICATION_CBOR) {
         return IAM_CBOR_INVALID_CONTENT_FORMAT;
     }
-    void* payload;
-    size_t payloadSize;
+    void* payload = NULL;
+    size_t payloadSize = 0;
     if (nabto_device_coap_request_get_payload(request, &payload, &payloadSize) != NABTO_DEVICE_EC_OK) {
         return IAM_CBOR_MISSING_PAYLOAD;
     }
@@ -146,7 +146,7 @@ void nm_iam_cbor_send_error_response(NabtoDeviceCoapRequest* request, enum nm_ia
 bool nm_iam_cbor_decode_string(CborValue* value, char** str)
 {
     if (cbor_value_is_text_string(value)) {
-        size_t nameLength;
+        size_t nameLength = 0;
         CborError err = cbor_value_calculate_string_length(value, &nameLength);
         if (err != CborNoError) {
             return false;
@@ -252,7 +252,7 @@ size_t nm_iam_cbor_encode_user(struct nm_iam_user* user, void* buffer, size_t bu
             nm_iam_cbor_err_not_oom(cbor_encoder_create_array(&map, &array, CborIndefiniteLength))) {
             return 0;
         }
-        struct nm_iam_user_fingerprint* fp;
+        struct nm_iam_user_fingerprint* fp = NULL;
         NN_LLIST_FOREACH(fp, &user->fingerprints) {
             CborEncoder fpMap;
 
@@ -321,7 +321,7 @@ size_t nm_iam_cbor_encode_user(struct nm_iam_user* user, void* buffer, size_t bu
             nm_iam_cbor_err_not_oom(cbor_encoder_create_array(&map, &array, CborIndefiniteLength))) {
             return 0;
         }
-        const char* c;
+        const char* c = NULL;
         NN_STRING_SET_FOREACH(c, &user->notificationCategories) {
             if(nm_iam_cbor_err_not_oom(cbor_encode_text_stringz(&array, c))) {
                 return 0;

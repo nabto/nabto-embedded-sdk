@@ -61,7 +61,7 @@ static char encodeChar(uint8_t val)
 
 void np_data_to_hex(uint8_t* data, size_t dataLength, char* output)
 {
-    size_t i;
+    size_t i = 0;
     for (i = 0; i < dataLength; i++) {
         uint8_t byte = data[i];
 

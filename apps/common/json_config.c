@@ -22,14 +22,14 @@ bool json_config_exists(struct nm_fs* fsImpl, const char* fileName)
 
 bool json_config_load(struct nm_fs* fsImpl, const char* path, cJSON** config, struct nn_log* logger)
 {
-    size_t fileSize;
+    size_t fileSize = 0;
     enum nm_fs_error ec = fsImpl->file_size(fsImpl->impl, path, &fileSize);
     if (ec != NM_FS_OK) {
         return false;
     }
 
     uint8_t* buffer = calloc(1, fileSize+1);
-    size_t readLength;
+    size_t readLength = 0;
     ec = fsImpl->read_file(fsImpl->impl, path, buffer, fileSize+1, &readLength);
     if (ec != NM_FS_OK) {
         free(buffer);
@@ -55,7 +55,7 @@ bool json_config_load(struct nm_fs* fsImpl, const char* path, cJSON** config, st
 
 bool json_config_save(struct nm_fs* fsImpl, const char* fileName, cJSON* config)
 {
-    bool status;
+    bool status = 0;
     char* j = NULL;
 
     j = cJSON_PrintUnformatted(config);

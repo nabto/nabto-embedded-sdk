@@ -18,7 +18,7 @@ np_error_code nc_connections_init(struct nc_connections_context* ctx, struct nc_
 void nc_connections_deinit(struct nc_connections_context* ctx)
 {
     if (ctx->device != NULL) { // if init was called
-        struct nc_connection* connection;
+        struct nc_connection* connection = NULL;
         struct nn_llist_iterator it = nn_llist_begin(&ctx->connections);
         while(!nn_llist_is_end(&it)) {
             connection = nn_llist_get_item(&it);
@@ -38,7 +38,7 @@ np_error_code nc_connections_async_close(struct nc_connections_context* ctx, nc_
 {
     bool hasActive = false;
     ctx->closing = true;
-    struct nc_connection* connection;
+    struct nc_connection* connection = NULL;
     struct nn_llist_iterator iter = nn_llist_begin(&ctx->connections);
     while(!nn_llist_is_end(&iter)) {
         connection = nn_llist_get_item(&iter);
@@ -127,7 +127,7 @@ void nc_connections_free_connection(struct nc_connections_context* ctx, struct n
 
 struct nc_connection* nc_connections_connection_from_ref(struct nc_connections_context* ctx, uint64_t ref)
 {
-    struct nc_connection* connection;
+    struct nc_connection* connection = NULL;
     NN_LLIST_FOREACH(connection, &ctx->connections) {
         if (connection->connectionRef == ref) {
             return connection;
@@ -138,7 +138,7 @@ struct nc_connection* nc_connections_connection_from_ref(struct nc_connections_c
 
 struct nc_connection* nc_connections_connection_from_client_connection(struct nc_connections_context* ctx, struct nc_client_connection* cliConn)
 {
-    struct nc_connection* connection;
+    struct nc_connection* connection = NULL;
     NN_LLIST_FOREACH(connection, &ctx->connections) {
         if (!connection->isVirtual && connection->connectionImplCtx == cliConn) {
             return connection;
@@ -150,7 +150,7 @@ struct nc_connection* nc_connections_connection_from_client_connection(struct nc
 
 struct nc_connection* nc_connections_connection_from_id(struct nc_connections_context* ctx, const uint8_t* id)
 {
-    struct nc_connection* connection;
+    struct nc_connection* connection = NULL;
     NN_LLIST_FOREACH(connection, &ctx->connections) {
         // compare middle 14 bytes, ignoring the channel ID and protocol prefix
         if (!connection->isVirtual) {
@@ -173,7 +173,6 @@ size_t nc_connections_count_connections(struct nc_connections_context* ctx)
 
 np_error_code nc_connection_init(struct nc_connection* conn, struct nc_device_context* device, bool isVirtual, void* impl)
 {
-    np_error_code ec;
     memset(conn, 0, sizeof(struct nc_connection));
     conn->device = device;
     conn->isVirtual = isVirtual;
@@ -182,7 +181,7 @@ np_error_code nc_connection_init(struct nc_connection* conn, struct nc_device_co
     conn->hasSpake2Key = false;
     conn->passwordAuthenticated = false;
 #endif
-    ec = nc_device_next_connection_ref(device, &conn->connectionRef);
+    np_error_code ec = nc_device_next_connection_ref(device, &conn->connectionRef);
     return ec;
 }
 

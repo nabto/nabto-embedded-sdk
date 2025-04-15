@@ -19,7 +19,7 @@ static const char* LOGM = "device_config";
 
 bool load_device_config(struct nm_fs *fsImpl, const char* fileName, struct device_config* dc, struct nn_log* logger)
 {
-    cJSON* config;
+    cJSON* config = NULL;
     if (!json_config_load(fsImpl, fileName, &config, logger)) {
         return false;
     }

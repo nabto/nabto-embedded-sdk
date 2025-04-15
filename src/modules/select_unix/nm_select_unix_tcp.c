@@ -54,7 +54,7 @@ struct np_tcp nm_select_unix_tcp_get_impl(struct nm_select_unix* ctx)
 
 void nm_select_unix_tcp_build_fd_sets(struct nm_select_unix* ctx)
 {
-    struct np_tcp_socket* s;
+    struct np_tcp_socket* s = NULL;
     nm_select_unix_lock(ctx);
     NN_LLIST_FOREACH(s, &ctx->tcpSockets)
     {
@@ -86,7 +86,7 @@ void nm_select_unix_tcp_free_socket(struct np_tcp_socket* sock)
 void nm_select_unix_tcp_handle_select(struct nm_select_unix* ctx, int nfds)
 {
     (void)nfds;
-    struct np_tcp_socket* s;
+    struct np_tcp_socket* s = NULL;
     nm_select_unix_lock(ctx);
     NN_LLIST_FOREACH(s, &ctx->tcpSockets)
     {
@@ -134,7 +134,7 @@ void destroy(struct np_tcp_socket* sock)
 
 np_error_code async_connect_ec(struct np_tcp_socket* sock, struct np_ip_address* address, uint16_t port)
 {
-    int s;
+    int s = 0;
 
     int type = SOCK_STREAM;
 #ifdef SOCK_NONBLOCK
@@ -155,7 +155,7 @@ np_error_code async_connect_ec(struct np_tcp_socket* sock, struct np_ip_address*
 
     sock->fd = s;
 
-    int flags;
+    int flags = 0;
 #ifndef SOCK_NONBLOCK
     // Mac
     flags = fcntl(sock->fd, F_GETFL, 0);
@@ -217,7 +217,7 @@ np_error_code async_connect_ec(struct np_tcp_socket* sock, struct np_ip_address*
 #endif
 
     {
-        int status;
+        int status = 0;
         if (address->type == NABTO_IPV4) {
             struct sockaddr_in host;
 
@@ -276,8 +276,8 @@ void async_connect(struct np_tcp_socket* sock, struct np_ip_address* address, ui
 
 np_error_code is_connected_ec(struct np_tcp_socket* sock)
 {
-    int err;
-    socklen_t len;
+    int err = 0;
+    socklen_t len = 0;
     len = sizeof(err);
     if (getsockopt(sock->fd, SOL_SOCKET, SO_ERROR, &err, &len) != 0) {
         NABTO_LOG_ERROR(LOG, "getsockopt error %s",strerror(errno));

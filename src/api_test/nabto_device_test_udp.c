@@ -52,7 +52,7 @@ static void packet_ready(np_error_code ec, void* data)
     }
     struct np_udp_endpoint recvEp;
     uint8_t recvBuffer[1500];
-    size_t recvSize;
+    size_t recvSize = 0;
     np_error_code recvEc = np_udp_recv_from(&t->udp, t->sock, &recvEp, recvBuffer, 1500, &recvSize);
     if (recvEc != NABTO_EC_OK) {
         resolve_and_free_test(t, recvEc);
@@ -124,8 +124,7 @@ nabto_device_test_udp(NabtoDevice* device, const char* ip, uint16_t port, NabtoD
     t->udp = dev->pl.udp;
     t->eq = dev->pl.eq;
 
-    np_error_code ec;
-    ec = np_udp_create(&t->udp, &t->sock);
+    np_error_code ec = np_udp_create(&t->udp, &t->sock);
     if (ec != NABTO_EC_OK) {
         resolve_and_free_test(t, ec);
         return;

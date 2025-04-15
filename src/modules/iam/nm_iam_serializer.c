@@ -17,14 +17,14 @@ bool nm_iam_serializer_configuration_dump_json(struct nm_iam_configuration* conf
     cJSON_AddNumberToObject(root, "Version", 1);
 
     cJSON* policies = cJSON_CreateArray();
-    struct nm_iam_policy* p;
+    struct nm_iam_policy* p = NULL;
     NN_LLIST_FOREACH(p, &conf->policies) {
         cJSON_AddItemToArray(policies, nm_policy_to_json(p));
     }
     cJSON_AddItemToObject(root, "Policies", policies);
 
     cJSON* roles = cJSON_CreateArray();
-    struct nm_iam_role* r;
+    struct nm_iam_role* r = NULL;
     NN_LLIST_FOREACH(r, &conf->roles) {
         cJSON_AddItemToArray(roles, nm_iam_role_to_json(r));
     }
@@ -170,7 +170,7 @@ bool nm_iam_serializer_state_dump_json(struct nm_iam_state* state, char** out)
 
         cJSON* usersArray = cJSON_CreateArray();
 
-        struct nm_iam_user* user;
+        struct nm_iam_user* user = NULL;
         NN_LLIST_FOREACH(user, &state->users)
         {
             cJSON* encodedUser = nm_iam_user_to_json(user);

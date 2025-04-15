@@ -31,7 +31,7 @@ np_error_code nc_attacher_fcm_send(struct nc_attach_context *attacher, struct nc
                                                               fcmContext, attacher->dtls);
     nabto_coap_client_request_set_content_format(fcmContext->coapRequest, NABTO_COAP_CONTENT_FORMAT_APPLICATION_CBOR);
 
-    size_t bufferSize;
+    size_t bufferSize = 0;
     {
         CborEncoder encoder;
         cbor_encoder_init(&encoder, NULL, 0, 0);
@@ -155,7 +155,7 @@ bool parse_response(const uint8_t* buffer, size_t bufferSize, struct nc_attacher
     if (!cbor_value_is_integer(&statusCode)) {
         return false;
     }
-    int tmp;
+    int tmp = 0;
     if (cbor_value_get_int(&statusCode, &tmp) != CborNoError) {
         return false;
     }

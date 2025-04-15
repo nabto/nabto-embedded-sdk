@@ -99,8 +99,6 @@ static void sct_deinit(struct nc_attach_context* ctx);
 
 np_error_code nc_attacher_init(struct nc_attach_context* ctx, struct np_platform* pl, struct nc_device_context* device, struct nc_coap_client_context* coapClient, nc_attacher_event_listener listener, void* listenerData)
 {
-    np_error_code ec;
-
     memset(ctx, 0, sizeof(struct nc_attach_context));
     ctx->pl = pl;
     ctx->device = device;
@@ -115,7 +113,7 @@ np_error_code nc_attacher_init(struct nc_attach_context* ctx, struct np_platform
 
     struct np_event_queue* eq = &pl->eq;
 
-    ec = np_event_queue_create_event(eq, &reattach, ctx, &ctx->reattachTimer);
+    np_error_code ec = np_event_queue_create_event(eq, &reattach, ctx, &ctx->reattachTimer);
     if (ec != NABTO_EC_OK) {
         return ec;
     }
@@ -850,8 +848,8 @@ void keep_alive_event(void* data)
     struct nc_attach_context* ctx = (struct nc_attach_context*)data;
     struct np_platform* pl = ctx->pl;
 
-    uint32_t recvCount;
-    uint32_t sentCount;
+    uint32_t recvCount = 0;
+    uint32_t sentCount = 0;
 
     pl->dtlsC.get_packet_count(ctx->dtls, &recvCount, &sentCount);
     enum nc_keep_alive_action action = nc_keep_alive_should_send(&ctx->keepAlive, recvCount, sentCount);
