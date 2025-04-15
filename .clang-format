@@ -3,6 +3,6 @@ IndentWidth: 4
 TabWidth: 4
 UseTab: Never
 ColumnLimit: 0
-IncludeBlocks: preserve
+IncludeBlocks: Preserve
 BraceWrapping: { AfterFunction: true }
 BreakBeforeBraces: Custom
