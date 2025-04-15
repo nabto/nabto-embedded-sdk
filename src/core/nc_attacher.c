@@ -334,12 +334,10 @@ np_error_code nc_attacher_is_server_connect_tokens_synchronized(struct nc_attach
     if (ctx->state == NC_ATTACHER_STATE_ATTACHED) {
         if (ctx->sctContext.synchronizedVersion == ctx->sctContext.version) {
             return NABTO_EC_OK;
-        } else {
-            return NABTO_EC_OPERATION_IN_PROGRESS;
         }
-    } else {
-        return NABTO_EC_OK;
+        return NABTO_EC_OPERATION_IN_PROGRESS;
     }
+    return NABTO_EC_OK;
     // TODO return something else if we are attaching
 }
 
@@ -649,12 +647,14 @@ void coap_attach_start_callback(enum nc_attacher_status status, void* data)
     if (status == NC_ATTACHER_STATUS_ATTACHED) {
         send_attach_sct_request(ctx);
         return;
-    } else if (status == NC_ATTACHER_STATUS_REDIRECT) {
+    }
+    if (status == NC_ATTACHER_STATUS_REDIRECT) {
         ctx->state = NC_ATTACHER_STATE_REDIRECT;
         ctx->redirectAttempts++;
         ctx->pl->dtlsC.async_close(ctx->dtls);
         return;
-    } else if (status == NC_ATTACHER_STATUS_UNKNOWN_FINGERPRINT && ctx->listener) {
+    }
+    if (status == NC_ATTACHER_STATUS_UNKNOWN_FINGERPRINT && ctx->listener) {
         ctx->listener(NC_DEVICE_EVENT_UNKNOWN_FINGERPRINT, ctx->listenerData);
     } else if (status == NC_ATTACHER_STATUS_WRONG_PRODUCT_ID && ctx->listener) {
         ctx->listener(NC_DEVICE_EVENT_WRONG_PRODUCT_ID, ctx->listenerData);
@@ -699,11 +699,9 @@ void send_sct_request(struct nc_attach_context* ctx)
     np_error_code ec = nc_attacher_sct_upload(ctx, &send_sct_request_callback, ctx);
     if (ec == NABTO_EC_NO_OPERATION) {
         return;
-    } else if (ec == NABTO_EC_OPERATION_STARTED) {
-        // wait for callback
-    } else {
-        // an error occured, do not care.
     }
+    // if operation started: wait for callback
+    // else an error occured, do not care.
 }
 
 void send_sct_request_callback(np_error_code ec, void* userData)
@@ -787,13 +785,12 @@ np_error_code dtls_packet_sender(uint8_t ch, uint8_t* buffer, uint16_t bufferSiz
     if (!ctx->hasActiveEp) {
         // We have yet to find suitable endpoint
         start_send_initial_packet(ctx, buffer, bufferSize, cb);
-        return NABTO_EC_OK;
     } else {
         nc_udp_dispatch_async_send_to(ctx->udp, &ctx->activeEp,
                                       buffer, bufferSize,
                                       cb);
-        return NABTO_EC_OK;
     }
+    return NABTO_EC_OK;
 }
 
 void start_send_initial_packet(struct nc_attach_context* ctx,

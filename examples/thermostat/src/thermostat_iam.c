@@ -44,10 +44,9 @@ void thermostat_iam_state_changed(struct nm_iam* iam, void* userData)
     struct nm_iam_state* state = nm_iam_dump_state(&thermostatIam->iam);
     if (state == NULL || thermostatIam->iamStateFile == NULL) {
         return;
-    } else {
-        save_iam_state(thermostatIam->file, thermostatIam->iamStateFile, state, thermostatIam->logger);
-        nm_iam_state_free(state);
     }
+    save_iam_state(thermostatIam->file, thermostatIam->iamStateFile, state, thermostatIam->logger);
+    nm_iam_state_free(state);
 }
 
 void save_iam_state(struct nm_fs* file, const char* filename, struct nm_iam_state* state, struct nn_log* logger)

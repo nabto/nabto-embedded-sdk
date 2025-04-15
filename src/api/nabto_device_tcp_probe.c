@@ -43,9 +43,8 @@ NabtoDeviceTcpProbe* NABTO_DEVICE_API nabto_device_tcp_probe_new(NabtoDevice* de
 
     if (ec != NABTO_EC_OK) {
         return NULL;
-    } else {
-        return (NabtoDeviceTcpProbe*)ctx;
     }
+    return (NabtoDeviceTcpProbe*)ctx;
 }
 
 /**

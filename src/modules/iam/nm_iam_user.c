@@ -86,16 +86,15 @@ bool nm_iam_user_set_fingerprint(struct nm_iam_user* user, const char* fingerpri
     }
     if (nn_llist_empty(&user->fingerprints)) {
         return nm_iam_user_add_fingerprint(user, fingerprint, NULL);
-    } else {
-        struct nn_llist_iterator it = nn_llist_begin(&user->fingerprints);
-        struct nm_iam_user_fingerprint* fp = nn_llist_get_item(&it);
-        char* tmp = nn_strdup(fingerprint, nm_iam_allocator_get());
-        if (tmp != NULL) {
-            nm_iam_free(fp->fingerprint);
-            fp->fingerprint = tmp;
-        }
-        return (tmp != NULL);
     }
+    struct nn_llist_iterator it = nn_llist_begin(&user->fingerprints);
+    struct nm_iam_user_fingerprint* fp = nn_llist_get_item(&it);
+    char* tmp = nn_strdup(fingerprint, nm_iam_allocator_get());
+    if (tmp != NULL) {
+        nm_iam_free(fp->fingerprint);
+        fp->fingerprint = tmp;
+    }
+    return (tmp != NULL);
 }
 
 bool nm_iam_user_add_fingerprint(struct nm_iam_user* user, const char* fingerprint, const char* fpName)

@@ -456,9 +456,8 @@ NabtoDeviceError NABTO_DEVICE_API nabto_device_get_local_port(NabtoDevice* devic
     nabto_device_threads_mutex_unlock(dev->eventMutex);
     if (p == 0) {
         return NABTO_DEVICE_EC_INVALID_STATE;
-    } else {
-        *port = p;
     }
+    *port = p;
     return NABTO_DEVICE_EC_OK;
 }
 
@@ -471,9 +470,8 @@ NabtoDeviceError NABTO_DEVICE_API nabto_device_get_p2p_port(NabtoDevice* device,
     nabto_device_threads_mutex_unlock(dev->eventMutex);
     if (p == 0) {
         return NABTO_DEVICE_EC_INVALID_STATE;
-    } else {
-        *port = p;
     }
+    *port = p;
     return NABTO_DEVICE_EC_OK;
 }
 

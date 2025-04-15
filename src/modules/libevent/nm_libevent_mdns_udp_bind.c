@@ -8,9 +8,9 @@
 #include <platform/np_logging.h>
 
 #include "nm_libevent_types.h"
-#include <event2/util.h>
-#include <event2/event.h>
 #include <event.h>
+#include <event2/event.h>
+#include <event2/util.h>
 
 #if defined(HAVE_SYS_SOCKET_H)
 #include <sys/socket.h>
@@ -74,8 +74,7 @@ np_error_code udp_async_bind_mdns_ipv4_ec(struct np_udp_socket* sock)
         return NABTO_EC_ABORTED;
     }
 
-    np_error_code ec;
-    ec = udp_create_socket_ipv4(sock);
+    np_error_code ec = udp_create_socket_ipv4(sock);
 
     if (ec != NABTO_EC_OK) {
         return ec;
@@ -258,8 +257,8 @@ void nm_libevent_mdns_update_ipv4_socket_registration(evutil_socket_t sock)
                 group.imr_multiaddr.s_addr = inet_addr("224.0.0.251");
                 //struct sockaddr_in* in = (struct sockaddr_in*)iterator->ifa_addr;
                 // TODO check return value
-                int index = if_nametoindex(iterator->ifa_name);
-                group.imr_ifindex = index;
+                unsigned int index = if_nametoindex(iterator->ifa_name);
+                group.imr_ifindex = (int)index;
                 int status = setsockopt(sock, IPPROTO_IP, IP_ADD_MEMBERSHIP, (char *)&group, sizeof(group));
                 if (status < 0) {
                     int e = EVUTIL_SOCKET_ERROR();
@@ -292,7 +291,7 @@ void nm_libevent_mdns_update_ipv6_socket_registration(evutil_socket_t sock)
             if (iterator->ifa_addr != NULL)
             {
                 // TODO check return value
-                int index = if_nametoindex(iterator->ifa_name);
+                unsigned int index = if_nametoindex(iterator->ifa_name);
 
                 struct ipv6_mreq group;
                 memset(&group, 0, sizeof(struct ipv6_mreq));

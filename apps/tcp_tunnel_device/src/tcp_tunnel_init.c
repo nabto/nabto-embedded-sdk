@@ -108,10 +108,9 @@ bool create_state_interactive(struct nm_fs* fsImpl, const char* file)
     if (createCustomIam) {
         printf("Creating custom iam configuration" NEWLINE);
         return create_state_interactive_custom(fsImpl, file);
-    } else {
-        printf("Use default iam" NEWLINE);
-        return create_state_default(fsImpl, file);
     }
+    printf("Use default iam" NEWLINE);
+    return create_state_default(fsImpl, file);
 }
 
 bool create_state_interactive_custom(struct nm_fs* fsImpl, const char* file) {
@@ -264,10 +263,9 @@ bool create_services_interactive(struct nm_fs* fsImpl, const char* file)
             makeService = prompt_yes_no("Do you want to add another service?");
         } while (makeService);
         return json_config_save(fsImpl, file, root);
-    } else {
-        printf("Use default services" NEWLINE);
-        return tcp_tunnel_create_default_services_file(fsImpl, file);
     }
+    printf("Use default services" NEWLINE);
+    return tcp_tunnel_create_default_services_file(fsImpl, file);
 }
 
 bool tcp_tunnel_demo_config(struct tcp_tunnel* tcpTunnel)

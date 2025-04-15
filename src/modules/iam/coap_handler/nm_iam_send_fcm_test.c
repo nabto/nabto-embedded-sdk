@@ -5,7 +5,7 @@
 
 #include "../nm_iam_allocator.h"
 
-
+#include <nn/string.h>
 
 #include <tinycbor/cbor.h>
 
@@ -126,9 +126,10 @@ void handle_request(struct nm_iam_coap_handler* handler, NabtoDeviceCoapRequest*
 
     struct nm_iam_fcm_ctx* ctx = NULL;
     char* payload = NULL;
+    const size_t payloadLen = strlen(noti1) + strlen(noti2) + strlen(user->fcmToken)+1;
 
     if ((ctx = (struct nm_iam_fcm_ctx*)nm_iam_calloc(1, sizeof(struct nm_iam_fcm_ctx))) == NULL ||
-        (payload = nm_iam_calloc(1, strlen(noti1) + strlen(noti2) + strlen(user->fcmToken)+1)) == NULL ||
+        (payload = nm_iam_calloc(1, payloadLen)) == NULL ||
         (ctx->msg = nabto_device_fcm_notification_new(handler->iam->device)) == NULL)
     {
         NN_LOG_INFO(handler->iam->logger, LOGM, "failed to alloc. ctx: %p, payload: %p, ctx->msg: %p", ctx, payload, ctx?ctx->msg:NULL);
@@ -153,11 +154,21 @@ void handle_request(struct nm_iam_coap_handler* handler, NabtoDeviceCoapRequest*
         return;
     }
 
-    char* tmp = strcpy(payload, noti1);
-    tmp += strlen(noti1);
-    strcpy(tmp, user->fcmToken);
-    tmp += strlen(user->fcmToken);
-    strcpy(tmp, noti2);
+    if (!nn_strcat(payload, payloadLen, noti1) ||
+        !nn_strcat(payload, payloadLen, user->fcmToken) ||
+        !nn_strcat(payload, payloadLen, noti2) )
+    {
+        nabto_device_fcm_notification_free(ctx->msg);
+        nm_iam_free(ctx);
+        nm_iam_free(payload);
+        nabto_device_future_free(fut);
+
+        NN_LOG_INFO(handler->iam->logger, LOGM, "failed build payload string");
+        nabto_device_coap_error_response(request, 500, "Insufficient resources");
+        nm_iam_coap_handler_async_request_end(handler);
+
+        return;
+    }
     if (nabto_device_fcm_notification_set_payload(ctx->msg, payload) != NABTO_DEVICE_EC_OK ||
         nabto_device_fcm_notification_set_project_id(ctx->msg, user->fcmProjectId) != NABTO_DEVICE_EC_OK)
     {

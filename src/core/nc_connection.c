@@ -53,12 +53,10 @@ np_error_code nc_connections_async_close(struct nc_connections_context* ctx, nc_
 
     if (!hasActive) {
         return NABTO_EC_STOPPED;
-    } else {
-        ctx->closeCb = cb;
-        ctx->closeData = data;
-        return NABTO_EC_OK;
     }
-
+    ctx->closeCb = cb;
+    ctx->closeData = data;
+    return NABTO_EC_OK;
 }
 
 struct nc_connection* nc_connections_alloc_client_connection(struct nc_connections_context* ctx)
@@ -193,24 +191,21 @@ bool nc_connection_get_client_fingerprint(struct nc_connection* connection, uint
 {
     if (connection->isVirtual) {
         return nc_virtual_connection_get_client_fingerprint(connection->connectionImplCtx, fp);
-    } else {
-        np_error_code ec = nc_client_connection_get_client_fingerprint(connection->connectionImplCtx, fp);
-        if (ec != NABTO_EC_OK) {
-            return false;
-        } else {
-            return true;
-        }
     }
+    np_error_code ec = nc_client_connection_get_client_fingerprint(connection->connectionImplCtx, fp);
+    if (ec != NABTO_EC_OK) {
+        return false;
+    }
+    return true;
 }
 
 bool nc_connection_get_device_fingerprint(struct nc_connection* connection, uint8_t* fp)
 {
     if (connection->isVirtual) {
         return nc_virtual_connection_get_device_fingerprint(connection->connectionImplCtx, fp);
-    } else {
-        memcpy(fp, connection->device->fingerprint, 32);
-        return true;
     }
+    memcpy(fp, connection->device->fingerprint, 32);
+    return true;
 
 }
 
@@ -219,10 +214,9 @@ bool nc_connection_is_local(struct nc_connection* connection)
     if (connection->isVirtual) {
         // TODO: can a virtual connection be local?
         return false;
-    } else {
-        struct nc_client_connection* conn = connection->connectionImplCtx;
-        return (&conn->device->localUdp == conn->currentChannel.sock);
     }
+    struct nc_client_connection* conn = connection->connectionImplCtx;
+    return (&conn->device->localUdp == conn->currentChannel.sock);
 }
 
 #if defined(NABTO_DEVICE_PASSWORD_AUTHENTICATION)

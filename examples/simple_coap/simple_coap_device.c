@@ -167,10 +167,12 @@ void wait_for_device_events(struct context* ctx) {
         if (ec != NABTO_DEVICE_EC_OK) {
             printf("Device event handler failed with %s\n", nabto_device_error_get_message(ec));
             break;
-        } else if (event == NABTO_DEVICE_EVENT_CLOSED) {
+        }
+        if (event == NABTO_DEVICE_EVENT_CLOSED) {
             printf("Device closed\n");
             break;
-        } else if (event == NABTO_DEVICE_EVENT_ATTACHED) {
+        }
+        if (event == NABTO_DEVICE_EVENT_ATTACHED) {
             printf("Attached to the basestation\n");
         } else if (event == NABTO_DEVICE_EVENT_DETACHED) {
             printf("Detached from the basestation\n");

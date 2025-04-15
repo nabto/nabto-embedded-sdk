@@ -1,22 +1,22 @@
 #include "nm_mdns_server.h"
 #include "nm_mdns_udp_bind.h"
 
-#include <platform/np_logging.h>
-#include <platform/np_completion_event.h>
-#include <platform/np_udp_wrapper.h>
-#include <platform/np_local_ip_wrapper.h>
 #include <platform/np_allocator.h>
+#include <platform/np_completion_event.h>
+#include <platform/np_local_ip_wrapper.h>
+#include <platform/np_logging.h>
+#include <platform/np_udp_wrapper.h>
 
 
 #define LOG NABTO_LOG_MODULE_MDNS
 
 #define MAX_LOCAL_IPS 2
 
-static void nm_mdns_socket_opened(const np_error_code ec, void* userData);
+static void nm_mdns_socket_opened(np_error_code ec, void* userData);
 static void nm_mdns_recv_packet(struct nm_mdns_server_instance* instance);
-static void nm_mdns_packet_recv_wait_completed(const np_error_code ec, void* userData);
+static void nm_mdns_packet_recv_wait_completed(np_error_code ec, void* userData);
 static void nm_mdns_send_packet(struct nm_mdns_server_instance* instance, uint16_t id, bool unicastResponse);
-static void nm_mdns_packet_sent(const np_error_code ec, void* userData);
+static void nm_mdns_packet_sent(np_error_code ec, void* userData);
 
 static void nm_mdns_update_local_ips(struct nm_mdns_server* mdns);
 
@@ -46,12 +46,10 @@ struct np_mdns nm_mdns_server_get_impl(struct nm_mdns_server* server)
 
 static np_error_code instance_init(struct nm_mdns_server_instance* instance, struct nm_mdns_server* server, bool v4)
 {
-    np_error_code ec;
-
     instance->sendBuffer = NULL;
     instance->server = server;
 
-    ec = np_udp_create(&instance->server->udp, &instance->socket);
+    np_error_code ec = np_udp_create(&instance->server->udp, &instance->socket);
     if (ec != NABTO_EC_OK) {
         return ec;
     }
@@ -104,8 +102,7 @@ np_error_code nm_mdns_server_init(struct nm_mdns_server* server, struct np_event
     server->mdnsUdpBind = *mdnsUdpBind;
     server->localIp = *localIp;
 
-    np_error_code ec;
-    ec = np_completion_event_init(eq, &server->instanceCloseCompletionEvent, NULL, NULL);
+    np_error_code ec = np_completion_event_init(eq, &server->instanceCloseCompletionEvent, NULL, NULL);
     if (ec != NABTO_EC_OK) {
         return ec;
     }
@@ -180,7 +177,7 @@ void nm_mdns_server_close_instance(struct nm_mdns_server_instance* instance, str
 
     instance->closeCompletionEvent = completionEvent;
 
-    size_t written;
+    size_t written = 0;
     uint16_t port = instance->server->port;
     nm_mdns_update_local_ips(instance->server);
 
@@ -287,12 +284,13 @@ void nm_mdns_packet_recv_wait_completed(const np_error_code ecIn, void* userData
 {
     struct nm_mdns_server_instance* instance = userData;
     if (ecIn == NABTO_EC_OK && !instance->server->stopped) {
-        size_t recvSize;
+        size_t recvSize = 0;
         size_t recvBufferSize = 1500;
         uint8_t* recvBuffer = np_calloc(1, recvBufferSize);
         if (recvBuffer == NULL) {
             // Discard udp packet.
             uint8_t dummyBuffer[1];
+            // TODO(tfk): returned error code is ignored
             np_udp_recv_from(&instance->server->udp, instance->socket, &instance->recvEp, dummyBuffer, sizeof(dummyBuffer), &recvSize);
             nm_mdns_recv_packet(instance);
             return;
@@ -301,7 +299,7 @@ void nm_mdns_packet_recv_wait_completed(const np_error_code ecIn, void* userData
 
         np_error_code ec = np_udp_recv_from(&instance->server->udp, instance->socket, &instance->recvEp, recvBuffer, recvBufferSize, &recvSize);
         if (ec == NABTO_EC_OK) {
-            uint16_t id;
+            uint16_t id = 0;
 
             if (nabto_mdns_server_handle_packet(&instance->server->mdnsServer,
                                                 recvBuffer, recvSize, &id))
@@ -324,7 +322,7 @@ void nm_mdns_packet_recv_wait_completed(const np_error_code ecIn, void* userData
 
 void nm_mdns_send_packet(struct nm_mdns_server_instance* instance, uint16_t id, bool unicastResponse)
 {
-    size_t written;
+    size_t written = 0;
     uint16_t port = instance->server->port;
     nm_mdns_update_local_ips(instance->server);
 
@@ -344,10 +342,9 @@ void nm_mdns_send_packet(struct nm_mdns_server_instance* instance, uint16_t id, 
                                      ep, instance->sendBuffer, (uint16_t)written,
                                      &instance->sendCompletionEvent);
                 return;
-            } else {
-                np_free(instance->sendBuffer);
-                instance->sendBuffer = NULL;
             }
+            np_free(instance->sendBuffer);
+            instance->sendBuffer = NULL;
         }
     }
     nm_mdns_recv_packet(instance);

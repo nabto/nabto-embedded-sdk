@@ -318,16 +318,17 @@ static np_error_code nc_device_populate_mdns(struct nc_device_context* device)
     }
 
     char uniqueId[64];
+    memset(uniqueId, 0, 64);
     if (strlen(device->productId) + 1 + strlen(device->deviceId) > 63) {
         return NABTO_EC_INVALID_STATE;
     }
 
-    char* ptr = uniqueId;
-    strcpy(ptr, device->productId);
-    ptr += strlen(device->productId);
-    strcpy(ptr, "-");
-    ptr += strlen("-");
-    strcpy(ptr, device->deviceId);
+    if (!nn_strcat(uniqueId, 64, device->productId) ||
+        !nn_strcat(uniqueId, 64, "-") ||
+        !nn_strcat(uniqueId, 64, device->deviceId)) {
+        return NABTO_EC_INVALID_STATE;
+    }
+
     if (!nn_string_set_insert(&device->mdnsSubtypes, uniqueId)) {
         return NABTO_EC_OUT_OF_MEMORY;
     }
@@ -405,15 +406,13 @@ np_error_code nc_device_start(struct nc_device_context* dev,
     }
 
     if (dev->hostname == NULL) {
-        dev->hostname = np_calloc(1, strlen(dev->productId) + strlen(defaultServerUrlSuffix)+1);
-        if (dev->hostname == NULL) {
+        size_t hostLen = strlen(dev->productId) + strlen(defaultServerUrlSuffix)+1;
+        dev->hostname = np_calloc(1, hostLen);
+        if (dev->hostname == NULL ||
+            !nn_strcat(dev->hostname, hostLen, dev->productId) ||
+            !nn_strcat(dev->hostname, hostLen, defaultServerUrlSuffix)) {
             return NABTO_EC_OUT_OF_MEMORY;
         }
-        char* ptr = dev->hostname;
-
-        strcpy(ptr, dev->productId);
-        ptr = ptr + strlen(dev->productId);
-        strcpy(ptr, defaultServerUrlSuffix);
     }
 
     np_error_code ec = NABTO_EC_OK;
@@ -661,16 +660,19 @@ np_error_code nc_device_set_basestation_attach(struct nc_device_context* dev, bo
     if (dev->state == NC_DEVICE_STATE_SETUP) {
         dev->enableAttach = enabled;
         return NABTO_EC_OK;
-    } else if (dev->state == NC_DEVICE_STATE_RUNNING && enabled && !dev->enableAttach) {
+    }
+    if (dev->state == NC_DEVICE_STATE_RUNNING && enabled && !dev->enableAttach) {
         dev->enableAttach = true;
         return nc_attacher_start(&dev->attacher, dev->hostname, dev->serverPort, &dev->udp);
-    } else if (dev->state == NC_DEVICE_STATE_RUNNING && enabled) {
-        return nc_attacher_restart(&dev->attacher);
-    } else if (dev->state == NC_DEVICE_STATE_RUNNING && !enabled) {
-        return nc_attacher_async_close(&dev->attacher, nc_device_attach_disabled_cb, dev);
-    } else { // NC_DEVICE_STATE_CLOSED
-        return NABTO_EC_INVALID_STATE;
     }
+    if (dev->state == NC_DEVICE_STATE_RUNNING && enabled) {
+        return nc_attacher_restart(&dev->attacher);
+    }
+     if (dev->state == NC_DEVICE_STATE_RUNNING && !enabled) {
+        return nc_attacher_async_close(&dev->attacher, nc_device_attach_disabled_cb, dev);
+    }
+    // NC_DEVICE_STATE_CLOSED
+    return NABTO_EC_INVALID_STATE;
 }
 
 np_error_code nc_device_enable_mdns(struct nc_device_context* dev)

@@ -179,11 +179,10 @@ int main(int argc, char** argv) {
         ec = nabto_device_future_wait(future);
         if (ec != NABTO_DEVICE_EC_OK) {
             break;
-        } else {
-            nabto_device_authorization_request_verdict(authorizationRequest, true);
-            nabto_device_authorization_request_free(authorizationRequest);
-            authorizationRequest = NULL;
         }
+        nabto_device_authorization_request_verdict(authorizationRequest, true);
+        nabto_device_authorization_request_free(authorizationRequest);
+        authorizationRequest = NULL;
     }
 
  cleanup:

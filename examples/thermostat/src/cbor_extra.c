@@ -38,7 +38,8 @@ CborError cbor_value_get_floating_point(CborValue* value, double* fp)
         float f = decode_halff(halff);
         *fp = f;
         return ec;
-    } else if (cbor_value_is_float(value)) {
+    }
+    if (cbor_value_is_float(value)) {
         float f;
         CborError ec = cbor_value_get_float(value, &f);
         if (ec != CborNoError) {
@@ -46,9 +47,9 @@ CborError cbor_value_get_floating_point(CborValue* value, double* fp)
         }
         *fp = f;
         return ec;
-    } else if (cbor_value_is_double(value)) {
-        return cbor_value_get_double(value, fp);
-    } else {
-        return CborErrorIllegalType;
     }
+    if (cbor_value_is_double(value)) {
+        return cbor_value_get_double(value, fp);
+    }
+    return CborErrorIllegalType;
 }

@@ -48,7 +48,6 @@ const char* thermostat_state_power_as_string(bool power)
 {
     if (power) {
         return "ON";
-    } else {
-        return "OFF";
     }
+    return "OFF";
 }

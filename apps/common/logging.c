@@ -34,9 +34,8 @@ const char* truncated_file_name(const char* filename)
     size_t len = strlen(filename);
     if (len > 24) {
         return filename + (len-24);
-    } else {
-        return filename;
     }
+    return filename;
 }
 
 const char* line_as_str(int line)

@@ -323,7 +323,8 @@ np_error_code udp_send_to(struct np_udp_socket* s, const struct np_udp_endpoint*
             // just drop the packet and the upper layers will take care of retransmissions.
             NABTO_LOG_TRACE(LOG, "Dropping udp packet, the packet will be retransmitted later (%d) %s", status, evutil_socket_error_to_string(status));
             return NABTO_EC_OK;
-        } else if (ERR_IS_EXPECTED(status)) {
+        }
+        if (ERR_IS_EXPECTED(status)) {
             NABTO_LOG_TRACE(LOG,"expected sendto status: (%i) '%s'", (int) status, ERR_TO_STRING(status));
         } else {
             NABTO_LOG_ERROR(LOG,"unexpected sendto status (%i) '%s'", (int) status, ERR_TO_STRING(status));
@@ -360,10 +361,9 @@ np_error_code udp_recv_from(struct np_udp_socket* sock, struct np_udp_endpoint* 
             // expected
             // wait for next event to check for data.
             return NABTO_EC_AGAIN;
-        } else {
-            NABTO_LOG_ERROR(LOG,"ERROR: (%d) '%s' in udp_recv_from", status, evutil_socket_error_to_string(status));
-            return NABTO_EC_FAILED;
         }
+        NABTO_LOG_ERROR(LOG,"ERROR: (%d) '%s' in udp_recv_from", status, evutil_socket_error_to_string(status));
+        return NABTO_EC_UDP_SOCKET_ERROR;
     }
     *readLength = recvLength;
     NABTO_LOG_TRACE(LOG, "Received udp packet of size %d, from %s, port %d ", recvLength, np_ip_address_to_string(&ep->ip), ep->port);
@@ -394,13 +394,12 @@ np_error_code udp_bind_port(struct np_udp_socket* s, uint16_t port)
 
     if (status == 0) {
         return NABTO_EC_OK;
-    } else {
-        if (errno == EADDRINUSE) {
-            return NABTO_EC_ADDRESS_IN_USE;
-        }
-        NABTO_LOG_TRACE(LOG, "Could not create UDP socket, errno is %d", errno);
-        return NABTO_EC_UDP_SOCKET_CREATION_ERROR;
     }
+    if (errno == EADDRINUSE) {
+        return NABTO_EC_ADDRESS_IN_USE;
+    }
+    NABTO_LOG_TRACE(LOG, "Could not create UDP socket, errno is %d", errno);
+    return NABTO_EC_UDP_SOCKET_CREATION_ERROR;
 }
 
 uint16_t udp_get_local_port(struct np_udp_socket* s)
@@ -415,13 +414,12 @@ uint16_t udp_get_local_port(struct np_udp_socket* s)
         socklen_type length = sizeof(struct sockaddr_in6);
         getsockname(s->sock, (struct sockaddr*)(&addr), &length);
         return htons(addr.sin6_port);
-    } else {
-        struct sockaddr_in addr;
-        addr.sin_port = 0;
-        socklen_type length = sizeof(struct sockaddr_in);
-        getsockname(s->sock, (struct sockaddr*)(&addr), &length);
-        return htons(addr.sin_port);
     }
+    struct sockaddr_in addr;
+    addr.sin_port = 0;
+    socklen_type length = sizeof(struct sockaddr_in);
+    getsockname(s->sock, (struct sockaddr*)(&addr), &length);
+    return htons(addr.sin_port);
 }
 
 np_error_code udp_create_socket_any(struct np_udp_socket* s)
@@ -435,9 +433,8 @@ np_error_code udp_create_socket_any(struct np_udp_socket* s)
             int e = EVUTIL_SOCKET_ERROR();
             NABTO_LOG_ERROR(LOG, "Unable to create socket: (%i) '%s'.", e, evutil_socket_error_to_string(e));
             return NABTO_EC_UDP_SOCKET_CREATION_ERROR;
-        } else {
-            NABTO_LOG_WARN(LOG, "IPv4 socket opened since IPv6 socket creation failed");
         }
+        NABTO_LOG_WARN(LOG, "IPv4 socket opened since IPv6 socket creation failed");
     } else {
         NABTO_LOG_TRACE(LOG, "Opened socket %d", sock);
         int no = 0;

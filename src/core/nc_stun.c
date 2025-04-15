@@ -43,9 +43,8 @@ bool nc_stun_get_rand(uint8_t* buf, uint16_t size, void* data)
     np_error_code ec = pl->random.random(pl, buf, size);
     if (ec == NABTO_EC_OK) {
         return true;
-    } else {
-        return false;
     }
+    return false;
 }
 
 // init function

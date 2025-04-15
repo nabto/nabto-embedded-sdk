@@ -30,12 +30,9 @@ void nm_unix_log (uint32_t severity, uint32_t module, uint32_t line, const char*
         localtime_r(&sec, &tm);
 
         size_t fileLen = strlen(file);
-        char fileTmp[NM_UNIX_LOGGING_FILE_LENGTH+4];
+        const char* fileTmp = file;
         if(fileLen > NM_UNIX_LOGGING_FILE_LENGTH) {
-            strcpy(fileTmp, "...");
-            strcpy(fileTmp + 3, file + fileLen - NM_UNIX_LOGGING_FILE_LENGTH);
-        } else {
-            strcpy(fileTmp, file);
+            fileTmp = file + fileLen - NM_UNIX_LOGGING_FILE_LENGTH;
         }
         char level[6];
         switch(severity) {

@@ -66,11 +66,10 @@ void request_callback(NabtoDeviceFuture* future, NabtoDeviceError ec, void* user
     struct thermostat_coap_handler* handler = userData;
     if (ec != NABTO_DEVICE_EC_OK) {
         return;
-    } else {
-        handler->requestHandler(handler, handler->request);
-        nabto_device_coap_request_free(handler->request);
-        start_listen(handler);
     }
+    handler->requestHandler(handler, handler->request);
+    nabto_device_coap_request_free(handler->request);
+    start_listen(handler);
 }
 
 bool thermostat_init_cbor_parser(NabtoDeviceCoapRequest* request, CborParser* parser, CborValue* cborValue)

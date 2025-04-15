@@ -74,19 +74,18 @@ void request_callback(NabtoDeviceFuture* future, NabtoDeviceError ec, void* user
     struct nm_iam_coap_handler* handler = userData;
     if (ec != NABTO_DEVICE_EC_OK) {
         return;
-    } else {
-        struct nm_iam* iam = handler->iam;
-        nabto_device_threads_mutex_lock(iam->mutex);
-        handler->asyncStopped = false;
-        handler->locked = true;
-        handler->requestHandler(handler, handler->request);
-        handler->locked = false;
-        nabto_device_threads_mutex_unlock(iam->mutex);
-        if (!handler->async || handler->asyncStopped) {
-            nabto_device_coap_request_free(handler->request);
-            nm_iam_internal_do_callbacks(handler->iam);
-            start_listen(handler);
-        }
+    }
+    struct nm_iam* iam = handler->iam;
+    nabto_device_threads_mutex_lock(iam->mutex);
+    handler->asyncStopped = false;
+    handler->locked = true;
+    handler->requestHandler(handler, handler->request);
+    handler->locked = false;
+    nabto_device_threads_mutex_unlock(iam->mutex);
+    if (!handler->async || handler->asyncStopped) {
+        nabto_device_coap_request_free(handler->request);
+        nm_iam_internal_do_callbacks(handler->iam);
+        start_listen(handler);
     }
 }
 
@@ -160,10 +159,9 @@ bool nm_iam_cbor_decode_string(CborValue* value, char** str)
             size_t copySize = nameLength;
             if (cbor_value_copy_text_string(value, *str, &copySize, NULL) == CborNoError) {
                 return true;
-            } else {
-                nm_iam_free(*str);
-                *str = NULL;
             }
+            nm_iam_free(*str);
+            *str = NULL;
         }
     } else if (cbor_value_is_null(value)) {
         *str = NULL;

@@ -100,10 +100,9 @@ struct nm_iam_statement* nm_statement_from_json(const cJSON* json, struct nn_log
 
     if (nm_statement_from_json_parse(actions, conditions, s, logger)) {
         return s;
-    } else {
-        nm_statement_free(s);
-        return NULL;
     }
+    nm_statement_free(s);
+    return NULL;
 }
 
 bool nm_statement_from_json_parse(const cJSON* actions, const cJSON* conditions, struct nm_iam_statement* statement, struct nn_log* logger)
