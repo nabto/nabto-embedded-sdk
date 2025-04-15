@@ -307,7 +307,7 @@ void nabto_device_authorization_request_ref_dec(struct nabto_device_authorizatio
     if (authReq->refCount == 0) {
         struct nabto_device_authorization_request_attribute* param = authReq->attributes;
 
-        for (size_t i = 0; param != NULL; i++) {
+        for (; param != NULL;) {
             struct nabto_device_authorization_request_attribute* old = param;
             param = param->next;
             free_attribute(old);

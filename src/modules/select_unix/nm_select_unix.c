@@ -19,7 +19,7 @@
 /**
  * Helper function declarations
  */
-static void build_fd_sets();
+static void build_fd_sets(struct nm_select_unix* ctx);
 static void* network_thread(void* data);
 
 static int nm_select_unix_inf_wait(struct nm_select_unix* ctx);
