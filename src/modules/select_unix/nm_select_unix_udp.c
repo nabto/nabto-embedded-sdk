@@ -253,7 +253,7 @@ int nm_select_unix_udp_nonblocking_socket(int domain, int type)
     return socket(domain, type | SOCK_NONBLOCK, 0);
 #elif defined(F_GETFL)
     int sock = socket(domain, type, 0);
-    if (sock == -1) {
+    if (sock == NM_SELECT_UNIX_INVALID_SOCKET) {
         NABTO_LOG_ERROR(LOG, "Cannot create UDP socket.");
         return NM_SELECT_UNIX_INVALID_SOCKET;
     }
@@ -420,9 +420,9 @@ uint16_t get_local_port(struct np_udp_socket* s)
 np_error_code create_socket_any(struct np_udp_socket* s)
 {
     int sock = nm_select_unix_udp_nonblocking_socket(AF_INET6, SOCK_DGRAM);
-    if (sock == -1) {
+    if (sock == NM_SELECT_UNIX_INVALID_SOCKET) {
         sock = nm_select_unix_udp_nonblocking_socket(AF_INET, SOCK_DGRAM);
-        if (s->sock == -1) {
+        if (s->sock == NM_SELECT_UNIX_INVALID_SOCKET) {
             int e = errno;
             NABTO_LOG_ERROR(LOG, "Unable to create socket: (%i) '%s'.", e, strerror(e));
             return NABTO_EC_UDP_SOCKET_CREATION_ERROR;

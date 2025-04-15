@@ -113,7 +113,7 @@ void nm_select_unix_async_bind_mdns_ipv6(struct np_udp_socket* sock, struct np_c
 np_error_code create_socket_ipv6(struct np_udp_socket* s)
 {
     int sock = nm_select_unix_udp_nonblocking_socket(AF_INET6, SOCK_DGRAM);
-    if (sock == -1) {
+    if (sock == NM_SELECT_UNIX_INVALID_SOCKET) {
         return NABTO_EC_UDP_SOCKET_CREATION_ERROR;
     }
 
@@ -132,7 +132,7 @@ np_error_code create_socket_ipv6(struct np_udp_socket* s)
 np_error_code create_socket_ipv4(struct np_udp_socket* s)
 {
     int sock = nm_select_unix_udp_nonblocking_socket(AF_INET, SOCK_DGRAM);
-    if (sock == -1) {
+    if (sock == NM_SELECT_UNIX_INVALID_SOCKET) {
         return NABTO_EC_UDP_SOCKET_CREATION_ERROR;
     }
     s->type = NABTO_IPV4;

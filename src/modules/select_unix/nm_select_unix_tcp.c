@@ -113,7 +113,7 @@ np_error_code create(struct np_tcp* obj, struct np_tcp_socket** sock)
     if (s == NULL) {
         return NABTO_EC_OUT_OF_MEMORY;
     }
-    s->fd = -1;
+    s->fd = NM_SELECT_UNIX_INVALID_SOCKET;
     *sock = s;
     s->selectCtx = selectCtx;
     nm_select_unix_lock(selectCtx);
