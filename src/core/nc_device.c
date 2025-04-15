@@ -318,6 +318,7 @@ static np_error_code nc_device_populate_mdns(struct nc_device_context* device)
     }
 
     char uniqueId[64];
+    memset(uniqueId, 0, 64);
     if (strlen(device->productId) + 1 + strlen(device->deviceId) > 63) {
         return NABTO_EC_INVALID_STATE;
     }
