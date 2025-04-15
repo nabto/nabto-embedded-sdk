@@ -37,11 +37,11 @@ static int hashPoint(wc_Sha256* mdCtx, const int grp, ecc_point* p);
 static int hashMpi(wc_Sha256* mdCtx, mp_int* n);
 
 static np_error_code wolfssl_spake2_calculate_key(
-    struct np_spake2_context* spake, struct nc_spake2_password_request* req, const char* password,
+    struct nc_spake2_password_request* req, const char* password,
     uint8_t* resp, size_t* respLen, uint8_t* spake2Key);
 
 static np_error_code wolfssl_spake2_key_confirmation(
-    struct np_spake2_context* spake, uint8_t* payload, size_t payloadLen,
+    uint8_t* payload, size_t payloadLen,
     uint8_t* key, size_t keyLen, uint8_t* hash1, size_t hash1Len);
 
 static int calculate_S(mp_int* groupA, mp_int* modulus, ecc_point* N, mp_int* w, ecc_point* Y, ecc_point* S);
@@ -100,7 +100,7 @@ static int password_to_mpi(const char* password, mp_int* w, WC_RNG* rng)
 // Key [out] used in key_confirmation
 
 static int wolfssl_spake2_calculate_key_ex(
-    struct np_spake2_context* spake, struct nc_spake2_password_request* req,
+    struct nc_spake2_password_request* req,
     const char* password, uint8_t* resp, size_t* respLen, uint8_t* spake2Key,
     ecc_point* T, ecc_point* M, ecc_point* N, ecc_point* K, ecc_point* S,
     WC_RNG* rng, ecc_key* Y,
@@ -217,7 +217,7 @@ static int wolfssl_spake2_calculate_key_ex(
     return 0;
 }
 
-static int calculate_key_allocate(struct np_spake2_context* spake, struct nc_spake2_password_request* req,
+static int calculate_key_allocate(struct nc_spake2_password_request* req,
     const char* password, uint8_t* resp, size_t* respLen, uint8_t* spake2Key)
 {
     int ret;
@@ -289,7 +289,7 @@ static int calculate_key_allocate(struct np_spake2_context* spake, struct nc_spa
 }
 
 static np_error_code wolfssl_spake2_calculate_key(
-    struct np_spake2_context* spake, struct nc_spake2_password_request* req,
+    struct nc_spake2_password_request* req,
     const char* password, uint8_t* resp, size_t* respLen, uint8_t* spake2Key)
 {
     int ret = calculate_key_allocate(spake, req, password, resp, respLen, spake2Key);
@@ -422,7 +422,7 @@ static int sha256_hash(uint8_t* buffer, size_t bufferSize, uint8_t* hash)
 }
 
 static np_error_code wolfssl_spake2_key_confirmation(
-    struct np_spake2_context* spake, uint8_t* payload, size_t payloadLen,
+    uint8_t* payload, size_t payloadLen,
     uint8_t* key, size_t keyLen, uint8_t* hash1, size_t hash1Len)
 {
     if (payloadLen != 32 || keyLen != 32 || hash1Len != 32) {

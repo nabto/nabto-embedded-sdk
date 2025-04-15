@@ -54,7 +54,7 @@ BOOST_AUTO_TEST_CASE(calculate_key, * boost::unit_test::timeout(120))
     size_t SLen = sizeof(S);
     uint8_t key[32];
 
-    BOOST_TEST(pl->spake2.calculate_key(NULL, req, password.c_str(), S, &SLen, key)== NABTO_EC_OK);
+    BOOST_TEST(pl->spake2.calculate_key(req, password.c_str(), S, &SLen, key)== NABTO_EC_OK);
 
     BOOST_TEST(SLen == (size_t)65);
     BOOST_TEST(cli.calculateK(S, SLen) == 0);
@@ -85,7 +85,7 @@ BOOST_AUTO_TEST_CASE(key_confirmation, * boost::unit_test::timeout(120))
 
     uint8_t hash1[32];
 
-    BOOST_TEST(pl->spake2.key_confirmation(NULL, payload, 32, key, 32, hash1, 32) == NABTO_EC_OK);
+    BOOST_TEST(pl->spake2.key_confirmation(payload, 32, key, 32, hash1, 32) == NABTO_EC_OK);
     BOOST_TEST(memcmp(expected, hash1, 32) == 0);
 }
 

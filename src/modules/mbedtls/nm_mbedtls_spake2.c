@@ -34,10 +34,10 @@ static int hashMpi(mbedtls_md_context_t* mdCtx, mbedtls_mpi* n);
 
 
 static np_error_code mbedtls_spake2_calculate_key(
-    struct np_spake2_context* spake, struct nc_spake2_password_request* req, const char* password,
+    struct nc_spake2_password_request* req, const char* password,
     uint8_t* resp, size_t* respLen, uint8_t* spake2Key);
 static np_error_code mbedtls_spake2_key_confirmation(
-    struct np_spake2_context* spake, uint8_t* payload, size_t payloadLen,
+    uint8_t* payload, size_t payloadLen,
     uint8_t* key, size_t keyLen, uint8_t* hash1, size_t hash1Len);
 
 np_error_code nm_mbedtls_spake2_init(struct np_platform* pl)
@@ -197,8 +197,7 @@ np_error_code nm_mbedtls_spake2_calculate_key(
 }
 
 static np_error_code mbedtls_spake2_calculate_key(
-    // NOLINTNEXTLINE(misc-unused-parameters)
-    struct np_spake2_context* spake, struct nc_spake2_password_request* req, const char* password,
+    struct nc_spake2_password_request* req, const char* password,
     uint8_t* resp, size_t* respLen, uint8_t* spake2Key)
 {
     mbedtls_entropy_context entropy;
@@ -217,8 +216,7 @@ static np_error_code mbedtls_spake2_calculate_key(
     return ec;
 }
 
-// NOLINTNEXTLINE(misc-unused-parameters)
-static np_error_code mbedtls_spake2_key_confirmation(struct np_spake2_context* spake, uint8_t* payload, size_t payloadLen, uint8_t* key, size_t keyLen, uint8_t* hash1, size_t hash1Len)
+static np_error_code mbedtls_spake2_key_confirmation(uint8_t* payload, size_t payloadLen, uint8_t* key, size_t keyLen, uint8_t* hash1, size_t hash1Len)
 {
     if(payloadLen != 32 || keyLen != 32 || hash1Len != 32) {
         return NABTO_EC_INVALID_ARGUMENT;
