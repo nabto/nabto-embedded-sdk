@@ -326,7 +326,7 @@ static np_error_code nc_device_populate_mdns(struct nc_device_context* device)
     if (!nn_strcat(uniqueId, 64, device->productId) ||
         !nn_strcat(uniqueId, 64, "-") ||
         !nn_strcat(uniqueId, 64, device->deviceId)) {
-        return NABTO_EC_OUT_OF_MEMORY;
+        return NABTO_EC_INVALID_STATE;
     }
 
     if (!nn_string_set_insert(&device->mdnsSubtypes, uniqueId)) {

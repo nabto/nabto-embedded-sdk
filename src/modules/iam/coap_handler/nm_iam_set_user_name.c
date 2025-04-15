@@ -40,12 +40,12 @@ void handle_request(struct nm_iam_coap_handler* handler, NabtoDeviceCoapRequest*
         nm_iam_free(newUsername);
         return;
     }
-     if (!nm_iam_user_validate_username(newUsername)) {
+    if (!nm_iam_user_validate_username(newUsername)) {
         nabto_device_coap_error_response(request, 400, "Invalid username");
         nm_iam_free(newUsername);
         return;
     }
-     if (strlen(newUsername) > handler->iam->usernameMaxLength) {
+    if (strlen(newUsername) > handler->iam->usernameMaxLength) {
         nabto_device_coap_error_response(request, 400, "Username too long");
         nm_iam_free(newUsername);
         return;
