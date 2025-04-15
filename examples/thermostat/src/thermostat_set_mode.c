@@ -42,7 +42,7 @@ void handle_request(struct thermostat_coap_handler* handler, NabtoDeviceCoapRequ
     const char* heat = "HEAT";
     const char* fan = "FAN";
     const char* dry = "DRY";
-    bool match;
+    bool match = 0;
 
     if ((cbor_value_text_string_equals(&value, cool, &match) == CborNoError) && match) {
         thermostat_state_set_mode(state, THERMOSTAT_MODE_COOL);

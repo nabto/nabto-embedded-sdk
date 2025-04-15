@@ -47,7 +47,7 @@ nabto_device_fcm_notification_set_project_id(NabtoDeviceFcmNotification* notific
 {
     struct nabto_device_fcm_notification* n = (struct nabto_device_fcm_notification*)notification;
     struct nabto_device_context* dev = n->dev;
-    NabtoDeviceError ec;
+    NabtoDeviceError ec = 0;
     nabto_device_threads_mutex_lock(dev->eventMutex);
 
     if (n->fcmSend.fcmRequest.projectId != NULL) {
@@ -69,7 +69,7 @@ nabto_device_fcm_notification_set_payload(NabtoDeviceFcmNotification* notificati
 {
     struct nabto_device_fcm_notification* n = (struct nabto_device_fcm_notification*)notification;
     struct nabto_device_context* dev = n->dev;
-    NabtoDeviceError ec;
+    NabtoDeviceError ec = 0;
     nabto_device_threads_mutex_lock(dev->eventMutex);
 
     if (n->fcmSend.fcmRequest.payload != NULL) {

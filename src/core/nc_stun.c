@@ -65,8 +65,7 @@ np_error_code nc_stun_init(struct nc_stun_context* ctx,
     ctx->stunModule.get_stamp = &nc_stun_get_stamp;
     ctx->stunModule.logger = &device->moduleLogger;
     ctx->stunModule.get_rand = &nc_stun_get_rand;
-    np_error_code ec;
-    ec = np_event_queue_create_event(eq, &nc_stun_handle_timeout, ctx, &ctx->toEv);
+    np_error_code ec = np_event_queue_create_event(eq, &nc_stun_handle_timeout, ctx, &ctx->toEv);
     if (ec != NABTO_EC_OK) {
         return ec;
     }

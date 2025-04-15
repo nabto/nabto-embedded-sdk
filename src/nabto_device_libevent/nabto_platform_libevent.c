@@ -55,7 +55,6 @@ struct libevent_platform {
  */
 np_error_code nabto_device_platform_init(struct nabto_device_context* device, struct nabto_device_mutex* eventMutex)
 {
-    np_error_code ec;
     NABTO_LOG_TRACE(LOG, "initializing platform");
     // Initialize the global libevent context.
     nm_libevent_global_init();
@@ -92,7 +91,7 @@ np_error_code nabto_device_platform_init(struct nabto_device_context* device, st
     struct np_dns dns = nm_libevent_dns_get_impl(&platform->libeventDns);
     struct np_local_ip localIp = nm_libevent_local_ip_get_impl(&platform->libeventContext);
 
-    ec = thread_event_queue_init(&platform->threadEventQueue, eventMutex, &timestamp);
+    np_error_code ec = thread_event_queue_init(&platform->threadEventQueue, eventMutex, &timestamp);
     if (ec != NABTO_EC_OK) {
         NABTO_LOG_TRACE(LOG, "thread_event_queue_init failed");
         return ec;
@@ -238,7 +237,7 @@ void* libevent_thread(void* data)
     // delivered to the offending thread. Linux with POSIX.1-2001 or earlier can cause SIGPIPE.
     // Mac uses the SO_NOSIGPIPE socket option at socket creation.
     sigset_t set;
-    int s;
+    int s = 0;
 
     sigemptyset(&set);
     sigaddset(&set, SIGPIPE);

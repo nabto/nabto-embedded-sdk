@@ -39,7 +39,7 @@ char* random_password(size_t outputSize)
 
     size_t generated = 0;
     while (generated < outputSize) {
-        uint8_t buffer;
+        uint8_t buffer = 0;
         int i = mbedtls_ctr_drbg_random(&ctx.ctr_drbg, &buffer, 1);
         if (i != 0) {
             free(out);
@@ -63,7 +63,7 @@ bool init_random(struct random_ctx* ctx)
     mbedtls_ctr_drbg_init(&ctx->ctr_drbg);
     mbedtls_entropy_init(&ctx->entropy);
 
-    int ret;
+    int ret = 0;
     ret = mbedtls_ctr_drbg_seed(&ctx->ctr_drbg, mbedtls_entropy_func, &ctx->entropy, NULL, 0);
     if (ret != 0) {
         return false;

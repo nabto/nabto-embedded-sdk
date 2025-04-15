@@ -44,8 +44,7 @@ np_error_code nc_coap_server_init(struct np_platform* pl, struct nc_device_conte
     ctx->pl = pl;
     ctx->device = device;
     nc_coap_server_set_infinite_stamp(ctx);
-    np_error_code ec;
-    ec = np_event_queue_create_event(&pl->eq, &nc_coap_server_notify_event_callback, ctx, &ctx->ev);
+    np_error_code ec = np_event_queue_create_event(&pl->eq, &nc_coap_server_notify_event_callback, ctx, &ctx->ev);
     if (ec != NABTO_EC_OK) {
         return ec;
     }

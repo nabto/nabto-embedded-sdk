@@ -143,8 +143,7 @@ np_error_code nm_tcp_tunnel_service_init_stream_listener(struct nm_tcp_tunnel_se
 {
     struct nc_device_context* device = service->tunnels->device;
     struct nc_stream_manager_context* streamManager = &device->streamManager;
-    np_error_code ec;
-    ec = nc_stream_manager_add_listener(streamManager, &service->streamListener, service->streamPort, &nm_tcp_tunnel_service_stream_listener_callback, service);
+    np_error_code ec = nc_stream_manager_add_listener(streamManager, &service->streamListener, service->streamPort, &nm_tcp_tunnel_service_stream_listener_callback, service);
     if (!ec) {
         service->streamPort = service->streamListener.type;
     }

@@ -98,9 +98,7 @@ np_error_code nm_select_unix_udp_async_bind_port_ec(struct np_udp_socket* sock, 
         return NABTO_EC_ABORTED;
     }
 
-    np_error_code ec;
-
-    ec = create_socket_any(sock);
+    np_error_code ec = create_socket_any(sock);
     if (ec != NABTO_EC_OK) {
         return ec;
     }

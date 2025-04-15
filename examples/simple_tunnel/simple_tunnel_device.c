@@ -45,7 +45,7 @@ NabtoDeviceError load_or_create_private_key();
 NabtoDevice* device = NULL;
 
 int main(int argc, char** argv) {
-    NabtoDeviceError ec;
+    NabtoDeviceError ec = 0;
     NabtoDeviceFuture* future = NULL;
     NabtoDeviceListener* authorizationListener = NULL;
     NabtoDeviceAuthorizationRequest* authorizationRequest = NULL;
@@ -207,11 +207,11 @@ void signal_handler(int s)
 
 NabtoDeviceError load_or_create_private_key()
 {
-    NabtoDeviceError ec;
+    NabtoDeviceError ec = 0;
     const char* privateKeyFileName = "device.key";
     struct nm_fs fsImpl = nm_fs_posix_get_impl();
     if (!string_file_exists(&fsImpl, privateKeyFileName)) {
-        char* privateKey;
+        char* privateKey = NULL;
         ec = nabto_device_create_private_key(device, &privateKey);
         if (ec != NABTO_DEVICE_EC_OK) {
             return ec;
@@ -220,7 +220,7 @@ NabtoDeviceError load_or_create_private_key()
         nabto_device_string_free(privateKey);
     }
 
-    char* privateKey;
+    char* privateKey = NULL;
     if (!string_file_load(&fsImpl, privateKeyFileName, &privateKey)) {
         return NABTO_DEVICE_EC_INVALID_STATE;
     }

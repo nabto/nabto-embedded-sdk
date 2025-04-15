@@ -99,8 +99,6 @@ static void sct_deinit(struct nc_attach_context* ctx);
 
 np_error_code nc_attacher_init(struct nc_attach_context* ctx, struct np_platform* pl, struct nc_device_context* device, struct nc_coap_client_context* coapClient, nc_attacher_event_listener listener, void* listenerData)
 {
-    np_error_code ec;
-
     memset(ctx, 0, sizeof(struct nc_attach_context));
     ctx->pl = pl;
     ctx->device = device;
@@ -115,7 +113,7 @@ np_error_code nc_attacher_init(struct nc_attach_context* ctx, struct np_platform
 
     struct np_event_queue* eq = &pl->eq;
 
-    ec = np_event_queue_create_event(eq, &reattach, ctx, &ctx->reattachTimer);
+    np_error_code ec = np_event_queue_create_event(eq, &reattach, ctx, &ctx->reattachTimer);
     if (ec != NABTO_EC_OK) {
         return ec;
     }

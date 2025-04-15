@@ -323,7 +323,7 @@ nabto_device_virtual_coap_request_get_response_status_code(NabtoDeviceVirtualCoa
         return NABTO_DEVICE_EC_INVALID_STATE;
     }
     struct nabto_device_context* dev = req->connection->dev;
-    np_error_code ec;
+    np_error_code ec = NABTO_EC_FAILED;
     nabto_device_threads_mutex_lock(dev->eventMutex);
 
     ec = nc_coap_server_response_get_code_human(req->apiReq.req, statusCode);
@@ -340,7 +340,7 @@ nabto_device_virtual_coap_request_get_response_content_format(NabtoDeviceVirtual
         return NABTO_DEVICE_EC_INVALID_STATE;
     }
     struct nabto_device_context* dev = req->connection->dev;
-    int32_t cf;
+    int32_t cf = 0;
     nabto_device_threads_mutex_lock(dev->eventMutex);
     cf = nc_coap_server_response_get_content_format(req->apiReq.req);
     nabto_device_threads_mutex_unlock(dev->eventMutex);

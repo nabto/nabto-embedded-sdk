@@ -173,7 +173,6 @@ size_t nc_connections_count_connections(struct nc_connections_context* ctx)
 
 np_error_code nc_connection_init(struct nc_connection* conn, struct nc_device_context* device, bool isVirtual, void* impl)
 {
-    np_error_code ec;
     memset(conn, 0, sizeof(struct nc_connection));
     conn->device = device;
     conn->isVirtual = isVirtual;
@@ -182,7 +181,7 @@ np_error_code nc_connection_init(struct nc_connection* conn, struct nc_device_co
     conn->hasSpake2Key = false;
     conn->passwordAuthenticated = false;
 #endif
-    ec = nc_device_next_connection_ref(device, &conn->connectionRef);
+    np_error_code ec = nc_device_next_connection_ref(device, &conn->connectionRef);
     return ec;
 }
 

@@ -38,7 +38,7 @@ bool load_tcp_tunnel_services(struct nn_vector* services, struct nm_fs* fsImpl, 
         }
     }
 
-    cJSON* config;
+    cJSON* config = NULL;
     if (!json_config_load(fsImpl, servicesFile, &config, logger)) {
         return false;
     }

@@ -171,9 +171,7 @@ np_error_code udp_async_bind_port_ec(struct np_udp_socket* sock, uint16_t port)
         return NABTO_EC_ABORTED;
     }
 
-    np_error_code ec;
-
-    ec = udp_create_socket_any(sock);
+    np_error_code ec = udp_create_socket_any(sock);
 
     if (ec != NABTO_EC_OK) {
         return ec;

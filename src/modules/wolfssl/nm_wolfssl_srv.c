@@ -259,8 +259,7 @@ np_error_code nm_wolfssl_srv_create_connection(
 
     struct np_platform* pl = ctx->pl;
 
-    np_error_code ec;
-    ec = np_event_queue_create_event(&pl->eq,
+    np_error_code ec = np_event_queue_create_event(&pl->eq,
                                      &nm_wolfssl_srv_start_send_deferred, ctx,
                                      &ctx->startSendEvent);
     if (ec != NABTO_EC_OK) {

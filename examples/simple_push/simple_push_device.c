@@ -111,8 +111,8 @@ void send_notification_to_category(NabtoDevice* device, struct nm_iam* iam, cons
     printf("Sending FCM notification to all users subsribed to category %s\n", category);
     NabtoDeviceFuture* fut = nabto_device_future_new(device);
     struct nm_iam_state* state = nm_iam_dump_state(iam);
-    NabtoDeviceError ec;
-    void* u;
+    NabtoDeviceError ec = 0;
+    void* u = NULL;
     NN_LLIST_FOREACH(u, &state->users) {
         struct nm_iam_user* user = (struct nm_iam_user*)u;
         if (nn_string_set_contains(&user->notificationCategories, category)) {
@@ -164,9 +164,9 @@ bool build_fcm_for_user(NabtoDevice* device, NabtoDeviceFcmNotification* fcm, st
 
 bool start_device(NabtoDevice* device, const char* productId, const char* deviceId, struct nm_iam* iam)
 {
-    NabtoDeviceError ec;
-    char* privateKey;
-    char* fp;
+    NabtoDeviceError ec = 0;
+    char* privateKey = NULL;
+    char* fp = NULL;
 
     struct nm_fs fsImpl = nm_fs_posix_get_impl();
 
@@ -261,7 +261,7 @@ void iam_user_changed(struct nm_iam* iam, void* userData)
 {
     (void)userData;
     struct nm_iam_state* state = nm_iam_dump_state(iam);
-    char* stateStr;
+    char* stateStr = NULL;
 
     struct nm_fs fsImpl = nm_fs_posix_get_impl();
 
@@ -300,8 +300,8 @@ bool setup_iam(NabtoDevice* device, struct nm_iam* iam)
     if (iamConfig == NULL) { return false; }
 
     /**** POLICY CONF ****/
-    struct nm_iam_policy* policy;
-    struct nm_iam_statement* stmt;
+    struct nm_iam_policy* policy = NULL;
+    struct nm_iam_statement* stmt = NULL;
     {
         policy = nm_iam_configuration_policy_new("Unpaired");
         if (policy == NULL) { return false; }
@@ -342,7 +342,7 @@ bool setup_iam(NabtoDevice* device, struct nm_iam* iam)
     }
 
     /**** ROLE CONF ****/
-    struct nm_iam_role* r;
+    struct nm_iam_role* r = NULL;
     {
         r = nm_iam_configuration_role_new("Unpaired");
         if ( r == NULL ||
@@ -368,7 +368,7 @@ bool setup_iam(NabtoDevice* device, struct nm_iam* iam)
         }
     }
 
-    char* stateStr;
+    char* stateStr = NULL;
     if (!string_file_load(&fsImpl, stateFile, &stateStr)) {
         printf("Failed to load IAM state from file: %s\n", stateFile);
         return false;
@@ -417,7 +417,7 @@ void iam_logger(void* data, enum nn_log_severity severity, const char* module,
     (void)data; (void)module;
     if (logLevel > 0 && severity <= logLevel) {
         char log[256];
-        int ret;
+        int ret = 0;
 
         ret = vsnprintf(log, 256, fmt, args);
         if (ret >= 256) {
@@ -428,7 +428,7 @@ void iam_logger(void* data, enum nn_log_severity severity, const char* module,
         if(fileLen > 16) {
             fileTmp = file + fileLen - 16;
         }
-        const char* level;
+        const char* level = NULL;
         switch(severity) {
             case NN_LOG_SEVERITY_ERROR:
                 level = "ERROR";
@@ -491,7 +491,7 @@ bool generate_default_state(NabtoDevice* device)
     { return false; }
     nabto_device_string_free(sct);
 
-    char* stateStr;
+    char* stateStr = NULL;
     nm_iam_serializer_state_dump_json(state, &stateStr);
     nm_iam_state_free(state);
     if (!string_file_save(&fsImpl, stateFile, stateStr)) {

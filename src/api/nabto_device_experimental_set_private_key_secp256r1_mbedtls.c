@@ -73,7 +73,7 @@ NabtoDeviceError nabto_device_set_private_key_secp256r1_compute(
         return NABTO_DEVICE_EC_INVALID_ARGUMENT;
     }
 
-    int status;
+    int status = 0;
     const mbedtls_pk_info_t * pkInfo = mbedtls_pk_info_from_type( MBEDTLS_PK_ECKEY );
 
     status =  mbedtls_pk_setup( pk, pkInfo);

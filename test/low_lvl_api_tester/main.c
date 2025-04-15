@@ -67,8 +67,6 @@ void stream_listener(np_error_code ec, struct nc_stream_context* incStream, void
 }
 
 int main() {
-    np_error_code ec;
-
     struct test_platform tp;
     struct nc_device_context device;
 
@@ -82,7 +80,7 @@ int main() {
 
     nc_device_init(&device, &tp.pl);
     // start the core
-    ec = nc_device_start(&device, appName, appVersion, productId, deviceId, hostname,4242, true);
+    np_error_code ec = nc_device_start(&device, appName, appVersion, productId, deviceId, hostname,4242, true);
     if (ec != NABTO_EC_OK) {
         // fail
     }

@@ -26,9 +26,8 @@ struct nabto_coap_client* nc_coap_client_get_client(struct nc_coap_client_contex
 np_error_code nc_coap_client_init(struct np_platform* pl, struct nc_coap_client_context* ctx)
 {
     ctx->sendBuffer = NULL;
-    np_error_code ec;
     ctx->pl = pl;
-    ec = np_event_queue_create_event(&ctx->pl->eq, &nc_coap_client_notify_event_callback, ctx, &ctx->ev);
+    np_error_code ec = np_event_queue_create_event(&ctx->pl->eq, &nc_coap_client_notify_event_callback, ctx, &ctx->ev);
     if (ec != NABTO_EC_OK) {
         return ec;
     }

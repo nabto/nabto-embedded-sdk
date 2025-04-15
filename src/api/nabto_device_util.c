@@ -26,7 +26,7 @@ void NABTO_DEVICE_API nabto_device_string_free(char* str)
 NabtoDeviceError NABTO_DEVICE_API nabto_device_create_private_key(NabtoDevice* device, char** privateKey)
 {
     struct nabto_device_context* dev = (struct nabto_device_context*)device;
-    np_error_code ec;
+    np_error_code ec = NABTO_EC_FAILED;
     *privateKey = NULL;
     nabto_device_threads_mutex_lock(dev->eventMutex);
 #if defined(NABTO_DEVICE_MBEDTLS)

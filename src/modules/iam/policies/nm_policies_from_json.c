@@ -25,7 +25,7 @@ struct nm_iam_condition* nm_condition_from_json(const cJSON* json, struct nn_log
         return NULL;
     }
 
-    enum nm_iam_condition_operator op;
+    enum nm_iam_condition_operator op = NM_IAM_CONDITION_OPERATOR_BOOL;
     if (!nm_condition_parse_operator(operation->string, &op)) {
         return NULL;
     }
@@ -54,7 +54,7 @@ bool nm_condition_from_json_parse(const cJSON* kv, struct nm_iam_condition* cond
     condition->key = nn_strdup(kv->string, nm_iam_allocator_get());
 
     size_t valuesSize = cJSON_GetArraySize(kv);
-    int i;
+    int i = 0;
     for (i = 0; i < (int)valuesSize; i++) {
         cJSON* value = cJSON_GetArrayItem(kv, i);
         if (!cJSON_IsString(value)) {
@@ -83,7 +83,7 @@ struct nm_iam_statement* nm_statement_from_json(const cJSON* json, struct nn_log
     }
     char* effectString = effect->valuestring;
 
-    enum nm_iam_effect e;
+    enum nm_iam_effect e = NM_IAM_EFFECT_DENY;
 
     if (strcmp(effectString, "Allow") == 0) {
         e = NM_IAM_EFFECT_ALLOW;
@@ -108,7 +108,7 @@ struct nm_iam_statement* nm_statement_from_json(const cJSON* json, struct nn_log
 bool nm_statement_from_json_parse(const cJSON* actions, const cJSON* conditions, struct nm_iam_statement* statement, struct nn_log* logger)
 {
     size_t actionsSize = cJSON_GetArraySize(actions);
-    int i;
+    int i = 0;
     for (i = 0; i < (int)actionsSize; i++) {
         cJSON* action = cJSON_GetArrayItem(actions, i);
         if (!cJSON_IsString(action)) {
@@ -162,7 +162,7 @@ struct nm_iam_policy* nm_policy_from_json(const cJSON* json, struct nn_log* logg
 bool nm_policy_from_json_parse(const cJSON* statements, struct nm_iam_policy* policy, struct nn_log* logger)
 {
     size_t count = cJSON_GetArraySize(statements);
-    int i;
+    int i = 0;
     for (i = 0; i < (int)count; i++) {
         cJSON* statement = cJSON_GetArrayItem(statements, i);
         struct nm_iam_statement* s = nm_statement_from_json(statement, logger);

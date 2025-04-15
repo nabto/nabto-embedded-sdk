@@ -40,7 +40,7 @@ np_error_code nabto_device_events_listener_cb(const np_error_code ec, struct nab
 {
     (void)future;
     struct nabto_device_listen_device_context* ctx = (struct nabto_device_listen_device_context*)listenerData;
-    np_error_code retEc;
+    np_error_code retEc = NABTO_EC_FAILED;
     if (ec == NABTO_EC_OK) {
         struct nabto_device_listen_device_event* ev = (struct nabto_device_listen_device_event*)eventData;
         if (ctx->userEvent != NULL) {

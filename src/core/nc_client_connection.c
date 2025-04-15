@@ -37,7 +37,6 @@ np_error_code nc_client_connection_init(struct np_platform* pl, struct nc_client
                                         struct nc_udp_dispatch_context* sock, struct np_udp_endpoint* ep,
                                         uint8_t* buffer, uint16_t bufferSize)
 {
-    np_error_code ec;
     memset(conn, 0, sizeof(struct nc_client_connection));
     memcpy(conn->id.id, buffer, 16);
     conn->currentChannel.sock = sock;
@@ -51,7 +50,7 @@ np_error_code nc_client_connection_init(struct np_platform* pl, struct nc_client
     conn->device = device;
     conn->parent = nc_connections_connection_from_client_connection(&device->connections, conn);
 
-    ec = nc_keep_alive_init(&conn->keepAlive, conn->pl, &nc_client_connection_keep_alive_event, conn);
+    np_error_code ec = nc_keep_alive_init(&conn->keepAlive, conn->pl, &nc_client_connection_keep_alive_event, conn);
     if (ec != NABTO_EC_OK) {
         return ec;
     }
@@ -86,15 +85,14 @@ np_error_code nc_client_connection_init(struct np_platform* pl, struct nc_client
 
 np_error_code nc_client_connection_start(struct nc_client_connection* connection, uint8_t* buffer, size_t bufferSize)
 {
-    np_error_code ec;
     struct np_platform* pl = connection->pl;
 #if defined(NABTO_DEVICE_DTLS_CLIENT_ONLY)
-    ec = pl->dtlsC.connect(connection->dtls);
+    np_error_code ec = pl->dtlsC.connect(connection->dtls);
 #else
     // Remove connection ID before passing packet to DTLS
     uint8_t* start = buffer + 16;
     bufferSize = bufferSize-16;
-    ec = pl->dtlsS.handle_packet(pl, connection->dtls, connection->currentChannel.channelId, start, (uint16_t)bufferSize);
+    np_error_code ec = pl->dtlsS.handle_packet(pl, connection->dtls, connection->currentChannel.channelId, start, (uint16_t)bufferSize);
 #endif
     return ec;
 }
@@ -103,7 +101,6 @@ np_error_code nc_client_connection_handle_packet(struct np_platform* pl, struct 
                                                  struct nc_udp_dispatch_context* sock, struct np_udp_endpoint* ep,
                                                  uint8_t* buffer, uint16_t bufferSize)
 {
-    np_error_code ec;
     uint8_t* start = buffer;
 
     uint8_t channelId = *(start+15);
@@ -126,9 +123,9 @@ np_error_code nc_client_connection_handle_packet(struct np_platform* pl, struct 
     memmove(start, start+16, bufferSize-16);
     bufferSize = bufferSize-16;
 #if defined(NABTO_DEVICE_DTLS_CLIENT_ONLY)
-    ec = pl->dtlsC.handle_packet(conn->dtls, channelId, buffer, bufferSize);
+    np_error_code ec = pl->dtlsC.handle_packet(conn->dtls, channelId, buffer, bufferSize);
 #else
-    ec = pl->dtlsS.handle_packet(conn->pl, conn->dtls, conn->currentChannel.channelId, buffer, bufferSize);
+    np_error_code ec = pl->dtlsS.handle_packet(conn->pl, conn->dtls, conn->currentChannel.channelId, buffer, bufferSize);
 #endif
     return ec;
 }

@@ -15,7 +15,7 @@ bool iam_config_exists(struct nm_fs* fsImpl, const char* iamConfigFile) {
 
 bool iam_config_load(struct nm_iam_configuration* iamConfig, struct nm_fs* fsImpl, const char* iamConfigFile, struct nn_log* logger)
 {
-    char* str;
+    char* str = NULL;
     if (!string_file_load(fsImpl, iamConfigFile, &str)) {
         return false;
     }
@@ -33,8 +33,8 @@ bool iam_config_create_default(struct nm_fs* fsImpl, const char* iamConfigFile)
 {
     struct nm_iam_configuration* iamConfig = nm_iam_configuration_new();
 
-    struct nm_iam_policy* policy;
-    struct nm_iam_statement* stmt;
+    struct nm_iam_policy* policy = NULL;
+    struct nm_iam_statement* stmt = NULL;
     {
         policy = nm_iam_configuration_policy_new("Pairing");
         stmt = nm_iam_configuration_policy_create_statement(policy, NM_IAM_EFFECT_ALLOW);
@@ -90,7 +90,7 @@ bool iam_config_create_default(struct nm_fs* fsImpl, const char* iamConfigFile)
         nm_iam_configuration_add_policy(iamConfig, policy);
     }
 
-    struct nm_iam_role* r;
+    struct nm_iam_role* r = NULL;
     {
         r = nm_iam_configuration_role_new("Unpaired");
         nm_iam_configuration_role_add_policy(r, "Pairing");

@@ -53,8 +53,7 @@ np_error_code nc_device_init(struct nc_device_context* device, struct np_platfor
     device->initialized = true; // This will be set to false again if we cleanup after a failed init.
 
 
-    np_error_code ec;
-    ec = nc_udp_dispatch_init(&device->udp, pl, &nc_device_events_listener_notify, device);
+    np_error_code ec = nc_udp_dispatch_init(&device->udp, pl, &nc_device_events_listener_notify, device);
     if (ec != NABTO_EC_OK) {
         nc_device_deinit(device);
         return ec;

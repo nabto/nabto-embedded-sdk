@@ -140,7 +140,6 @@ CborError encode_request(CborEncoder* encoder, struct nc_attacher_service_invoke
 bool parse_response(const uint8_t* buffer, size_t bufferSize, struct nc_attacher_service_invoke_response* response) {
     CborParser parser;
     CborValue map;
-    CborError err;
     if (cbor_parser_init(buffer, bufferSize, 0, &parser, &map) != CborNoError ||
         !cbor_value_is_map(&map)) {
         NABTO_LOG_ERROR(LOG, "Invalid Cbor response");
@@ -169,7 +168,7 @@ bool parse_response(const uint8_t* buffer, size_t bufferSize, struct nc_attacher
     // if messageFormat exists, use as intended. If not we assume the
     // basestation uses old format, and set messageFormat to BINARY
     if (cbor_value_is_integer(&messageFormat)) {
-        err = cbor_value_get_int(&messageFormat, &tmp);
+        CborError err = cbor_value_get_int(&messageFormat, &tmp);
         if (err != CborNoError) {
             NABTO_LOG_ERROR(LOG, "Failed to get integer from 'MessageFormat': %d", err);
             return false;

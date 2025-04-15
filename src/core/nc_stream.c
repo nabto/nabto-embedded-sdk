@@ -57,8 +57,7 @@ np_error_code nc_stream_init(struct np_platform* pl, struct nc_stream_context* c
     nc_stream_module.free_recv_segment = &nc_stream_free_recv_segment;
     nc_stream_module.notify_event = &nc_stream_event_callback;
 
-    np_error_code ec;
-    ec = np_event_queue_create_event(&pl->eq, &nc_stream_event_queue_callback, ctx, &ctx->ev);
+    np_error_code ec = np_event_queue_create_event(&pl->eq, &nc_stream_event_queue_callback, ctx, &ctx->ev);
     if (ec != NABTO_EC_OK) {
         return ec;
     }

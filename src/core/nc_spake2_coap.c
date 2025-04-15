@@ -14,8 +14,7 @@ void nc_spake2_handle_coap_1(struct nc_coap_server_request* request, void* data)
 void nc_spake2_handle_coap_2(struct nc_coap_server_request* request, void* data);
 
 np_error_code nc_spake2_coap_init(struct nc_spake2_module* module, struct nc_coap_server_context* coap) {
-    nabto_coap_error err;
-    err = nc_coap_server_add_resource(coap, NABTO_COAP_METHOD_POST,
+    nabto_coap_error err = nc_coap_server_add_resource(coap, NABTO_COAP_METHOD_POST,
                                          (const char*[]){"p2p", "pwd-auth", "1", NULL},
                                          &nc_spake2_handle_coap_1, module,
                                          &module->spake21);

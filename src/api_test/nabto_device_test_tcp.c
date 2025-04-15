@@ -78,9 +78,7 @@ nabto_device_test_tcp(NabtoDevice* device, const char* ip, uint16_t port, NabtoD
     t->tcp = dev->pl.tcp;
     t->eq = dev->pl.eq;
 
-    np_error_code ec;
-
-    ec = np_completion_event_init(&dev->pl.eq, &t->completionEvent, NULL, NULL);
+    np_error_code ec = np_completion_event_init(&dev->pl.eq, &t->completionEvent, NULL, NULL);
     if (ec != NABTO_EC_OK) {
         resolve_and_free_test(t, ec);
         return;
@@ -147,8 +145,7 @@ void tcp_rst_connected(np_error_code ec, void* userData)
 
 void tcp_rst_test(struct tcp_test* t)
 {
-    np_error_code ec;
-    ec = np_tcp_create(&t->tcp, &t->sock);
+    np_error_code ec = np_tcp_create(&t->tcp, &t->sock);
     if (ec != NABTO_EC_OK) {
         NABTO_LOG_ERROR(LOG, "Could not create tcp socket.");
         resolve_and_free_test(t, ec);
@@ -175,8 +172,7 @@ void echo_test_done(struct tcp_test* t)
 
 static void tcp_echo_init(struct tcp_test* t)
 {
-    np_error_code ec;
-    ec = np_tcp_create(&t->tcp, &t->sock);
+    np_error_code ec = np_tcp_create(&t->tcp, &t->sock);
     if (ec != NABTO_EC_OK) {
         resolve_and_free_test(t, ec);
         return;

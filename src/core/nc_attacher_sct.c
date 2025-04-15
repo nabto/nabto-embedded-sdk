@@ -84,7 +84,7 @@ void sct_request_handler(struct nabto_coap_client_request* request, void* userDa
     struct nc_attacher_sct_context* sctCtx = userData;
     nc_attacher_sct_callback cb = sctCtx->callback;
     void* cbUserData = sctCtx->callbackUserData;
-    np_error_code status;
+    np_error_code status = NABTO_EC_FAILED;
     struct nabto_coap_client_response* res = nabto_coap_client_request_get_response(request);
     uint16_t resCode = nabto_coap_client_response_get_code(res);
     if (nc_coap_is_status_ok(resCode)) {

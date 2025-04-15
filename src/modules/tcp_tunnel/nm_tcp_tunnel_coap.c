@@ -27,9 +27,7 @@ static bool cbor_err_not_oom(CborError e) {
 
 np_error_code nm_tcp_tunnel_coap_init(struct nm_tcp_tunnels* tunnels, struct nc_coap_server_context* server)
 {
-    nabto_coap_error err;
-
-    err = nc_coap_server_add_resource(server, NABTO_COAP_METHOD_GET,
+    nabto_coap_error err = nc_coap_server_add_resource(server, NABTO_COAP_METHOD_GET,
                                          (const char*[]){"tcp-tunnels", "services", NULL},
                                          list_services, tunnels, &tunnels->coapListServices);
     if (err != NABTO_COAP_ERROR_OK) {

@@ -66,10 +66,9 @@ bool nc_stream_manager_port_in_use(struct nc_stream_manager_context* ctx, uint32
 
 np_error_code nc_stream_manager_add_listener(struct nc_stream_manager_context* ctx, struct nc_stream_listener* listener, uint32_t type, nc_stream_manager_listen_callback cb, void* data)
 {
-    np_error_code ec;
     if (type == 0) {
         // get ephemeral port number
-        ec = nc_stream_manager_get_ephemeral_stream_port(ctx, &type);
+        np_error_code ec = nc_stream_manager_get_ephemeral_stream_port(ctx, &type);
         if (ec) {
             return ec;
         }
@@ -221,8 +220,7 @@ struct nc_stream_context* nc_stream_manager_accept_stream(struct nc_stream_manag
 
     uint64_t nonce = nc_stream_manager_get_next_nonce(ctx);
 
-    np_error_code ec;
-    ec = nc_stream_init(ctx->pl, stream, streamId, nonce, conn->parent, ctx, conn->parent->connectionRef, ctx->logger);
+    np_error_code ec = nc_stream_init(ctx->pl, stream, streamId, nonce, conn->parent, ctx, conn->parent->connectionRef, ctx->logger);
     if (ec != NABTO_EC_OK) {
         nc_stream_manager_free_stream(stream);
         return NULL;

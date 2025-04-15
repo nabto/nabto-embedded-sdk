@@ -54,7 +54,7 @@ nabto_device_service_invocation_set_service_id(NabtoDeviceServiceInvocation* ser
 {
     struct nabto_device_service_invoke* s = (struct nabto_device_service_invoke*)serviceInvoke;
     struct nabto_device_context* dev = s->dev;
-    NabtoDeviceError ec;
+    NabtoDeviceError ec = 0;
     nabto_device_threads_mutex_lock(dev->eventMutex);
 
     if (s->serviceInvoke.serviceInvokeRequest.serviceId != NULL) {
@@ -76,7 +76,7 @@ nabto_device_service_invocation_set_message(NabtoDeviceServiceInvocation* servic
 {
     struct nabto_device_service_invoke* s = (struct nabto_device_service_invoke*)serviceInvoke;
     struct nabto_device_context* dev = s->dev;
-    NabtoDeviceError ec;
+    NabtoDeviceError ec = 0;
     nabto_device_threads_mutex_lock(dev->eventMutex);
 
     if (s->serviceInvoke.serviceInvokeRequest.message != NULL) {

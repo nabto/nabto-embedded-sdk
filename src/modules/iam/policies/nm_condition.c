@@ -2,6 +2,7 @@
 
 #include "../nm_iam_allocator.h"
 
+#include <math.h>
 #include <nn/string_map.h>
 #include <nn/string.h>
 
@@ -73,7 +74,7 @@ bool nm_condition_parse_bool(const char* value, bool* out)
 
 bool nm_condition_parse_numeric(const char* value, double* out)
 {
-    char* err;
+    char* err = NULL;
     *out = strtod(value, &err);
     // err points to the character after last parsed part of the
     // value. if it points to the null termination the full value was
@@ -91,8 +92,8 @@ static enum nm_condition_result status(bool s)
 
 enum nm_condition_result nm_condition_numeric_operator(enum nm_iam_condition_operator op, const char* lhs, const char* rhs)
 {
-    double lhsDouble;
-    double rhsDouble;
+    double lhsDouble = NAN;
+    double rhsDouble = NAN;
     if (nm_condition_parse_numeric(lhs, &lhsDouble) && nm_condition_parse_numeric(rhs, &rhsDouble)) {
         switch (op) {
             case NM_IAM_CONDITION_OPERATOR_NUMERIC_EQUALS:
@@ -126,9 +127,9 @@ enum nm_condition_result nm_condition_matches(const struct nm_iam_condition* con
 
     const char* attributeValue = nn_string_map_value(&iter);
 
-    const char* v;
+    const char* v = NULL;
     NN_STRING_SET_FOREACH(v, &condition->values) {
-        const char* resolvedValue;
+        const char* resolvedValue = NULL;
         // If the value is a variable we try to resolve it to a string
         // else interpret it as a string.
         if (resolve_value(attributes, v, &resolvedValue)) {
@@ -183,8 +184,8 @@ const char* nm_condition_operator_to_string(const enum nm_iam_condition_operator
 
 enum nm_condition_result bool_equals(const char* lhs, const char* rhs)
 {
-    bool lhsBool;
-    bool rhsBool;
+    bool lhsBool = 0;
+    bool rhsBool = 0;
     if (nm_condition_parse_bool(lhs, &lhsBool) && nm_condition_parse_bool(rhs, &rhsBool)) {
         return status(lhsBool == rhsBool);
     }

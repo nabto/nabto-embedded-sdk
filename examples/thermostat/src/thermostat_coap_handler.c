@@ -74,15 +74,15 @@ void request_callback(NabtoDeviceFuture* future, NabtoDeviceError ec, void* user
 
 bool thermostat_init_cbor_parser(NabtoDeviceCoapRequest* request, CborParser* parser, CborValue* cborValue)
 {
-    uint16_t contentFormat;
-    NabtoDeviceError ec;
+    uint16_t contentFormat = 0;
+    NabtoDeviceError ec = 0;
     ec = nabto_device_coap_request_get_content_format(request, &contentFormat);
     if (ec || contentFormat != NABTO_DEVICE_COAP_CONTENT_FORMAT_APPLICATION_CBOR) {
         nabto_device_coap_error_response(request, 400, "Invalid Content Format");
         return false;
     }
-    void* payload;
-    size_t payloadSize;
+    void* payload = NULL;
+    size_t payloadSize = 0;
     if (nabto_device_coap_request_get_payload(request, &payload, &payloadSize) != NABTO_DEVICE_EC_OK) {
         nabto_device_coap_error_response(request, 400, "Missing payload");
         return false;

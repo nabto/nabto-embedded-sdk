@@ -33,7 +33,7 @@ void handle_request(struct thermostat_coap_handler* handler, NabtoDeviceCoapRequ
         return;
     }
 
-    bool powerState;
+    bool powerState = 0;
     if (!cbor_value_is_boolean(&value) || cbor_value_get_boolean(&value, &powerState) != CborNoError) {
         nabto_device_coap_error_response(request, 400, "Invalid request");
         return;

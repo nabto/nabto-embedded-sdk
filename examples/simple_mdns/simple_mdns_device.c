@@ -38,7 +38,7 @@ int main(int argc, char* argv[]) {
     char* txtKey = argv[4];
     char* txtVal = argv[5];
 
-    NabtoDevice* device;
+    NabtoDevice* device = NULL;
 
     printf("Nabto Embedded SDK Version %s\n", nabto_device_version());
 
@@ -46,7 +46,7 @@ int main(int argc, char* argv[]) {
         die("Allocation error");
     }
 
-    char *key;
+    char *key = NULL;
     if (nabto_device_create_private_key(device, &key) != NABTO_DEVICE_EC_OK ||
         nabto_device_set_private_key(device, key) != NABTO_DEVICE_EC_OK ||
         nabto_device_set_product_id(device, productId) != NABTO_DEVICE_EC_OK ||
