@@ -99,8 +99,6 @@ static void sct_deinit(struct nc_attach_context* ctx);
 
 np_error_code nc_attacher_init(struct nc_attach_context* ctx, struct np_platform* pl, struct nc_device_context* device, struct nc_coap_client_context* coapClient, nc_attacher_event_listener listener, void* listenerData)
 {
-    np_error_code ec;
-
     memset(ctx, 0, sizeof(struct nc_attach_context));
     ctx->pl = pl;
     ctx->device = device;
@@ -115,7 +113,7 @@ np_error_code nc_attacher_init(struct nc_attach_context* ctx, struct np_platform
 
     struct np_event_queue* eq = &pl->eq;
 
-    ec = np_event_queue_create_event(eq, &reattach, ctx, &ctx->reattachTimer);
+    np_error_code ec = np_event_queue_create_event(eq, &reattach, ctx, &ctx->reattachTimer);
     if (ec != NABTO_EC_OK) {
         return ec;
     }
@@ -150,7 +148,7 @@ np_error_code nc_attacher_init(struct nc_attach_context* ctx, struct np_platform
         return ec;
     }
 
-    nc_dns_multi_resolver_init(pl, &ctx->dnsMultiResolver);
+    ec = nc_dns_multi_resolver_init(pl, &ctx->dnsMultiResolver);
 
     return ec;
 }
@@ -240,8 +238,7 @@ np_error_code nc_attacher_set_handshake_timeout(struct nc_attach_context* ctx,
                                                 uint32_t minTimeoutMilliseconds, uint32_t maxTimeoutMilliseconds)
 {
     struct np_platform* pl = ctx->pl;
-    pl->dtlsC.set_handshake_timeout(ctx->pl, minTimeoutMilliseconds, maxTimeoutMilliseconds);
-    return NABTO_EC_OK;
+    return pl->dtlsC.set_handshake_timeout(ctx->pl, minTimeoutMilliseconds, maxTimeoutMilliseconds);
 }
 
 static np_error_code update_dns(struct nc_attach_context* ctx , const char* hostname)
@@ -335,12 +332,10 @@ np_error_code nc_attacher_is_server_connect_tokens_synchronized(struct nc_attach
     if (ctx->state == NC_ATTACHER_STATE_ATTACHED) {
         if (ctx->sctContext.synchronizedVersion == ctx->sctContext.version) {
             return NABTO_EC_OK;
-        } else {
-            return NABTO_EC_OPERATION_IN_PROGRESS;
         }
-    } else {
-        return NABTO_EC_OK;
+        return NABTO_EC_OPERATION_IN_PROGRESS;
     }
+    return NABTO_EC_OK;
     // TODO return something else if we are attaching
 }
 
@@ -484,7 +479,7 @@ void dns_resolved_callback(const np_error_code ec, void* data)
     size_t ipsSize = ctx->resolvedIpsSize;
 
     for (size_t i = 0; i < ipsSize; i++) {
-        if (ctx->initialPacket.endpointsIndex < NC_ATTACHER_MAX_ENDPOINTS) {
+        if (ctx->initialPacket.endpointsSize < NC_ATTACHER_MAX_ENDPOINTS) {
             ctx->initialPacket.endpoints[ctx->initialPacket.endpointsSize].ip = ctx->resolvedIps[i];
             ctx->initialPacket.endpoints[ctx->initialPacket.endpointsSize].port = ctx->currentPort;
             ctx->initialPacket.endpointsSize++;
@@ -650,12 +645,14 @@ void coap_attach_start_callback(enum nc_attacher_status status, void* data)
     if (status == NC_ATTACHER_STATUS_ATTACHED) {
         send_attach_sct_request(ctx);
         return;
-    } else if (status == NC_ATTACHER_STATUS_REDIRECT) {
+    }
+    if (status == NC_ATTACHER_STATUS_REDIRECT) {
         ctx->state = NC_ATTACHER_STATE_REDIRECT;
         ctx->redirectAttempts++;
         ctx->pl->dtlsC.async_close(ctx->dtls);
         return;
-    } else if (status == NC_ATTACHER_STATUS_UNKNOWN_FINGERPRINT && ctx->listener) {
+    }
+    if (status == NC_ATTACHER_STATUS_UNKNOWN_FINGERPRINT && ctx->listener) {
         ctx->listener(NC_DEVICE_EVENT_UNKNOWN_FINGERPRINT, ctx->listenerData);
     } else if (status == NC_ATTACHER_STATUS_WRONG_PRODUCT_ID && ctx->listener) {
         ctx->listener(NC_DEVICE_EVENT_WRONG_PRODUCT_ID, ctx->listenerData);
@@ -700,11 +697,9 @@ void send_sct_request(struct nc_attach_context* ctx)
     np_error_code ec = nc_attacher_sct_upload(ctx, &send_sct_request_callback, ctx);
     if (ec == NABTO_EC_NO_OPERATION) {
         return;
-    } else if (ec == NABTO_EC_OPERATION_STARTED) {
-        // wait for callback
-    } else {
-        // an error occured, do not care.
     }
+    // if operation started: wait for callback
+    // else an error occured, do not care.
 }
 
 void send_sct_request_callback(np_error_code ec, void* userData)
@@ -755,7 +750,10 @@ void coap_attach_end_handler(np_error_code ec, void* data)
 
 void coap_attach_failed(struct nc_attach_context* ctx)
 {
-    ctx->pl->dtlsC.async_close(ctx->dtls);
+    np_error_code ec = ctx->pl->dtlsC.async_close(ctx->dtls);
+    if (ec != NABTO_EC_OK) {
+        NABTO_LOG_ERROR(LOG, "Calling close on the attach DTLS connection failed %s", np_error_code_to_string(ec));
+    }
 }
 
 void nc_attacher_handle_dtls_packet(struct nc_attach_context* ctx, struct np_udp_endpoint* ep, uint8_t* buffer, size_t bufferSize)
@@ -785,13 +783,12 @@ np_error_code dtls_packet_sender(uint8_t ch, uint8_t* buffer, uint16_t bufferSiz
     if (!ctx->hasActiveEp) {
         // We have yet to find suitable endpoint
         start_send_initial_packet(ctx, buffer, bufferSize, cb);
-        return NABTO_EC_OK;
     } else {
         nc_udp_dispatch_async_send_to(ctx->udp, &ctx->activeEp,
                                       buffer, bufferSize,
                                       cb);
-        return NABTO_EC_OK;
     }
+    return NABTO_EC_OK;
 }
 
 void start_send_initial_packet(struct nc_attach_context* ctx,
@@ -851,8 +848,8 @@ void keep_alive_event(void* data)
     struct nc_attach_context* ctx = (struct nc_attach_context*)data;
     struct np_platform* pl = ctx->pl;
 
-    uint32_t recvCount;
-    uint32_t sentCount;
+    uint32_t recvCount = 0;
+    uint32_t sentCount = 0;
 
     pl->dtlsC.get_packet_count(ctx->dtls, &recvCount, &sentCount);
     enum nc_keep_alive_action action = nc_keep_alive_should_send(&ctx->keepAlive, recvCount, sentCount);

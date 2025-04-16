@@ -68,16 +68,15 @@ enum nc_keep_alive_action nc_keep_alive_should_send(struct nc_keep_alive_context
         ctx->lastRecvCount = recvCount;
         ctx->lastSentCount = sentCount;
         return DO_NOTHING;
-    } else if (ctx->lostKeepAlives > ctx->kaMaxRetries+ctx->n) {
-        return KA_TIMEOUT;
-    } else {
-        ctx->lostKeepAlives++;
-        if(!ctx->isSending && ctx->lostKeepAlives > ctx->n) {
-            return SEND_KA;
-        } else {
-            return DO_NOTHING;
-        }
     }
+    if (ctx->lostKeepAlives > ctx->kaMaxRetries+ctx->n) {
+        return KA_TIMEOUT;
+    }
+    ctx->lostKeepAlives++;
+    if(!ctx->isSending && ctx->lostKeepAlives > ctx->n) {
+        return SEND_KA;
+    }
+    return DO_NOTHING;
 }
 
 void nc_keep_alive_wait(struct nc_keep_alive_context* ctx)
@@ -90,7 +89,7 @@ void nc_keep_alive_create_request(struct nc_keep_alive_context* ctx, uint8_t** b
     uint8_t* ptr = ctx->sendBuffer;
     *ptr = AT_KEEP_ALIVE; ptr++;
     *ptr = CT_KEEP_ALIVE_REQUEST; ptr++;
-    memset(ptr, 0, 16); ptr += 16;
+    memset(ptr, 0, 16); // ptr += 16;
 
     ctx->isSending = true;
     *buffer = ctx->sendBuffer;

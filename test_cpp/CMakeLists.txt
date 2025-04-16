@@ -1,4 +1,4 @@
-find_package(Boost COMPONENTS asio unit_test_framework)
+find_package(Boost CONFIG COMPONENTS asio unit_test_framework)
 find_package(nlohmann_json REQUIRED)
 find_package(NabtoCommon REQUIRED)
 
@@ -52,10 +52,13 @@ set(test_src
   tests/policies/statement_json_test.cpp
   tests/policies/policy_test.cpp
   tests/policies/policy_json_test.cpp
+  tests/rendezvous/rendezvous_test.cpp
   tests/dns/dns_test.cpp
   tests/local_ping/local_ping_test.cpp
   tests/core/nc_coap_rest_error_test.cpp
+  tests/core/watchdog_test.cpp
   tests/spake2/spake2_test.cpp
+  tests/spake2/spake2_mbedtls_test.cpp
   tests/spake2/spake2_wolfssl_test.cpp
   ../src/api_test/nabto_device_test_logging.c
   )
@@ -99,6 +102,7 @@ target_link_libraries(embedded_unit_test nm_libevent nlohmann_json::nlohmann_jso
 
 target_include_directories(embedded_unit_test PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
 target_include_directories(embedded_unit_test PRIVATE platform)
+target_include_directories(embedded_unit_test PRIVATE "../nabto-common/components")
 
 install(TARGETS embedded_unit_test
   RUNTIME DESTINATION bin

@@ -33,8 +33,9 @@ void handle_request(struct nm_iam_coap_handler* handler, NabtoDeviceCoapRequest*
         return;
     }
 
-    if (!nm_iam_cbor_init_parser(request, &parser, &value)) {
-        nabto_device_coap_error_response(request, 400, "Bad request");
+    enum nm_iam_cbor_error ec = nm_iam_cbor_init_parser(request, &parser, &value);
+    if ( ec != IAM_CBOR_OK ) {
+        nm_iam_cbor_send_error_response(request, ec);
         return;
     }
 
@@ -43,7 +44,8 @@ void handle_request(struct nm_iam_coap_handler* handler, NabtoDeviceCoapRequest*
         if (!nm_iam_cbor_decode_string(&value, &fn) || fn == NULL) {
             nabto_device_coap_error_response(request, 400, "Friendly name missing");
             return;
-        } else if (strlen(fn) > iam->friendlyNameMaxLength) {
+        }
+        if (strlen(fn) > iam->friendlyNameMaxLength) {
             nabto_device_coap_error_response(request, 400, "Friendly name length exceeded");
             nm_iam_free(fn);
             return;

@@ -1,6 +1,6 @@
 #pragma once
 
-#include <boost/asio/io_service.hpp>
+#include <boost/asio.hpp>
 #include <fixtures/dtls_server/dtls_server.hpp>
 
 #include "certificates.hpp"
@@ -136,7 +136,7 @@ class AttachCoapServer {
         stopped_ = true;
         std::promise<void> promise;
         std::future<void> future = promise.get_future();
-        io_.post([this, &promise]() {
+        boost::asio::post(io_, [this, &promise]() {
             dtlsServer_.stop();
             promise.set_value();
         });
@@ -267,6 +267,16 @@ class AttachServer : public AttachCoapServer,
                 (void)request;
                 response->setCode(201);
                 // self->attachCount_ += 1;
+                return;
+            });
+        dtlsServer_.addResourceHandler(
+            NABTO_COAP_CODE_PUT, "/device/sct",
+            [self](DtlsConnectionPtr connection,
+                   std::shared_ptr<CoapServerRequest> request,
+                   std::shared_ptr<CoapServerResponse> response) {
+                (void)connection;
+                (void)request;
+                response->setCode(201);
                 return;
             });
         dtlsServer_.addResourceHandler(
@@ -540,7 +550,7 @@ class AttachServer : public AttachCoapServer,
     {
         std::promise<void> promise;
         std::future<void> future = promise.get_future();
-        io_.post([this, &promise]() {
+        boost::asio::post(io_, [this, &promise]() {
             dtlsServer_.asyncNiceClose([&promise](const lib::error_code& ec) {
                 promise.set_value();
                 (void)ec;

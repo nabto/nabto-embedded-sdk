@@ -74,7 +74,7 @@ np_error_code nm_select_unix_udp_create(struct np_udp* obj, struct np_udp_socket
         return NABTO_EC_OUT_OF_MEMORY;
     }
     *sock = s;
-    s->sock = -1;
+    s->sock = NM_SELECT_UNIX_INVALID_SOCKET;
 
     struct nm_select_unix* selectCtx = obj->data;
 
@@ -98,9 +98,7 @@ np_error_code nm_select_unix_udp_async_bind_port_ec(struct np_udp_socket* sock, 
         return NABTO_EC_ABORTED;
     }
 
-    np_error_code ec;
-
-    ec = create_socket_any(sock);
+    np_error_code ec = create_socket_any(sock);
     if (ec != NABTO_EC_OK) {
         return ec;
     }
@@ -110,7 +108,7 @@ np_error_code nm_select_unix_udp_async_bind_port_ec(struct np_udp_socket* sock, 
         close(sock->sock);
     }
 
-    return NABTO_EC_OK;
+    return ec;
 }
 
 void nm_select_unix_udp_async_bind_port(struct np_udp_socket* sock, uint16_t port, struct np_completion_event* completionEvent)
@@ -128,11 +126,7 @@ np_error_code nm_select_unix_udp_async_send_to_ec(struct np_udp_socket* sock, st
         return NABTO_EC_ABORTED;
     }
 
-    np_error_code ec = udp_send_to(sock, ep, buffer, bufferSize);
-    if (ec != NABTO_EC_OK) {
-        return ec;
-    }
-    return NABTO_EC_OK;
+    return udp_send_to(sock, ep, buffer, bufferSize);
 }
 
 void nm_select_unix_udp_async_send_to(struct np_udp_socket* sock, struct np_udp_endpoint* ep,
@@ -223,11 +217,11 @@ void nm_select_unix_udp_free_socket(struct np_udp_socket* sock)
 
 void nm_select_unix_udp_build_fd_sets(struct nm_select_unix* ctx)
 {
-    struct np_udp_socket* s;
+    struct np_udp_socket* s = NULL;
     nm_select_unix_lock(ctx);
     NN_LLIST_FOREACH(s, &ctx->udpSockets)
     {
-        if (s->recv.completionEvent && s->sock != -1) {
+        if (s->recv.completionEvent && s->sock != NM_SELECT_UNIX_INVALID_SOCKET) {
             FD_SET(s->sock, &ctx->readFds);
             ctx->maxReadFd = NP_MAX(ctx->maxReadFd, s->sock);
         }
@@ -238,12 +232,12 @@ void nm_select_unix_udp_build_fd_sets(struct nm_select_unix* ctx)
 void nm_select_unix_udp_handle_select(struct nm_select_unix* ctx, int nfds)
 {
     (void)nfds;
-    struct np_udp_socket* s;
+    struct np_udp_socket* s = NULL;
 
     nm_select_unix_lock(ctx);
     NN_LLIST_FOREACH(s, &ctx->udpSockets)
     {
-        if (s->sock != -1 && FD_ISSET(s->sock, &ctx->readFds)) {
+        if (s->sock != NM_SELECT_UNIX_INVALID_SOCKET && FD_ISSET(s->sock, &ctx->readFds)) {
             nm_select_unix_udp_handle_event(s);
         }
     }
@@ -255,21 +249,33 @@ int nm_select_unix_udp_nonblocking_socket(int domain, int type)
 {
 #if defined(SOCK_NONBLOCK)
     return socket(domain, type | SOCK_NONBLOCK, 0);
-#endif
-
-#ifdef F_GETFL
+#elif defined(F_GETFL)
     int sock = socket(domain, type, 0);
+    if (sock == NM_SELECT_UNIX_INVALID_SOCKET) {
+        NABTO_LOG_ERROR(LOG, "Cannot create UDP socket.");
+        return NM_SELECT_UNIX_INVALID_SOCKET;
+    }
 
     int flags = fcntl(sock, F_GETFL, 0);
-    if (flags == -1) flags = 0;
-    fcntl(sock, F_SETFL, flags | O_NONBLOCK);
+    if (flags == -1) {
+        NABTO_LOG_ERROR(LOG, "Cannot get flags for UDP socket.");
+        close(sock);
+        return NM_SELECT_UNIX_INVALID_SOCKET;
+    }
+    if (fcntl(sock, F_SETFL, flags | O_NONBLOCK) == -1) {
+        NABTO_LOG_ERROR(LOG, "Cannot set socket to nonblocking mode.");
+        close(sock);
+        return NM_SELECT_UNIX_INVALID_SOCKET;
+    }
     return sock;
+#else
+    #error Cannot create a nonblocking socket.
 #endif
 }
 
 np_error_code udp_send_to(struct np_udp_socket* s, const struct np_udp_endpoint* ep, const uint8_t* buffer, uint16_t bufferSize)
 {
-    ssize_t res;
+    ssize_t res = 0;
 
     struct np_ip_address sendIp;
 
@@ -283,7 +289,7 @@ np_error_code udp_send_to(struct np_udp_socket* s, const struct np_udp_endpoint*
         np_ip_convert_v4_mapped_to_v4(&ep->ip, &sendIp);
     } else {
         NABTO_LOG_TRACE(LOG, "Cannot send ipv6 packets on an ipv4 socket.");
-        return NABTO_EC_FAILED_TO_SEND_PACKET;
+        return NABTO_EC_FAILED;
     }
 
     NABTO_LOG_TRACE(LOG, "Sending packet of size %d, to %s:%d", bufferSize, np_ip_address_to_string(&sendIp), ep->port);
@@ -305,22 +311,24 @@ np_error_code udp_send_to(struct np_udp_socket* s, const struct np_udp_endpoint*
 
     if (res < 0) {
         int status = errno;
-        NABTO_LOG_TRACE(LOG, "UDP returned error status (%d) %s", status, strerror(status));
         if (status == EAGAIN || status == EWOULDBLOCK) {
             // expected
             // just drop the packet and the upper layers will take care of retransmissions.
+            NABTO_LOG_TRACE(LOG, "UDP sendto returned an expected error status (%i) '%s'", status, strerror(status));
+            return NABTO_EC_OK;
+        } else if (status == EADDRNOTAVAIL || // if we send to ipv6 scopes we do not have
+                   status == ENETUNREACH || // if we send ipv6 on a system without it.
+                   status == EAFNOSUPPORT) // if we send ipv6 on an ipv4 only socket
+        {
+            NABTO_LOG_TRACE(LOG,"UDP sendto could not send the packet but the error was expected on some systems. (%i) '%s'", status, strerror(status));
         } else {
-
-            if (status == EADDRNOTAVAIL || // if we send to ipv6 scopes we do not have
-                status == ENETUNREACH || // if we send ipv6 on a system without it.
-                status == EAFNOSUPPORT) // if we send ipv6 on an ipv4 only socket
-            {
-                NABTO_LOG_TRACE(LOG,"ERROR: (%i) '%s' in nm_epoll_event_send_to", (int) status, strerror(status));
-            } else {
-                NABTO_LOG_ERROR(LOG,"ERROR: (%i) '%s' in nm_epoll_event_send_to", (int) status, strerror(status));
-            }
-            return NABTO_EC_FAILED_TO_SEND_PACKET;
+            NABTO_LOG_ERROR(LOG,"UDP sendto could not send the packet. (%i) '%s'", status, strerror(status));
         }
+        return NABTO_EC_FAILED_TO_SEND_PACKET;
+    }
+
+    if (res >= 0 && res < (ssize_t)bufferSize) {
+        NABTO_LOG_WARN(LOG, "sendto sent less bytes than expected.");
     }
 
     return NABTO_EC_OK;
@@ -328,7 +336,7 @@ np_error_code udp_send_to(struct np_udp_socket* s, const struct np_udp_endpoint*
 
 np_error_code udp_recv_from(struct np_udp_socket* sock, struct np_udp_endpoint* ep, uint8_t* buffer, size_t bufferSize, size_t* readLength)
 {
-    ssize_t recvLength;
+    ssize_t recvLength = 0;
     if (sock->type == NABTO_IPV6) {
         struct sockaddr_in6 sa;
         socklen_t addrlen = sizeof(sa);
@@ -350,10 +358,9 @@ np_error_code udp_recv_from(struct np_udp_socket* sock, struct np_udp_endpoint* 
             // expected
             // wait for next event to check for data.
             return NABTO_EC_AGAIN;
-        } else {
-            NABTO_LOG_ERROR(LOG,"ERROR: (%d) '%s' in udp_recv_from", status, strerror(status));
-            return NABTO_EC_UDP_SOCKET_ERROR;
         }
+        NABTO_LOG_ERROR(LOG,"ERROR: (%d) '%s' in udp_recv_from", status, strerror(status));
+        return NABTO_EC_UDP_SOCKET_ERROR;
     }
     *readLength = recvLength;
     return NABTO_EC_OK;
@@ -361,7 +368,7 @@ np_error_code udp_recv_from(struct np_udp_socket* sock, struct np_udp_endpoint* 
 
 np_error_code bind_port(struct np_udp_socket* s, uint16_t port)
 {
-    int status;
+    int status = 0;
 
     if (s->type == NABTO_IPV6) {
         struct sockaddr_in6 si_me6;
@@ -379,13 +386,12 @@ np_error_code bind_port(struct np_udp_socket* s, uint16_t port)
         status = bind(s->sock, (struct sockaddr*)&si_me, sizeof(si_me));
     }
 
-    NABTO_LOG_TRACE(LOG, "bind returned %i", status);
-
     if (status == 0) {
         return NABTO_EC_OK;
-    } else {
-        return NABTO_EC_UDP_SOCKET_CREATION_ERROR;
     }
+    int bindErrno = errno;
+    NABTO_LOG_ERROR(LOG, "UDP bind failed. (%i) '%s'", bindErrno, strerror(bindErrno));
+    return NABTO_EC_UDP_SOCKET_CREATION_ERROR;
 }
 
 uint16_t get_local_port(struct np_udp_socket* s)
@@ -394,30 +400,30 @@ uint16_t get_local_port(struct np_udp_socket* s)
         struct sockaddr_in6 addr;
         addr.sin6_port = 0;
         socklen_t length = sizeof(struct sockaddr_in6);
+        // TODO handle errors
         getsockname(s->sock, (struct sockaddr*)(&addr), &length);
         return htons(addr.sin6_port);
-    } else {
-        struct sockaddr_in addr;
-        addr.sin_port = 0;
-        socklen_t length = sizeof(struct sockaddr_in);
-        getsockname(s->sock, (struct sockaddr*)(&addr), &length);
-        return htons(addr.sin_port);
     }
+    struct sockaddr_in addr;
+    addr.sin_port = 0;
+    socklen_t length = sizeof(struct sockaddr_in);
+    // TODO handle errors
+    getsockname(s->sock, (struct sockaddr*)(&addr), &length);
+    return htons(addr.sin_port);
 }
 
 np_error_code create_socket_any(struct np_udp_socket* s)
 {
     int sock = nm_select_unix_udp_nonblocking_socket(AF_INET6, SOCK_DGRAM);
-    if (sock == -1) {
+    if (sock == NM_SELECT_UNIX_INVALID_SOCKET) {
         sock = nm_select_unix_udp_nonblocking_socket(AF_INET, SOCK_DGRAM);
-        if (s->sock == -1) {
+        if (s->sock == NM_SELECT_UNIX_INVALID_SOCKET) {
             int e = errno;
             NABTO_LOG_ERROR(LOG, "Unable to create socket: (%i) '%s'.", e, strerror(e));
             return NABTO_EC_UDP_SOCKET_CREATION_ERROR;
-        } else {
-            NABTO_LOG_WARN(LOG, "IPv4 socket opened since IPv6 socket creation failed");
-            s->type = NABTO_IPV4;
         }
+        NABTO_LOG_WARN(LOG, "IPv4 socket opened since IPv6 socket creation failed");
+        s->type = NABTO_IPV4;
     } else {
         int no = 0;
         s->type = NABTO_IPV6;

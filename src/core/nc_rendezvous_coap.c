@@ -36,7 +36,7 @@ void nc_rendezvous_coap_deinit(struct nc_rendezvous_coap_context* context)
     }
 }
 
-static bool handle_rendezvous_payload(struct nc_rendezvous_coap_context* ctx, struct nc_coap_server_request* request, uint8_t* payload, size_t payloadLength)
+bool handle_rendezvous_payload(struct nc_rendezvous_coap_context* ctx, struct nc_coap_server_request* request, uint8_t* payload, size_t payloadLength)
 {
     struct nc_rendezvous_send_packet packet;
     packet.type = CT_RENDEZVOUS_DEVICE_REQUEST;
@@ -50,50 +50,61 @@ static bool handle_rendezvous_payload(struct nc_rendezvous_coap_context* ctx, st
 
     CborParser parser;
     CborValue array;
-
-    cbor_parser_init(payload, payloadLength, 0, &parser, &array);
-
-    if (!cbor_value_is_array(&array)) {
+    if (cbor_parser_init(payload, payloadLength, 0, &parser, &array) != CborNoError ||
+        !cbor_value_is_array(&array)) {
         return false;
     }
+
     CborValue ep;
-    cbor_value_enter_container(&array, &ep);
+    if (cbor_value_enter_container(&array, &ep) != CborNoError) {
+        return false;
+    }
 
     while (!cbor_value_at_end(&ep)) {
 
         if (cbor_value_is_map(&ep)) {
             CborValue ip;
             CborValue port;
-            cbor_value_map_find_value(&ep, "Ip", &ip);
-            cbor_value_map_find_value(&ep, "Port", &port);
+            uint64_t p = 0;
 
-            if (cbor_value_is_byte_string(&ip) &&
-                cbor_value_is_unsigned_integer(&port))
-            {
+            if (cbor_value_map_find_value(&ep, "Ip", &ip) != CborNoError ||
+                cbor_value_map_find_value(&ep, "Port", &port) != CborNoError ||
+                !cbor_value_is_byte_string(&ip) ||
+                !cbor_value_is_unsigned_integer(&port) ||
+                cbor_value_get_uint64(&port, &p) != CborNoError) {
+                return false;
+            }
+            packet.ep.port = (uint16_t)p;
 
-                uint64_t p;
-                cbor_value_get_uint64(&port, &p);
-                packet.ep.port = (uint16_t)p;
-
-                size_t ipLength;
-                cbor_value_get_string_length(&ip, &ipLength);
-                if (ipLength == 4) {
-                    packet.ep.ip.type = NABTO_IPV4;
-                    cbor_value_copy_byte_string(&ip, packet.ep.ip.ip.v4, &ipLength, NULL);
-                    nc_rendezvous_send_rendezvous(ctx->rendezvous, &packet);
-                } else if (ipLength == 16) {
-                    packet.ep.ip.type = NABTO_IPV6;
-                    cbor_value_copy_byte_string(&ip, packet.ep.ip.ip.v6, &ipLength, NULL);
-                    nc_rendezvous_send_rendezvous(ctx->rendezvous, &packet);
+            size_t ipLength = 0;
+            if (cbor_value_get_string_length(&ip, &ipLength) != CborNoError) {
+                return false;
+            }
+            if (ipLength == 4) {
+                packet.ep.ip.type = NABTO_IPV4;
+                if (cbor_value_copy_byte_string(&ip, packet.ep.ip.ip.v4, &ipLength, NULL) != CborNoError) {
+                    return false;
                 }
+                nc_rendezvous_send_rendezvous(ctx->rendezvous, &packet);
+            } else if (ipLength == 16) {
+                packet.ep.ip.type = NABTO_IPV6;
+                if (cbor_value_copy_byte_string(&ip, packet.ep.ip.ip.v6, &ipLength, NULL) != CborNoError) {
+                    return false;
+                }
+                nc_rendezvous_send_rendezvous(ctx->rendezvous, &packet);
             }
         } else {
             return false;
         }
-        cbor_value_advance(&ep);
+
+        if (cbor_value_advance(&ep) != CborNoError) {
+            return false;
+        }
     }
 
-    cbor_value_leave_container(&array, &ep);
+    if (cbor_value_leave_container(&array, &ep) != CborNoError) {
+        return false;
+    }
     return true;
 }
 
@@ -108,8 +119,8 @@ void nc_rendezvous_handle_coap_p2p_rendezvous(struct nc_coap_server_request* req
         return;
     }
 
-    uint8_t* payload;
-    size_t payloadLength;
+    uint8_t* payload = NULL;
+    size_t payloadLength = 0;
     nc_coap_server_request_get_payload(request, (void**)&payload, &payloadLength);
     if (payload == NULL) {
         nc_coap_server_send_error_response(request, (nabto_coap_code)NABTO_COAP_CODE(4,00), NULL);

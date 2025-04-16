@@ -50,7 +50,7 @@ void request_callback(NabtoDeviceFuture* fut, NabtoDeviceError ec, void* data);
 
 int main()
 {
-    NabtoDeviceError ec;
+    NabtoDeviceError ec = 0;
 
     // First allocate a new device
     NabtoDevice* device = nabto_device_new();
@@ -89,7 +89,7 @@ int main()
 
     // This CoAP request pointer will be our reference to incoming
     // requests.
-    NabtoDeviceCoapRequest* request;
+    NabtoDeviceCoapRequest* request = NULL;
 
     ////////////////////////////////////////////////////////////////////////////////
     // example 1: blocking wait future approach
@@ -263,8 +263,8 @@ void request_callback(NabtoDeviceFuture* fut, NabtoDeviceError ec, void* data)
 
 bool start_device(NabtoDevice* device)
 {
-    NabtoDeviceError ec;
-    char* fp;
+    NabtoDeviceError ec = 0;
+    char* fp = NULL;
 
     // If a private key was set in the top, use that. Otherwise we
     // create one. The fingerprint of the device must be registered in

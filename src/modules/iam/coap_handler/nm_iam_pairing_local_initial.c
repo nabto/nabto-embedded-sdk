@@ -8,7 +8,6 @@
 #include "../nm_iam_allocator.h"
 
 
-
 static void handle_request(struct nm_iam_coap_handler* handler, NabtoDeviceCoapRequest* request);
 
 NabtoDeviceError nm_iam_pairing_local_initial_init(struct nm_iam_coap_handler* handler, NabtoDevice* device, struct nm_iam* iam)
@@ -45,9 +44,16 @@ void handle_request(struct nm_iam_coap_handler* handler, NabtoDeviceCoapRequest*
             CborValue value;
 
             char* fpName = NULL;
-            if (nm_iam_cbor_init_parser(request, &parser, &value)) {
-                nm_iam_cbor_decode_kv_string(&value, "FingerprintName", &fpName);
-
+            enum nm_iam_cbor_error ec = nm_iam_cbor_init_parser(request, &parser, &value);
+            if ( ec != IAM_CBOR_OK && ec != IAM_CBOR_INVALID_CONTENT_FORMAT ) {
+                nm_iam_cbor_send_error_response(request, ec);
+                return;
+            }
+            if (ec == IAM_CBOR_OK) {
+                if (!nm_iam_cbor_decode_kv_string(&value, "FingerprintName", &fpName)) {
+                    nabto_device_coap_error_response(request, 400, "Missing FingerprintName");
+                    return;
+                }
             }
 
             if (nm_iam_pairing_pair_user(iam, initialUser, ref, fpName)) {

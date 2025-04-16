@@ -13,7 +13,7 @@
 
 static void coap_handler(struct nabto_coap_client_request* request, void* data);
 
-static size_t encode_request(struct nc_attacher_service_invoke_request* request, uint8_t* buffer, size_t bufferSize);
+static CborError encode_request(CborEncoder* encoder, struct nc_attacher_service_invoke_request* request);
 static bool parse_response(const uint8_t* buffer, size_t bufferSize, struct nc_attacher_service_invoke_response* response);
 
 const char* serviceInvokePath[] = { "device", "service", "invoke" };
@@ -31,13 +31,30 @@ np_error_code nc_attacher_service_invoke_execute(struct nc_attach_context *attac
                                                               serviceInvokeContext, attacher->dtls);
     nabto_coap_client_request_set_content_format(serviceInvokeContext->coapRequest, NABTO_COAP_CONTENT_FORMAT_APPLICATION_CBOR);
 
-    size_t bufferSize = encode_request(&serviceInvokeContext->serviceInvokeRequest, NULL, 0);
+    size_t bufferSize = 0;
+    {
+        CborEncoder encoder;
+        cbor_encoder_init(&encoder, NULL, 0, 0);
+        if (encode_request(&encoder, &serviceInvokeContext->serviceInvokeRequest) != CborErrorOutOfMemory) {
+            NABTO_LOG_ERROR(LOG, "Cannot determine the required size fot the service invocation request.");
+            return NABTO_EC_FAILED;
+        }
+        bufferSize = cbor_encoder_get_extra_bytes_needed(&encoder);
+    }
 
     uint8_t* buffer = np_calloc(1, bufferSize);
     if (buffer == NULL) {
         return NABTO_EC_OUT_OF_MEMORY;
     }
-    encode_request(&serviceInvokeContext->serviceInvokeRequest, buffer, bufferSize);
+    {
+        CborEncoder encoder;
+        cbor_encoder_init(&encoder, buffer, bufferSize, 0);
+        if (encode_request(&encoder, &serviceInvokeContext->serviceInvokeRequest) != CborNoError) {
+            np_free(buffer);
+            NABTO_LOG_ERROR(LOG, "Cannot encode service invocation request as cbor.");
+            return NABTO_EC_FAILED;
+        }
+    }
 
     nabto_coap_error err = nabto_coap_client_request_set_payload(serviceInvokeContext->coapRequest, buffer, bufferSize);
     np_free(buffer);
@@ -75,7 +92,6 @@ static void coap_handler(struct nabto_coap_client_request* request, void* data)
         size_t payloadLength = 0;
         nabto_coap_client_response_get_payload(res, &payload, &payloadLength);
 
-        ec = NABTO_EC_UNKNOWN;
         if (resCode != 201) {
             struct nc_coap_rest_error error;
             nc_coap_rest_error_decode_response(res, &error);
@@ -110,63 +126,77 @@ void nc_attacher_service_invoke_stop(struct nc_attacher_service_invoke_context* 
     }
 }
 
-size_t encode_request(struct nc_attacher_service_invoke_request* request, uint8_t* buffer, size_t bufferSize)
+CborError encode_request(CborEncoder* encoder, struct nc_attacher_service_invoke_request* request)
 {
-    CborEncoder encoder;
-    cbor_encoder_init(&encoder, buffer, bufferSize, 0);
     CborEncoder map;
-    cbor_encoder_create_map(&encoder, &map, CborIndefiniteLength);
-
-    cbor_encode_text_stringz(&map, "ServiceId");
-    cbor_encode_text_stringz(&map, request->serviceId);
-
-    cbor_encode_text_stringz(&map, "Message");
-    cbor_encode_byte_string(&map, request->message, request->messageLength);
-
-    cbor_encoder_close_container(&encoder, &map);
-
-    return cbor_encoder_get_extra_bytes_needed(&encoder);
+    NC_CBOR_CHECK_FOR_ERROR_EXCEPT_OOM(cbor_encoder_create_map(encoder, &map, CborIndefiniteLength));
+    NC_CBOR_CHECK_FOR_ERROR_EXCEPT_OOM(cbor_encode_text_stringz(&map, "ServiceId"));
+    NC_CBOR_CHECK_FOR_ERROR_EXCEPT_OOM(cbor_encode_text_stringz(&map, request->serviceId));
+    NC_CBOR_CHECK_FOR_ERROR_EXCEPT_OOM(cbor_encode_text_stringz(&map, "Message"));
+    NC_CBOR_CHECK_FOR_ERROR_EXCEPT_OOM(cbor_encode_byte_string(&map, request->message, request->messageLength));
+    return cbor_encoder_close_container(encoder, &map);
 }
 
 bool parse_response(const uint8_t* buffer, size_t bufferSize, struct nc_attacher_service_invoke_response* response) {
     CborParser parser;
     CborValue map;
+    if (cbor_parser_init(buffer, bufferSize, 0, &parser, &map) != CborNoError ||
+        !cbor_value_is_map(&map)) {
+        NABTO_LOG_ERROR(LOG, "Invalid Cbor response");
+        return false;
+    }
     CborValue statusCode;
     CborValue message;
     CborValue messageFormat;
-    cbor_parser_init(buffer, bufferSize, 0, &parser, &map);
-    if (!cbor_value_is_map(&map)) {
+    int tmp = 0;
+    if (cbor_value_map_find_value(&map, "StatusCode", &statusCode) != CborNoError ||
+        cbor_value_map_find_value(&map, "Message", &message) != CborNoError ||
+        cbor_value_map_find_value(&map, "MessageFormat", &messageFormat) != CborNoError ||
+        !cbor_value_is_integer(&statusCode) != CborNoError ||
+        cbor_value_get_int(&statusCode, &tmp) != CborNoError) {
+        NABTO_LOG_ERROR(LOG, "Parse Cbor response");
         return false;
     }
-    cbor_value_map_find_value(&map, "StatusCode", &statusCode);
-    cbor_value_map_find_value(&map, "Message", &message);
-    cbor_value_map_find_value(&map, "MessageFormat", &messageFormat);
 
-    if (!cbor_value_is_integer(&statusCode)) {
+    if (tmp < 0 || tmp > UINT16_MAX) {
+        NABTO_LOG_ERROR(LOG, "The status code is outside uint16_t range");
         return false;
     }
-    int tmp;
-    if (cbor_value_get_int(&statusCode, &tmp) != CborNoError) {
-        return false;
-    }
+
     response->statusCode = (uint16_t)tmp;
 
-    // if messageFormat exists, use as intented. If not we assume the
+    // if messageFormat exists, use as intended. If not we assume the
     // basestation uses old format, and set messageFormat to BINARY
-    if (cbor_value_is_integer(&messageFormat) &&
-        cbor_value_get_int(&messageFormat, &tmp) == CborNoError) {
-        response->messageFormat =
-            (enum nc_attacher_service_invoke_message_format)tmp;
-
-        if (response->messageFormat != NC_SERVICE_INVOKE_MESSAGE_FORMAT_NONE &&
-            !nc_cbor_copy_byte_string(&message, &response->message,
-                                      &response->messageLength, 65536)) {
+    if (cbor_value_is_integer(&messageFormat)) {
+        CborError err = cbor_value_get_int(&messageFormat, &tmp);
+        if (err != CborNoError) {
+            NABTO_LOG_ERROR(LOG, "Failed to get integer from 'MessageFormat': %d", err);
             return false;
         }
-    } else if (!nc_cbor_copy_byte_string(&message, &response->message,
-                                         &response->messageLength, 65536)) {
-        return false;
+        switch(tmp) {
+            case NC_SERVICE_INVOKE_MESSAGE_FORMAT_BINARY:
+            case NC_SERVICE_INVOKE_MESSAGE_FORMAT_NONE:
+            case NC_SERVICE_INVOKE_MESSAGE_FORMAT_TEXT:
+                response->messageFormat = (enum nc_attacher_service_invoke_message_format)tmp;
+            break;
+            default:
+                NABTO_LOG_ERROR(LOG, "The received message format is not known.");
+                return false;
+        }
+
+        if (response->messageFormat != NC_SERVICE_INVOKE_MESSAGE_FORMAT_NONE) {
+            if (!nc_cbor_copy_byte_string(&message, &response->message,
+                                      &response->messageLength, 65536)) {
+                NABTO_LOG_ERROR(LOG, "Failed to copy message byte string");
+                return false;
+            }
+        }
     } else {
+        if (!nc_cbor_copy_byte_string(&message, &response->message,
+                                         &response->messageLength, 65536)) {
+            NABTO_LOG_ERROR(LOG, "Failed to copy message byte string (default binary)");
+            return false;
+        }
         response->messageFormat = NC_SERVICE_INVOKE_MESSAGE_FORMAT_BINARY;
     }
 

@@ -101,7 +101,7 @@ void event_queue_test()
 void timestamp_test()
 {
     NabtoDevice* device = nabto_device_new();
-    uint32_t timestamp;
+    uint32_t timestamp = 0;
 
     nabto_device_test_timestamp(device, &timestamp);
 

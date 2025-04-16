@@ -104,15 +104,17 @@ struct nm_iam_user* nm_iam_user_from_json(const cJSON* json, int version)
     }
 
     if (cJSON_IsString(fcmToken)) {
+        // NOLINTNEXTLINE(clang-analyzer-core.NullDereference)
         nm_iam_user_set_fcm_token(user, fcmToken->valuestring);
     }
 
     if (cJSON_IsString(fcmProjectId)) {
+        // NOLINTNEXTLINE(clang-analyzer-core.NullDereference)
         nm_iam_user_set_fcm_project_id(user, fcmProjectId->valuestring);
     }
 
     if (cJSON_IsArray(notificationCategories)) {
-        cJSON* element;
+        cJSON* element = NULL;
         struct nn_string_set cs;
         nn_string_set_init(&cs, nm_iam_allocator_get());
         cJSON_ArrayForEach(element, notificationCategories) {

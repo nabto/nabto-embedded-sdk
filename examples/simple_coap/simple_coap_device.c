@@ -159,7 +159,7 @@ void signal_handler(int s)
 }
 
 void wait_for_device_events(struct context* ctx) {
-    NabtoDeviceEvent event;
+    NabtoDeviceEvent event = 0;
     nabto_device_device_events_init_listener(ctx->device, ctx->deviceEventListener);
     while(true) {
         nabto_device_listener_device_event(ctx->deviceEventListener, ctx->deviceEventFuture, &event);
@@ -167,10 +167,12 @@ void wait_for_device_events(struct context* ctx) {
         if (ec != NABTO_DEVICE_EC_OK) {
             printf("Device event handler failed with %s\n", nabto_device_error_get_message(ec));
             break;
-        } else if (event == NABTO_DEVICE_EVENT_CLOSED) {
+        }
+        if (event == NABTO_DEVICE_EVENT_CLOSED) {
             printf("Device closed\n");
             break;
-        } else if (event == NABTO_DEVICE_EVENT_ATTACHED) {
+        }
+        if (event == NABTO_DEVICE_EVENT_ATTACHED) {
             printf("Attached to the basestation\n");
         } else if (event == NABTO_DEVICE_EVENT_DETACHED) {
             printf("Detached from the basestation\n");
@@ -180,6 +182,8 @@ void wait_for_device_events(struct context* ctx) {
             printf("The provided Product ID did not match the fingerprint\n");
         } else if (event == NABTO_DEVICE_EVENT_WRONG_DEVICE_ID) {
             printf("The provided Device ID did not match the fingerprint\n");
+        } else if (event == NABTO_DEVICE_EVENT_WATCHDOG_FAILURE) {
+            printf("Watchdog failure event!\n");
         }
     }
     nabto_device_stop(ctx->device);
@@ -187,9 +191,9 @@ void wait_for_device_events(struct context* ctx) {
 
 bool start_device(struct context* ctx, const char* productId, const char* deviceId)
 {
-    NabtoDeviceError ec;
-    char* privateKey;
-    char* fp;
+    NabtoDeviceError ec = 0;
+    char* privateKey = NULL;
+    char* fp = NULL;
 
     struct nm_fs fsImpl = nm_fs_posix_get_impl();
 
@@ -301,8 +305,8 @@ void post_request_callback(NabtoDeviceFuture* fut, NabtoDeviceError ec, void* da
 
 void handle_coap_post_request(NabtoDeviceCoapRequest* request)
 {
-    char* payload;
-    size_t len;
+    char* payload = NULL;
+    size_t len = 0;
     if (nabto_device_coap_request_get_payload(request, (void**)&payload, &len) != NABTO_DEVICE_EC_OK) {
         nabto_device_coap_error_response(request, 400, "Missing payload");
         return;

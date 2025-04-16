@@ -74,7 +74,6 @@ void nabto_device_new_resolve_failure(struct nabto_device_context* dev)
 NabtoDevice* NABTO_DEVICE_API nabto_device_new()
 {
     struct nabto_device_context* dev = np_calloc(1, sizeof(struct nabto_device_context));
-    np_error_code ec;
     if (dev == NULL) {
         NABTO_LOG_ERROR(LOG, "Could not allocate %d bytes for the device context", sizeof(struct nabto_device_context));
         return NULL;
@@ -114,7 +113,7 @@ NabtoDevice* NABTO_DEVICE_API nabto_device_new()
 #endif
 #endif
 
-    ec = nabto_device_platform_init(dev, dev->eventMutex);
+    np_error_code ec = nabto_device_platform_init(dev, dev->eventMutex);
     if (ec != NABTO_EC_OK) {
         NABTO_LOG_ERROR(LOG, "Failed to initialize platform modules");
         nabto_device_new_resolve_failure(dev);
@@ -336,7 +335,7 @@ NabtoDeviceError NABTO_DEVICE_API nabto_device_set_private_key(NabtoDevice* devi
     if (dev->privateKey == NULL) {
         ec = NABTO_EC_OUT_OF_MEMORY;
     } else {
-        char* crt;
+        char* crt = NULL;
 #if defined(NABTO_DEVICE_MBEDTLS)
         ec = nm_mbedtls_create_crt_from_private_key(dev->privateKey, &crt);
 #elif defined(NABTO_DEVICE_WOLFSSL)
@@ -350,13 +349,15 @@ NabtoDeviceError NABTO_DEVICE_API nabto_device_set_private_key(NabtoDevice* devi
         }
         dev->certificate = crt;
 
+        if (ec == NABTO_EC_OK) {
 #if defined(NABTO_DEVICE_MBEDTLS)
-        ec = nm_mbedtls_get_fingerprint_from_private_key(dev->privateKey, dev->fingerprint);
+            ec = nm_mbedtls_get_fingerprint_from_private_key(dev->privateKey, dev->fingerprint);
 #elif defined(NABTO_DEVICE_WOLFSSL)
-        ec = nm_wolfssl_get_fingerprint_from_private_key(dev->privateKey, dev->fingerprint);
+            ec = nm_wolfssl_get_fingerprint_from_private_key(dev->privateKey, dev->fingerprint);
 #else
 #error Missing implementation to create a crt from a private key.
 #endif
+        }
     }
 
     nabto_device_threads_mutex_unlock(dev->eventMutex);
@@ -454,9 +455,8 @@ NabtoDeviceError NABTO_DEVICE_API nabto_device_get_local_port(NabtoDevice* devic
     nabto_device_threads_mutex_unlock(dev->eventMutex);
     if (p == 0) {
         return NABTO_DEVICE_EC_INVALID_STATE;
-    } else {
-        *port = p;
     }
+    *port = p;
     return NABTO_DEVICE_EC_OK;
 }
 
@@ -469,9 +469,8 @@ NabtoDeviceError NABTO_DEVICE_API nabto_device_get_p2p_port(NabtoDevice* device,
     nabto_device_threads_mutex_unlock(dev->eventMutex);
     if (p == 0) {
         return NABTO_DEVICE_EC_INVALID_STATE;
-    } else {
-        *port = p;
     }
+    *port = p;
     return NABTO_DEVICE_EC_OK;
 }
 
@@ -504,9 +503,8 @@ void NABTO_DEVICE_API nabto_device_start(NabtoDevice* device, NabtoDeviceFuture*
         NABTO_LOG_ERROR(LOG, "Encryption key pair not set");
         nabto_device_future_resolve(fut, NABTO_EC_INVALID_STATE);
     } else {
-        np_error_code ec;
         // Init platform
-        ec = nc_device_set_keys(&dev->core, (const unsigned char*)dev->certificate, strlen(dev->certificate), (const unsigned char*)dev->privateKey, strlen(dev->privateKey), dev->fingerprint);
+        np_error_code ec = nc_device_set_keys(&dev->core, (const unsigned char*)dev->certificate, strlen(dev->certificate), (const unsigned char*)dev->privateKey, strlen(dev->privateKey), dev->fingerprint);
         if (ec != NABTO_EC_OK) {
             nabto_device_future_resolve(fut, ec);
         } else {
@@ -527,7 +525,7 @@ static char* toHex(uint8_t* data, size_t dataLength)
     if (output == NULL) {
         return output;
     }
-    size_t i;
+    size_t i = 0;
     for (i = 0; i < dataLength; i++) {
         size_t outputOffset = i*2;
         sprintf(output+outputOffset, "%02x", data[i]);
@@ -539,7 +537,7 @@ NabtoDeviceError NABTO_DEVICE_API nabto_device_get_device_fingerprint(NabtoDevic
 {
     *fingerprint = NULL;
     struct nabto_device_context* dev = (struct nabto_device_context*)device;
-    np_error_code ec;
+    np_error_code ec = NABTO_EC_FAILED;
     nabto_device_threads_mutex_lock(dev->eventMutex);
     if (dev->privateKey == NULL) {
         ec = NABTO_EC_INVALID_STATE;
@@ -555,7 +553,7 @@ NabtoDeviceError NABTO_DEVICE_API nabto_device_get_device_fingerprint_hex(NabtoD
 {
     *fingerprint = NULL;
     struct nabto_device_context* dev = (struct nabto_device_context*)device;
-    np_error_code ec;
+    np_error_code ec = NABTO_EC_FAILED;
     nabto_device_threads_mutex_lock(dev->eventMutex);
     if (dev->privateKey == NULL) {
         ec = NABTO_EC_INVALID_STATE;
@@ -692,7 +690,7 @@ nabto_device_add_server_connect_token(NabtoDevice* device, const char* serverCon
         return NABTO_DEVICE_EC_INVALID_ARGUMENT;
     }
     struct nabto_device_context* dev = (struct nabto_device_context*)device;
-    np_error_code ec;
+    np_error_code ec = NABTO_EC_FAILED;
     nabto_device_threads_mutex_lock(dev->eventMutex);
     ec = nc_device_add_server_connect_token(&dev->core, serverConnectToken);
     nabto_device_threads_mutex_unlock(dev->eventMutex);
@@ -703,7 +701,7 @@ NabtoDeviceError NABTO_DEVICE_API
 nabto_device_are_server_connect_tokens_synchronized(NabtoDevice* device)
 {
     struct nabto_device_context* dev = (struct nabto_device_context*)device;
-    np_error_code ec;
+    np_error_code ec = NABTO_EC_FAILED;
     nabto_device_threads_mutex_lock(dev->eventMutex);
     ec = nc_device_is_server_connect_tokens_synchronized(&dev->core);
     nabto_device_threads_mutex_unlock(dev->eventMutex);
@@ -718,7 +716,7 @@ nabto_device_create_server_connect_token(NabtoDevice* device, char** serverConne
 
     struct nabto_device_context* dev = (struct nabto_device_context*)device;
 
-    np_error_code ec;
+    np_error_code ec = NABTO_EC_FAILED;
     nabto_device_threads_mutex_lock(dev->eventMutex);
 
     struct np_platform* pl = &dev->pl;
@@ -727,7 +725,7 @@ nabto_device_create_server_connect_token(NabtoDevice* device, char** serverConne
     memset(output, 0, 13);
     size_t generated = 0;
     while (generated < 12) {
-        uint8_t randByte;
+        uint8_t randByte = 0;
 
         ec = pl->random.random(pl, &randByte, 1);
         if (ec) {
@@ -762,7 +760,7 @@ NabtoDeviceError NABTO_DEVICE_API
 nabto_device_set_root_certs(NabtoDevice* device, const char* certs)
 {
     struct nabto_device_context* dev = (struct nabto_device_context*)device;
-    np_error_code ec;
+    np_error_code ec = NABTO_EC_FAILED;
 
     nabto_device_threads_mutex_lock(dev->eventMutex);
     ec = nc_attacher_set_root_certs(&dev->core.attacher, certs);

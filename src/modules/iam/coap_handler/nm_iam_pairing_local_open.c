@@ -32,8 +32,8 @@ void handle_request(struct nm_iam_coap_handler* handler, NabtoDeviceCoapRequest*
         return;
     }
 
-    NabtoDeviceError ec;
-    char* fingerprint;
+    NabtoDeviceError ec = 0;
+    char* fingerprint = NULL;
     ec = nabto_device_connection_get_client_fingerprint(handler->device, ref, &fingerprint);
     if (ec) {
         nabto_device_coap_error_response(request, 500, "Server error");
@@ -43,39 +43,43 @@ void handle_request(struct nm_iam_coap_handler* handler, NabtoDeviceCoapRequest*
     CborParser parser;
     CborValue value;
 
-    if (!nm_iam_cbor_init_parser(request, &parser, &value)) {
-        nabto_device_coap_error_response(request, 400, "Bad request");
+    enum nm_iam_cbor_error err = nm_iam_cbor_init_parser(request, &parser, &value);
+    if ( err != IAM_CBOR_OK ) {
+        nm_iam_cbor_send_error_response(request, err);
+        nm_iam_free(fingerprint);
         return;
     }
 
     char* username = NULL;
     char* fpName = NULL;
 
-    nm_iam_cbor_decode_kv_string(&value, "Username", &username);
-    nm_iam_cbor_decode_kv_string(&value, "FingerprintName", &fpName);
-
+    if (!nm_iam_cbor_decode_kv_string(&value, "Username", &username)) {
+        nabto_device_coap_error_response(request, 400, "Invalid CBOR data for Username");
+        nm_iam_free(fingerprint);
+        return;
+    }
     if (username == NULL) {
         nabto_device_coap_error_response(request, 400, "Username missing");
-        nm_iam_free(username);
+        nm_iam_free(fingerprint);
         return;
-    } else {
-            enum nm_iam_error e = nm_iam_internal_pair_new_client(handler->iam, username, fingerprint, fpName);
-            switch (e) {
-            case NM_IAM_ERROR_OK:
-                // OK response
-                nabto_device_coap_response_set_code(request, 201);
-                nabto_device_coap_response_ready(request);
-                break;
-            case NM_IAM_ERROR_INVALID_ARGUMENT:
-                nabto_device_coap_error_response(request, 400, "Invalid username");
-                break;
-            case NM_IAM_ERROR_USER_EXISTS:
-                nabto_device_coap_error_response(request, 409, "Conflict");
-                break;
-            default:
-                nabto_device_coap_error_response(request, 500, "Server error");
-            }
+    }
+    nm_iam_cbor_decode_kv_string(&value, "FingerprintName", &fpName); // FingerprintName is optional
 
+    enum nm_iam_error e = nm_iam_internal_pair_new_client(handler->iam, username, fingerprint, fpName);
+    switch (e) {
+    case NM_IAM_ERROR_OK:
+        // OK response
+        nabto_device_coap_response_set_code(request, 201);
+        nabto_device_coap_response_ready(request);
+        break;
+    case NM_IAM_ERROR_INVALID_ARGUMENT:
+        nabto_device_coap_error_response(request, 400, "Invalid username");
+        break;
+    case NM_IAM_ERROR_USER_EXISTS:
+        nabto_device_coap_error_response(request, 409, "Conflict");
+        break;
+    default:
+        nabto_device_coap_error_response(request, 500, "Server error");
     }
 
     nm_iam_free(fingerprint);

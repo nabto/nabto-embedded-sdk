@@ -75,7 +75,7 @@ np_error_code nm_libevent_dns_init(struct nm_libevent_dns* ctx, struct event_bas
         nabto_device_threads_free_mutex(ctx->cancelMutex);
         return NABTO_EC_OUT_OF_MEMORY;
     }
-    int r;
+    int r = 0;
 #if _WIN32
     r = evdns_base_config_windows_nameservers(ctx->dnsBase);
 #else
@@ -108,7 +108,7 @@ void nm_libevent_dns_stop(struct nm_libevent_dns* ctx)
     nabto_device_threads_mutex_unlock(ctx->mutex);
 
     nabto_device_threads_mutex_lock(ctx->cancelMutex);
-    struct nm_dns_request* request;
+    struct nm_dns_request* request = NULL;
     NN_LLIST_FOREACH(request, &ctx->requests) {
         evdns_getaddrinfo_cancel(request->req);
     }

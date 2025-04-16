@@ -1,0 +1,22 @@
+name: Check code
+
+on:
+  push:
+  release:
+    types: [published]
+
+jobs:
+  build-and-test:
+    timeout-minutes: 20
+    name: Build
+    runs-on: "ubuntu-24.04"
+
+    steps:
+      - name: Install compiler
+        run: sudo apt update && sudo apt install -y build-essential cmake git ninja-build
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+          fetch-depth: 0
+      - name: Build
+        run: cmake --workflow --preset werror

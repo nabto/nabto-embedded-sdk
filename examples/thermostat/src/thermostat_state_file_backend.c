@@ -47,7 +47,7 @@ bool thermostate_state_file_backend_load_data(struct thermostat_state_file_backe
     if (!json_config_exists(fb->fsImpl, fb->filename)) {
         thermostat_state_file_backend_create_default_state_file(fb);
     }
-    cJSON* json;
+    cJSON* json = NULL;
     if (!json_config_load(fb->fsImpl, fb->filename, &json, logger)) {
         NN_LOG_ERROR(logger, LOGM, "Cannot load state from file %s", fb->filename);
         return false;

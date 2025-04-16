@@ -40,10 +40,19 @@ class AttachTest {
         np_completion_event_deinit(&boundCompletionEvent);
     }
 
+    void addSct(std::string sct) {
+        sct_ = sct;
+    }
+
+    static void udpEvent(enum nc_device_event event, void* data)
+    {
+        // we do not test udp socket failures here, just ignore event
+    }
+
     void start(std::function<void (AttachTest& at)> event, std::function<void (AttachTest& at)> state) {
         event_ = event;
         state_ = state;
-        BOOST_TEST(nc_udp_dispatch_init(&udpDispatch_, tp_.getPlatform()) == NABTO_EC_OK);
+        BOOST_TEST(nc_udp_dispatch_init(&udpDispatch_, tp_.getPlatform(), &AttachTest::udpEvent, this) == NABTO_EC_OK);
         nc_udp_dispatch_async_bind(&udpDispatch_, tp_.getPlatform(), 0,
                                    &boundCompletionEvent);
     }
@@ -63,6 +72,10 @@ class AttachTest {
         nc_attacher_set_handshake_timeout(&attach_, 50, 500);
         attach_.retryWaitTime = 100;
         attach_.accessDeniedWaitTime = 1000;
+
+        if (!sct_.empty()) {
+            nc_attacher_add_server_connect_token(&attach_, sct_.c_str());
+        }
 
         BOOST_TEST(nc_attacher_start(&attach_, hostname_.c_str(), serverPort_, &udpDispatch_) == NABTO_EC_OK);
         state_(*this);
@@ -161,6 +174,7 @@ class AttachTest {
     const char* appVersion_ = "bar";
     std::string productId_ = "test";
     std::string deviceId_ = "devTest";
+    std::string sct_ = "";
     const unsigned char* devPupKey_ = reinterpret_cast<const unsigned char*>(nabto::test::devicePublicKey.c_str());
     size_t devPubKeySize_ = nabto::test::devicePublicKey.size();
     const unsigned char* devPrivKey_ = reinterpret_cast<const unsigned char*>(nabto::test::devicePrivateKey.c_str());
@@ -199,6 +213,28 @@ BOOST_AUTO_TEST_CASE(attach_close, * boost::unit_test::timeout(300))
                                   });
                  }
              },[](nabto::test::AttachTest& at){(void)at; });
+
+    at.waitForTestEnd();
+    attachServer->stop();
+    BOOST_TEST(attachServer->attachCount_ == (uint64_t)1);
+}
+
+
+BOOST_AUTO_TEST_CASE(attach_sct, *boost::unit_test::timeout(300))
+{
+    auto ioService = nabto::IoService::create("test");
+    auto attachServer = nabto::test::AttachServer::create(ioService->getIoService());
+
+    auto tp = nabto::test::TestPlatform::create();
+    nabto::test::AttachTest at(*tp, attachServer->getHostname(), attachServer->getPort(), attachServer->getRootCerts());
+    at.addSct("foobar");
+    at.start([](nabto::test::AttachTest& at) {
+        if (at.attachCount_ == (uint64_t)1) {
+            at.niceClose([](nabto::test::AttachTest& at) {
+                at.end();
+                });
+        }
+        }, [](nabto::test::AttachTest& at) {(void)at; });
 
     at.waitForTestEnd();
     attachServer->stop();

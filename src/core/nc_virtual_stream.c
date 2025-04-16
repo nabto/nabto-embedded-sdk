@@ -287,7 +287,8 @@ void nc_virtual_stream_client_async_close(struct nc_stream_context* stream, stru
         // Wait for outstanding write to finish before closing
         stream->virt.closeEv = closeEv;
         return;
-    } else if (stream->readAllEv != NULL || stream->readSomeEv != NULL) {
+    }
+    if (stream->readAllEv != NULL || stream->readSomeEv != NULL) {
         nc_stream_resolve_read(stream, NABTO_EC_EOF);
     }
     np_completion_event_resolve(closeEv, NABTO_EC_OK);
@@ -300,7 +301,8 @@ void nc_virtual_stream_server_close(struct nc_stream_context* stream)
     if (stream->writeEv != NULL) {
         // Wait for outstanding write to finish before closing
         return;
-    } else if (stream->virt.readAllEv != NULL || stream->virt.readSomeEv != NULL) {
+    }
+    if (stream->virt.readAllEv != NULL || stream->virt.readSomeEv != NULL) {
         nc_virtual_stream_resolve_read(stream, NABTO_EC_EOF);
     }
     np_completion_event_resolve(stream->closeEv, NABTO_EC_OK);

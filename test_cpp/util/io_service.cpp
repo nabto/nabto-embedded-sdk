@@ -3,7 +3,7 @@
 namespace nabto {
 
 IoService::IoService(const std::string& name)
-    : name_(name)
+    : name_(name), work_(boost::asio::make_work_guard(io_))
 {
 }
 
@@ -22,29 +22,13 @@ IoServicePtr IoService::create(const std::string& name)
 
 void IoService::start()
 {
-    work_.reset(new boost::asio::io_context::work(io_));
+    //work_ = boost::asio::make_work_guard(io_);
+    //work_.reset(new boost::asio::io_context::work(io_));
     auto& io = io_;
     thread_.reset(new std::thread([&io, this](){
                 std::string name = name_;
                 io.run();
             }));
-}
-
-void IoService::restart()
-{
-    work_.reset(new boost::asio::io_context::work(io_));
-    auto& io = io_;
-    io.restart();
-    thread_.reset(new std::thread([&io, this](){
-                std::string name = name_;
-                io.run();
-            }));
-
-}
-
-void IoService::workReset()
-{
-    work_.reset();
 }
 
 void IoService::stop()
@@ -66,7 +50,7 @@ void IoService::shutdown()
         thread_->join();
     }
     thread_.reset();
-    io_.reset();           // Reset the io service (not thread safe, requires no threads using it)
+    //io_.reset();           // Reset the io service (not thread safe, requires no threads using it)
 }
 
 boost::asio::io_context& IoService::getIoService()

@@ -33,24 +33,24 @@ void handle_request(struct nm_iam_coap_handler* handler, NabtoDeviceCoapRequest*
     CborParser parser;
     CborValue value;
 
-    if (!nm_iam_cbor_init_parser(request, &parser, &value)) {
-        nabto_device_coap_error_response(request, 400, "Bad request");
+    enum nm_iam_cbor_error ec = nm_iam_cbor_init_parser(request, &parser, &value);
+    if ( ec != IAM_CBOR_OK ) {
+        nm_iam_cbor_send_error_response(request, ec);
         return;
     }
 
     char* username = NULL;
 
-    nm_iam_cbor_decode_kv_string(&value, "Username", &username);
-
-    if (username == NULL) {
+    if (!nm_iam_cbor_decode_kv_string(&value, "Username", &username)) {
         nabto_device_coap_error_response(request, 400, "Username missing");
-        nm_iam_free(username);
         return;
-    } else if (!nm_iam_user_validate_username(username)) {
+    }
+    if (!nm_iam_user_validate_username(username)) {
         nabto_device_coap_error_response(request, 400, "Invalid username");
         nm_iam_free(username);
         return;
-    } else if (strlen(username) > handler->iam->usernameMaxLength) {
+    }
+    if (strlen(username) > handler->iam->usernameMaxLength) {
         nabto_device_coap_error_response(request, 400, "Username too long");
         nm_iam_free(username);
         return;
@@ -63,9 +63,15 @@ void handle_request(struct nm_iam_coap_handler* handler, NabtoDeviceCoapRequest*
     }
 
     struct nm_iam_user* user = nm_iam_user_new(username);
+    if (user == NULL) {
+        nabto_device_coap_error_response(request, 500, "Insufficient resources");
+        nm_iam_free(username);
+        return;
+    }
 
-    char* sct;
+    char* sct = NULL;
     if (nabto_device_create_server_connect_token(handler->iam->device, &sct) != NABTO_DEVICE_EC_OK ||
+        sct == NULL ||
         strlen(sct) > handler->iam->sctMaxLength ||
         !nm_iam_user_set_sct(user, sct)) {
 
@@ -92,8 +98,8 @@ void handle_request(struct nm_iam_coap_handler* handler, NabtoDeviceCoapRequest*
 
     nabto_device_coap_response_set_code(request, 201);
     nabto_device_coap_response_set_content_format(request, NABTO_DEVICE_COAP_CONTENT_FORMAT_APPLICATION_CBOR);
-    NabtoDeviceError ec = nabto_device_coap_response_set_payload(request, payload, payloadSize);
-    if (ec != NABTO_DEVICE_EC_OK) {
+    NabtoDeviceError err = nabto_device_coap_response_set_payload(request, payload, payloadSize);
+    if (err != NABTO_DEVICE_EC_OK) {
         nabto_device_coap_error_response(request, 500, "Insufficient resources");
     } else {
         nabto_device_coap_response_ready(request);

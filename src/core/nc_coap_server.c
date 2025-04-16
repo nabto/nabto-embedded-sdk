@@ -34,15 +34,17 @@ np_error_code nc_coap_server_init(struct np_platform* pl, struct nc_device_conte
 {
     ctx->sendBuffer = NULL;
     nabto_coap_error err = nabto_coap_server_init(&ctx->server, logger, np_allocator_get());
-    nabto_coap_server_requests_init(&ctx->requests, &ctx->server, &nc_coap_server_get_stamp, &nc_coap_server_notify_event, ctx);
+    if (err != NABTO_COAP_ERROR_OK) {
+        return nc_coap_error_to_core(err);
+    }
+    err = nabto_coap_server_requests_init(&ctx->requests, &ctx->server, &nc_coap_server_get_stamp, &nc_coap_server_notify_event, ctx);
     if (err != NABTO_COAP_ERROR_OK) {
         return nc_coap_error_to_core(err);
     }
     ctx->pl = pl;
     ctx->device = device;
     nc_coap_server_set_infinite_stamp(ctx);
-    np_error_code ec;
-    ec = np_event_queue_create_event(&pl->eq, &nc_coap_server_notify_event_callback, ctx, &ctx->ev);
+    np_error_code ec = np_event_queue_create_event(&pl->eq, &nc_coap_server_notify_event_callback, ctx, &ctx->ev);
     if (ec != NABTO_EC_OK) {
         return ec;
     }
@@ -93,9 +95,8 @@ void nc_coap_server_event(struct nc_coap_server_context* ctx)
             // we are waiting for an async operation before doing the next
             // thing
             return;
-        } else {
-            nc_coap_server_event_deferred(ctx);
         }
+        nc_coap_server_event_deferred(ctx);
     } else if (nextEvent == NABTO_COAP_SERVER_NEXT_EVENT_WAIT) {
         nc_coap_server_handle_wait(ctx);
         return;
@@ -152,7 +153,7 @@ np_error_code nc_coap_server_handle_send(struct nc_coap_server_context* ctx)
 
 void nc_coap_server_handle_wait(struct nc_coap_server_context* ctx)
 {
-    uint32_t nextStamp;
+    uint32_t nextStamp = 0;
     nabto_coap_server_get_next_timeout(&ctx->requests, &nextStamp);
     if (nabto_coap_is_stamp_less(nextStamp, ctx->currentExpiry)) {
         ctx->currentExpiry = nextStamp;
@@ -189,7 +190,7 @@ void nc_coap_server_remove_connection(struct nc_coap_server_context* ctx, struct
 {
     if (connection->isVirtual) {
         struct nc_virtual_connection* virConn = connection->connectionImplCtx;
-        struct nc_coap_server_request* request;
+        struct nc_coap_server_request* request = NULL;
         NN_LLIST_FOREACH(request, &virConn->coapRequests) {
             request->virRequest->connectionClosed = true;
             nc_coap_server_resolve_virtual(NABTO_EC_STOPPED, request);
@@ -286,12 +287,15 @@ void nc_coap_server_remove_resource(struct nc_coap_server_resource* resource)
     if (resource->resource != NULL) {
         nabto_coap_server_remove_resource(resource->resource);
     }
-    struct nc_coap_server_request* req;
+    struct nc_coap_server_request* req = NULL;
     struct nn_llist_iterator it = nn_llist_begin(&resource->virtualRequests);
     while(!nn_llist_is_end(&it)) {
         req = nn_llist_get_item(&it);
         nn_llist_next(&it);
-        nc_coap_server_send_error_response(req, NABTO_COAP_CODE_NOT_FOUND, "Resource not found");
+        nabto_coap_error ec = nc_coap_server_send_error_response(req, NABTO_COAP_CODE_NOT_FOUND, "Resource not found");
+        if (ec != NABTO_COAP_ERROR_OK) {
+            NABTO_LOG_ERROR(LOG, "Cannot send coap error response. Discarding the response.");
+        }
     }
     np_free(resource);
 }
@@ -429,10 +433,9 @@ void* nc_coap_server_request_get_connection(struct nc_coap_server_request* reque
 {
     if (request->isVirtual) {
         return request->virRequest->connection;
-    } else {
-        struct nc_client_connection* cliConn = nabto_coap_server_request_get_connection(request->request);
-        return nc_connections_connection_from_client_connection(&request->device->connections, cliConn);
     }
+    struct nc_client_connection* cliConn = nabto_coap_server_request_get_connection(request->request);
+    return nc_connections_connection_from_client_connection(&request->device->connections, cliConn);
 }
 
 uint64_t nc_coap_server_request_get_connection_ref(struct nc_coap_server_request* request)
@@ -456,12 +459,10 @@ const char* nc_coap_server_request_get_parameter(struct nc_coap_server_request* 
         struct nn_string_map_iterator it = nn_string_map_get(&request->virRequest->parameters, parameter);
         if (nn_string_map_is_end(&it)) {
             return NULL;
-        } else {
-            return nn_string_map_value(&it);
         }
-    } else {
-        return nabto_coap_server_request_get_parameter(request->request, parameter);
+        return nn_string_map_value(&it);
     }
+    return nabto_coap_server_request_get_parameter(request->request, parameter);
 }
 
 
@@ -513,9 +514,8 @@ int32_t nc_coap_server_response_get_content_format(struct nc_coap_server_request
         request->virRequest == NULL ||
         !request->virRequest->responseReady) {
         return -1;
-    } else {
-        return request->virRequest->respContentFormat;
     }
+    return request->virRequest->respContentFormat;
 }
 
 bool nc_coap_server_response_get_payload(struct nc_coap_server_request* request, void** payload, size_t* payloadLength)
@@ -524,35 +524,24 @@ bool nc_coap_server_response_get_payload(struct nc_coap_server_request* request,
         request->virRequest == NULL ||
         !request->virRequest->responseReady) {
         return false;
-    } else {
-        *payload = request->virRequest->respPayload;
-        *payloadLength = request->virRequest->respPayloadSize;
-        return true;
     }
+    *payload = request->virRequest->respPayload;
+    *payloadLength = request->virRequest->respPayloadSize;
+    return true;
 
 }
 
-nabto_coap_code nc_coap_server_response_get_code(struct nc_coap_server_request* request)
+np_error_code nc_coap_server_response_get_code_human(struct nc_coap_server_request* request, uint16_t* code)
 {
     if (!request->isVirtual ||
         request->virRequest == NULL ||
-        !request->virRequest->responseReady) {
-        return -1;
-    } else {
-        return request->virRequest->respStatusCode;
+        !request->virRequest->responseReady)
+    {
+        return NABTO_EC_INVALID_STATE;
     }
-
-}
-uint16_t nc_coap_server_response_get_code_human(struct nc_coap_server_request* request)
-{
-    if (!request->isVirtual ||
-        request->virRequest == NULL ||
-        !request->virRequest->responseReady) {
-        return 0;
-    } else {
-        uint8_t compactCode = request->virRequest->respStatusCode;
-        return ((compactCode >> 5)) * 100 + (compactCode & 0x1f);
-    }
+    uint8_t compactCode = request->virRequest->respStatusCode;
+    *code = ((compactCode >> 5)) * 100 + (compactCode & 0x1f);
+    return NABTO_EC_OK;
 }
 
 void nc_coap_server_resolve_virtual(np_error_code ec, struct nc_coap_server_request* request)

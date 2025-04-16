@@ -22,30 +22,38 @@ static size_t encode_response(struct nm_iam* iam, void* buffer, size_t bufferSiz
     CborEncoder encoder;
     cbor_encoder_init(&encoder, buffer, bufferSize, 0);
     CborEncoder map;
-    cbor_encoder_create_map(&encoder, &map, CborIndefiniteLength);
-
-    cbor_encode_text_stringz(&map, "Modes");
-
     CborEncoder array;
-    cbor_encoder_create_array(&map, &array, CborIndefiniteLength);
 
-    if (nm_iam_pairing_is_password_open_possible(iam, conn)) {
-        cbor_encode_text_stringz(&array, "PasswordOpen");
+    if (nm_iam_cbor_err_not_oom(cbor_encoder_create_map(&encoder, &map, CborIndefiniteLength)) ||
+        nm_iam_cbor_err_not_oom(cbor_encode_text_stringz(&map, "Modes")) ||
+        nm_iam_cbor_err_not_oom(cbor_encoder_create_array(&map, &array, CborIndefiniteLength))) {
+        return 0;
     }
 
-    if (nm_iam_pairing_is_local_open_possible(iam, conn)) {
-        cbor_encode_text_stringz(&array, "LocalOpen");
+
+    if (nm_iam_pairing_is_password_open_possible(iam, conn) &&
+        nm_iam_cbor_err_not_oom(cbor_encode_text_stringz(&array, "PasswordOpen"))) {
+            return 0;
     }
 
-    if (nm_iam_pairing_is_password_invite_possible(iam, conn)) {
-        cbor_encode_text_stringz(&array, "PasswordInvite");
+    if (nm_iam_pairing_is_local_open_possible(iam, conn) &&
+        nm_iam_cbor_err_not_oom(cbor_encode_text_stringz(&array, "LocalOpen"))) {
+        return 0;
     }
 
-    if (nm_iam_pairing_is_local_initial_possible(iam, conn)) {
-        cbor_encode_text_stringz(&array, "LocalInitial");
+    if (nm_iam_pairing_is_password_invite_possible(iam, conn) &&
+        nm_iam_cbor_err_not_oom(cbor_encode_text_stringz(&array, "PasswordInvite"))) {
+        return 0;
     }
 
-    cbor_encoder_close_container(&map, &array);
+    if (nm_iam_pairing_is_local_initial_possible(iam, conn) &&
+        nm_iam_cbor_err_not_oom(cbor_encode_text_stringz(&array, "LocalInitial"))) {
+        return 0;
+    }
+
+    if (nm_iam_cbor_err_not_oom(cbor_encoder_close_container(&map, &array))) {
+        return 0;
+    }
 
     const char* nabtoVersion = nabto_device_version();
     const char* appName = nabto_device_get_app_name(iam->device);
@@ -54,36 +62,50 @@ static size_t encode_response(struct nm_iam* iam, void* buffer, size_t bufferSiz
     const char* deviceId = nabto_device_get_device_id(iam->device);
 
     if (nabtoVersion) {
-        cbor_encode_text_stringz(&map, "NabtoVersion");
-        cbor_encode_text_stringz(&map, nabtoVersion);
+        if (nm_iam_cbor_err_not_oom(cbor_encode_text_stringz(&map, "NabtoVersion")) ||
+            nm_iam_cbor_err_not_oom(cbor_encode_text_stringz(&map, nabtoVersion))) {
+            return 0;
+        }
     }
 
     if (appVersion) {
-        cbor_encode_text_stringz(&map, "AppVersion");
-        cbor_encode_text_stringz(&map, appVersion);
+        if (nm_iam_cbor_err_not_oom(cbor_encode_text_stringz(&map, "AppVersion")) ||
+            nm_iam_cbor_err_not_oom(cbor_encode_text_stringz(&map, appVersion))) {
+            return 0;
+        }
     }
 
     if (appName) {
-        cbor_encode_text_stringz(&map, "AppName");
-        cbor_encode_text_stringz(&map, appName);
+        if (nm_iam_cbor_err_not_oom(cbor_encode_text_stringz(&map, "AppName")) ||
+            nm_iam_cbor_err_not_oom(cbor_encode_text_stringz(&map, appName))) {
+            return 0;
+        }
     }
 
     if (productId) {
-        cbor_encode_text_stringz(&map, "ProductId");
-        cbor_encode_text_stringz(&map, productId);
+        if (nm_iam_cbor_err_not_oom(cbor_encode_text_stringz(&map, "ProductId")) ||
+            nm_iam_cbor_err_not_oom(cbor_encode_text_stringz(&map, productId))) {
+            return 0;
+        }
     }
 
     if (deviceId) {
-        cbor_encode_text_stringz(&map, "DeviceId");
-        cbor_encode_text_stringz(&map, deviceId);
+        if (nm_iam_cbor_err_not_oom(cbor_encode_text_stringz(&map, "DeviceId")) ||
+            nm_iam_cbor_err_not_oom(cbor_encode_text_stringz(&map, deviceId))) {
+            return 0;
+        }
     }
 
     if (iam->state->friendlyName) {
-        cbor_encode_text_stringz(&map, "FriendlyName");
-        cbor_encode_text_stringz(&map, iam->state->friendlyName);
+        if (nm_iam_cbor_err_not_oom(cbor_encode_text_stringz(&map, "FriendlyName")) ||
+            nm_iam_cbor_err_not_oom(cbor_encode_text_stringz(&map, iam->state->friendlyName))) {
+            return 0;
+        }
     }
 
-    cbor_encoder_close_container(&encoder, &map);
+    if (nm_iam_cbor_err_not_oom(cbor_encoder_close_container(&encoder, &map))) {
+        return 0;
+    }
 
     return cbor_encoder_get_extra_bytes_needed(&encoder);
 }

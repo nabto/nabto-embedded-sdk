@@ -19,8 +19,8 @@ void nm_logging_unix_init()
 void nm_unix_log (uint32_t severity, uint32_t module, uint32_t line, const char* file, const char* fmt, va_list args)
 {
     if(((NABTO_LOG_SEVERITY_FILTER & severity) && ((NABTO_LOG_MODULE_FILTER & module) || module == 0))) {
-        time_t sec;
-        unsigned int ms;
+        time_t sec = 0;
+        unsigned int ms = 0;
         struct timeval tv;
         struct tm tm;
         gettimeofday(&tv, NULL);
@@ -30,12 +30,9 @@ void nm_unix_log (uint32_t severity, uint32_t module, uint32_t line, const char*
         localtime_r(&sec, &tm);
 
         size_t fileLen = strlen(file);
-        char fileTmp[NM_UNIX_LOGGING_FILE_LENGTH+4];
+        const char* fileTmp = file;
         if(fileLen > NM_UNIX_LOGGING_FILE_LENGTH) {
-            strcpy(fileTmp, "...");
-            strcpy(fileTmp + 3, file + fileLen - NM_UNIX_LOGGING_FILE_LENGTH);
-        } else {
-            strcpy(fileTmp, file);
+            fileTmp = file + fileLen - NM_UNIX_LOGGING_FILE_LENGTH;
         }
         char level[6];
         switch(severity) {

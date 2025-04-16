@@ -197,7 +197,8 @@ void tcp_readen(np_error_code ec, void* userData)
     if (ec == NABTO_EC_OK) {
         start_stream_write(connection, connection->readLength);
         return;
-    } else if (ec == NABTO_EC_ABORTED) {
+    }
+    if (ec == NABTO_EC_ABORTED) {
         NABTO_LOG_TRACE(LOG, "TCP read aborted");
     } else {
         NABTO_LOG_ERROR(LOG, "Tcp read error");

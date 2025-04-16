@@ -66,7 +66,7 @@ void p256r1_multiplication_speed_test(struct nabto_device_context* dev) {
 
     // do multiplication
 
-    int status;
+    int status = 0;
     // calculcate Q = d*G where d is a bignumber and G is the generator for the group P256r1
 
     uint8_t number[32];

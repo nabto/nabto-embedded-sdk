@@ -33,7 +33,7 @@ bool nm_mbedtls_random_init(struct np_platform* pl)
     }
     mbedtls_ctr_drbg_init(&ctx->ctr_drbg);
     mbedtls_entropy_init(&ctx->entropy);
-    int ret;
+    int ret = 0;
     ret = mbedtls_ctr_drbg_seed(&ctx->ctr_drbg, mbedtls_entropy_func, &ctx->entropy, NULL, 0);
     if (ret != 0) {
         free_random_ctx(ctx);

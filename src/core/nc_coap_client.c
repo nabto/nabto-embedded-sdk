@@ -26,9 +26,8 @@ struct nabto_coap_client* nc_coap_client_get_client(struct nc_coap_client_contex
 np_error_code nc_coap_client_init(struct np_platform* pl, struct nc_coap_client_context* ctx)
 {
     ctx->sendBuffer = NULL;
-    np_error_code ec;
     ctx->pl = pl;
-    ec = np_event_queue_create_event(&ctx->pl->eq, &nc_coap_client_notify_event_callback, ctx, &ctx->ev);
+    np_error_code ec = np_event_queue_create_event(&ctx->pl->eq, &nc_coap_client_notify_event_callback, ctx, &ctx->ev);
     if (ec != NABTO_EC_OK) {
         return ec;
     }
@@ -40,6 +39,10 @@ np_error_code nc_coap_client_init(struct np_platform* pl, struct nc_coap_client_
 
     ec = np_completion_event_init(&ctx->pl->eq, &ctx->sendCtx.ev,
                                   &nc_coap_client_send_to_callback, ctx);
+    if (ec != NABTO_EC_OK)
+    {
+        return ec;
+    }
 
     nabto_coap_error err = nabto_coap_client_init(&ctx->client, np_allocator_get(), &nc_coap_client_notify_event, ctx);
     if (err != NABTO_COAP_ERROR_OK) {
@@ -93,7 +96,7 @@ np_error_code nc_coap_client_handle_send(struct nc_coap_client_context* ctx)
         return NABTO_EC_OPERATION_IN_PROGRESS;
     }
     uint32_t ts = np_timestamp_now_ms(&ctx->pl->timestamp);
-    void* connection;
+    void* connection = NULL;
 
     ctx->sendBuffer = pl->buf.allocate();
     if (ctx->sendBuffer == NULL) {
@@ -113,19 +116,18 @@ np_error_code nc_coap_client_handle_send(struct nc_coap_client_context* ctx)
         pl->buf.free(ctx->sendBuffer);
         ctx->sendBuffer = NULL;
         return NABTO_EC_UNKNOWN;
-    } else {
-        size_t used = ptr - sendCtx->buffer;
-        sendCtx->bufferSize = (uint16_t)used;
-
-        struct np_dtls_cli_connection* dtls = connection;
-        ctx->pl->dtlsC.async_send_data(dtls, sendCtx);
-        return NABTO_EC_OPERATION_STARTED;
     }
+    size_t used = ptr - sendCtx->buffer;
+    sendCtx->bufferSize = (uint16_t)used;
+
+    struct np_dtls_cli_connection* dtls = connection;
+    ctx->pl->dtlsC.async_send_data(dtls, sendCtx);
+    return NABTO_EC_OPERATION_STARTED;
 }
 
 void nc_coap_client_handle_wait(struct nc_coap_client_context* ctx)
 {
-    uint32_t nextStamp;
+    uint32_t nextStamp = 0;
     uint32_t now = np_timestamp_now_ms(&ctx->pl->timestamp);
     nextStamp = nabto_coap_client_get_next_timeout(&ctx->client, now);
     if (nabto_coap_is_stamp_less(nextStamp, ctx->currentExpiry)) {
@@ -166,15 +168,15 @@ void nc_coap_client_event(struct nc_coap_client_context* ctx)
     if (nextEvent == NABTO_COAP_CLIENT_NEXT_EVENT_CALLBACK) {
         nc_coap_client_handle_callback(ctx);
         return;
-    } else if (nextEvent == NABTO_COAP_CLIENT_NEXT_EVENT_SEND) {
+    }
+    if (nextEvent == NABTO_COAP_CLIENT_NEXT_EVENT_SEND) {
         np_error_code ec = nc_coap_client_handle_send(ctx);
         if (ec == NABTO_EC_OPERATION_IN_PROGRESS ||
             ec == NABTO_EC_OPERATION_STARTED) {
             return;
-        } else {
-            // a packet was not sent,
-            nc_coap_client_event_deferred(ctx);
         }
+        // a packet was not sent,
+        nc_coap_client_event_deferred(ctx);
     } else if (nextEvent == NABTO_COAP_CLIENT_NEXT_EVENT_WAIT) {
         nc_coap_client_handle_wait(ctx);
         return;
@@ -215,5 +217,6 @@ void nc_coap_client_set_infinite_stamp(struct nc_coap_client_context* ctx)
 {
     uint32_t now = np_timestamp_now_ms(&ctx->pl->timestamp);
     ctx->currentExpiry = now;
+    // overflow is welldefined for unsigned integers in the c standard.
     ctx->currentExpiry += (1 << 29);
 }

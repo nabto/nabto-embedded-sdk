@@ -68,7 +68,7 @@ void thermostat_stop(struct thermostat* thermostat)
 
 NabtoDeviceError thermostat_init_coap_handlers(struct thermostat* thermostat)
 {
-    NabtoDeviceError ec;
+    NabtoDeviceError ec = 0;
     ec = thermostat_get_init(&thermostat->coapGet, thermostat->device, thermostat);
     if (ec != NABTO_DEVICE_EC_OK) {
         return ec;

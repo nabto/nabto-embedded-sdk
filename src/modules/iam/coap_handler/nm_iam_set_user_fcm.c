@@ -23,8 +23,6 @@ bool handle_request_data(struct nm_iam* iam, CborValue* map, struct nm_iam_user*
         return false;
     }
 
-    bool status = true;
-
     char* t = NULL;
     char* p = NULL;
 
@@ -32,9 +30,17 @@ bool handle_request_data(struct nm_iam* iam, CborValue* map, struct nm_iam_user*
     CborValue projectId;
     cbor_value_map_find_value(map, "Token", &token);
     cbor_value_map_find_value(map, "ProjectId", &projectId);
-    nm_iam_cbor_decode_string(&token, &t);
-    nm_iam_cbor_decode_string(&projectId, &p);
+    if (!nm_iam_cbor_decode_string(&token, &t)) {
+         nm_iam_free(t);
+         return false;
+    }
+    if (!nm_iam_cbor_decode_string(&projectId, &p)) {
+         nm_iam_free(t);
+         nm_iam_free(p);
+         return false;
+    }
 
+    bool status = true;
     if (t != NULL && p != NULL && strlen(t) < iam->fcmTokenMaxLength && strlen(p) < iam->fcmProjectIdMaxLength) {
         nm_iam_user_set_fcm_token(user, t);
         nm_iam_user_set_fcm_project_id(user, p);
@@ -51,8 +57,13 @@ void handle_request(struct nm_iam_coap_handler* handler, NabtoDeviceCoapRequest*
     CborParser parser;
     CborValue value;
     const char* username = nabto_device_coap_request_get_parameter(request, "user");
-    if (username == NULL || !nm_iam_cbor_init_parser(request, &parser, &value)) {
+    if (username == NULL) {
         nabto_device_coap_error_response(request, 400, "Bad request");
+        return;
+    }
+    enum nm_iam_cbor_error ec = nm_iam_cbor_init_parser(request, &parser, &value);
+    if ( ec != IAM_CBOR_OK ) {
+        nm_iam_cbor_send_error_response(request, ec);
         return;
     }
 

@@ -259,8 +259,7 @@ np_error_code nm_wolfssl_srv_create_connection(
 
     struct np_platform* pl = ctx->pl;
 
-    np_error_code ec;
-    ec = np_event_queue_create_event(&pl->eq,
+    np_error_code ec = np_event_queue_create_event(&pl->eq,
                                      &nm_wolfssl_srv_start_send_deferred, ctx,
                                      &ctx->startSendEvent);
     if (ec != NABTO_EC_OK) {
@@ -378,7 +377,7 @@ void nm_wolfssl_srv_do_one(void* data)
 {
     struct np_dtls_srv_connection* ctx = (struct np_dtls_srv_connection*)data;
     if (ctx->state == CONNECTING) {
-        int ret;
+        int ret = 0;
         ret = wolfSSL_accept(ctx->ssl);
         if (ret != WOLFSSL_SUCCESS) {
             int err = wolfSSL_get_error(ctx->ssl, ret);
@@ -399,7 +398,7 @@ void nm_wolfssl_srv_do_one(void* data)
             event_callback(ctx, NP_DTLS_EVENT_HANDSHAKE_COMPLETE);
         }
     } else if (ctx->state == DATA) {
-        int ret;
+        int ret = 0;
         uint8_t recvBuffer[1500];
         ret = wolfSSL_read(ctx->ssl, recvBuffer, sizeof(recvBuffer));
         if (ret == 0) {
@@ -560,7 +559,7 @@ np_error_code nm_wolfssl_srv_init_config(struct np_dtls_srv* server,
                                          const unsigned char* privateKeyL,
                                          size_t privateKeySize)
 {
-    int ret;
+    int ret = 0;
 
     if (wolfSSL_CTX_set_cipher_list(server->ctx, allowedCipherSuitesList) !=
         WOLFSSL_SUCCESS) {

@@ -15,6 +15,7 @@
 np_error_code nc_client_connection_async_send_to_udp(uint8_t channelId,
                                                      uint8_t* buffer, uint16_t bufferSize,
                                                      struct np_completion_event* cb, void* listenerData);
+// TODO remove unused MTU discovery code.
 void nc_client_connection_mtu_discovered(const np_error_code ec, uint16_t mtu, void* data);
 
 void nc_client_connection_handle_event(enum np_dtls_event event, void* data);
@@ -37,7 +38,6 @@ np_error_code nc_client_connection_init(struct np_platform* pl, struct nc_client
                                         struct nc_udp_dispatch_context* sock, struct np_udp_endpoint* ep,
                                         uint8_t* buffer, uint16_t bufferSize)
 {
-    np_error_code ec;
     memset(conn, 0, sizeof(struct nc_client_connection));
     memcpy(conn->id.id, buffer, 16);
     conn->currentChannel.sock = sock;
@@ -51,7 +51,7 @@ np_error_code nc_client_connection_init(struct np_platform* pl, struct nc_client
     conn->device = device;
     conn->parent = nc_connections_connection_from_client_connection(&device->connections, conn);
 
-    ec = nc_keep_alive_init(&conn->keepAlive, conn->pl, &nc_client_connection_keep_alive_event, conn);
+    np_error_code ec = nc_keep_alive_init(&conn->keepAlive, conn->pl, &nc_client_connection_keep_alive_event, conn);
     if (ec != NABTO_EC_OK) {
         return ec;
     }
@@ -86,15 +86,14 @@ np_error_code nc_client_connection_init(struct np_platform* pl, struct nc_client
 
 np_error_code nc_client_connection_start(struct nc_client_connection* connection, uint8_t* buffer, size_t bufferSize)
 {
-    np_error_code ec;
     struct np_platform* pl = connection->pl;
 #if defined(NABTO_DEVICE_DTLS_CLIENT_ONLY)
-    ec = pl->dtlsC.connect(connection->dtls);
+    np_error_code ec = pl->dtlsC.connect(connection->dtls);
 #else
     // Remove connection ID before passing packet to DTLS
     uint8_t* start = buffer + 16;
     bufferSize = bufferSize-16;
-    ec = pl->dtlsS.handle_packet(pl, connection->dtls, connection->currentChannel.channelId, start, (uint16_t)bufferSize);
+    np_error_code ec = pl->dtlsS.handle_packet(pl, connection->dtls, connection->currentChannel.channelId, start, (uint16_t)bufferSize);
 #endif
     return ec;
 }
@@ -103,7 +102,6 @@ np_error_code nc_client_connection_handle_packet(struct np_platform* pl, struct 
                                                  struct nc_udp_dispatch_context* sock, struct np_udp_endpoint* ep,
                                                  uint8_t* buffer, uint16_t bufferSize)
 {
-    np_error_code ec;
     uint8_t* start = buffer;
 
     uint8_t channelId = *(start+15);
@@ -126,9 +124,9 @@ np_error_code nc_client_connection_handle_packet(struct np_platform* pl, struct 
     memmove(start, start+16, bufferSize-16);
     bufferSize = bufferSize-16;
 #if defined(NABTO_DEVICE_DTLS_CLIENT_ONLY)
-    ec = pl->dtlsC.handle_packet(conn->dtls, channelId, buffer, bufferSize);
+    np_error_code ec = pl->dtlsC.handle_packet(conn->dtls, channelId, buffer, bufferSize);
 #else
-    ec = pl->dtlsS.handle_packet(conn->pl, conn->dtls, conn->currentChannel.channelId, buffer, bufferSize);
+    np_error_code ec = pl->dtlsS.handle_packet(conn->pl, conn->dtls, conn->currentChannel.channelId, buffer, bufferSize);
 #endif
     return ec;
 }
@@ -183,7 +181,7 @@ void nc_client_connection_handle_data(uint8_t channelId, uint64_t sequence,
                                       uint8_t* buffer, uint16_t bufferSize, void* data)
 {
     struct nc_client_connection* conn = (struct nc_client_connection*)data;
-    uint8_t applicationType;
+    uint8_t applicationType = 0;
 
     applicationType = *(buffer);
 
@@ -241,8 +239,8 @@ void nc_client_connection_keep_alive_event(void* data)
     struct nc_client_connection* ctx = (struct nc_client_connection*)data;
     struct np_platform* pl = ctx->pl;
 
-    uint32_t recvCount;
-    uint32_t sentCount;
+    uint32_t recvCount = 0;
+    uint32_t sentCount = 0;
 
 #if defined(NABTO_DEVICE_DTLS_CLIENT_ONLY)
     pl->dtlsC.get_packet_count(ctx->dtls, &recvCount, &sentCount);
@@ -327,7 +325,11 @@ void nc_client_connection_send_to_udp_cb(const np_error_code ec, void* data)
     }
     struct np_completion_event* cb = conn->sentCb;
     conn->sentCb = NULL;
-    np_completion_event_resolve(cb, ec);
+    if (ec == NABTO_EC_OK || ec == NABTO_EC_FAILED_TO_SEND_PACKET) {
+        np_completion_event_resolve(cb, NABTO_EC_OK);
+    } else {
+        np_completion_event_resolve(cb, ec);
+    }
 }
 
 np_error_code nc_client_connection_async_send_to_udp(uint8_t channel,

@@ -14,11 +14,13 @@ void nc_spake2_handle_coap_1(struct nc_coap_server_request* request, void* data)
 void nc_spake2_handle_coap_2(struct nc_coap_server_request* request, void* data);
 
 np_error_code nc_spake2_coap_init(struct nc_spake2_module* module, struct nc_coap_server_context* coap) {
-    nabto_coap_error err;
-    err = nc_coap_server_add_resource(coap, NABTO_COAP_METHOD_POST,
+    nabto_coap_error err = nc_coap_server_add_resource(coap, NABTO_COAP_METHOD_POST,
                                          (const char*[]){"p2p", "pwd-auth", "1", NULL},
                                          &nc_spake2_handle_coap_1, module,
                                          &module->spake21);
+    if (err != NABTO_COAP_ERROR_OK) {
+        return nc_coap_error_to_core(err);
+    }
 
     err = nc_coap_server_add_resource(coap, NABTO_COAP_METHOD_POST,
                                          (const char*[]){"p2p", "pwd-auth", "2", NULL},
@@ -51,14 +53,18 @@ static bool read_username_and_password(struct nc_spake2_password_request* passwo
 {
     CborParser parser;
     CborValue map;
-    cbor_parser_init(payload, payloadLength, 0, &parser, &map);
+    if (cbor_parser_init(payload, payloadLength, 0, &parser, &map) != CborNoError) {
+        return false;
+    }
 
     // Read Username
     // Read T
     CborValue username;
     CborValue T;
-    cbor_value_map_find_value(&map, "Username", &username);
-    cbor_value_map_find_value(&map, "T", &T);
+    if (cbor_value_map_find_value(&map, "Username", &username) != CborNoError ||
+        cbor_value_map_find_value(&map, "T", &T) != CborNoError) {
+        return false;
+    }
 
     if (!nc_cbor_copy_text_string(&username, &passwordRequest->username,
                                   4096) ||
@@ -70,8 +76,8 @@ static bool read_username_and_password(struct nc_spake2_password_request* passwo
 
 void nc_spake2_handle_coap_1(struct nc_coap_server_request* request, void* data)
 {
-    uint8_t* payload;
-    size_t payloadLength;
+    uint8_t* payload = NULL;
+    size_t payloadLength = 0;
 
     struct nc_spake2_module* spake2 = data;
 
@@ -115,8 +121,8 @@ void nc_spake2_handle_coap_1(struct nc_coap_server_request* request, void* data)
 
 void nc_spake2_handle_coap_2(struct nc_coap_server_request* request, void* data)
 {
-    uint8_t* payload;
-    size_t payloadLength;
+    uint8_t* payload = NULL;
+    size_t payloadLength = 0;
     struct nc_connection* connection = nc_coap_server_request_get_connection(request);
 
     struct nc_spake2_module* spake2 = data;
@@ -138,7 +144,7 @@ void nc_spake2_handle_coap_2(struct nc_coap_server_request* request, void* data)
             nc_coap_server_send_error_response(request, (nabto_coap_code)NABTO_COAP_CODE(4,00), NULL);
         } else {
             uint8_t responseData[32];
-            if (spake2->pl->spake2.key_confirmation(NULL, payload, payloadLength, connection->spake2Key, 32, responseData, 32) != NABTO_EC_OK) {
+            if (spake2->pl->spake2.key_confirmation(payload, payloadLength, connection->spake2Key, 32, responseData, 32) != NABTO_EC_OK) {
                 nc_coap_server_send_error_response(request, (nabto_coap_code)NABTO_COAP_CODE(4,01), NULL);
                 nc_spake2_spend_token(spake2);
             } else {

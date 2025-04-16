@@ -1,26 +1,26 @@
 #include "nm_mbedtls_cli.h"
-#include "nm_mbedtls_util.h"
-#include "nm_mbedtls_timer.h"
 #include "nm_mbedtls_common.h"
+#include "nm_mbedtls_timer.h"
+#include "nm_mbedtls_util.h"
 
-#include <platform/np_logging.h>
-#include <platform/np_event_queue_wrapper.h>
 #include <platform/np_allocator.h>
+#include <platform/np_event_queue_wrapper.h>
+#include <platform/np_logging.h>
 
-#include <core/nc_version.h>
 #include <core/nc_udp_dispatch.h>
+#include <core/nc_version.h>
 
 #if !defined(DEVICE_MBEDTLS_2)
 #include <mbedtls/build_info.h>
 #endif
-#include <mbedtls/debug.h>
-#include <mbedtls/ssl.h>
-#include <mbedtls/entropy.h>
 #include <mbedtls/ctr_drbg.h>
+#include <mbedtls/debug.h>
+#include <mbedtls/entropy.h>
 #include <mbedtls/error.h>
-#include <mbedtls/timing.h>
-#include <mbedtls/ssl_ciphersuites.h>
 #include <mbedtls/pem.h>
+#include <mbedtls/ssl.h>
+#include <mbedtls/ssl_ciphersuites.h>
+#include <mbedtls/timing.h>
 
 #include <string.h>
 
@@ -100,8 +100,8 @@ static np_error_code create_client_connection(
 static void destroy_connection(struct np_dtls_cli_connection* conn);
 
 static np_error_code set_keys(struct np_platform* pl,
-                              const unsigned char* certificate,
-                              size_t certificateSize,
+                              const unsigned char* publicKeyL,
+                              size_t publicKeySize,
                               const unsigned char* privateKeyL,
                               size_t privateKeySize);
 static np_error_code set_handshake_timeout(struct np_platform* pl,
@@ -138,11 +138,12 @@ static void event_do_one(void *data);
 static void nm_dtls_do_close(void* data, np_error_code ec);
 static void start_send(struct np_dtls_cli_connection *conn);
 static void start_send_deferred(void *data);
-static void dtls_udp_send_callback(const np_error_code ec, void *data);
-static uint64_t uint64_from_bigendian(uint8_t *bytes);
+static void dtls_udp_send_callback(np_error_code ec, void *data);
+static uint64_t uint64_from_bigendian(const uint8_t *bytes);
 static int nm_dtls_mbedtls_send(void *data, const unsigned char *buffer, size_t bufferSize);
 static int nm_dtls_mbedtls_recv(void *data, unsigned char *buffer, size_t bufferSize);
 static void nm_dtls_timed_event_do_one(void *data);
+static void event_handle_connecting_state(struct np_dtls_cli_connection* conn);
 
 /*
  * Initialize the np_platform to use this particular dtls cli module
@@ -187,7 +188,7 @@ void nm_mbedtls_cli_deinit(struct np_platform* pl)
 
 np_error_code init_mbedtls_config(struct nm_mbedtls_cli_context* ctx, mbedtls_ssl_config* conf)
 {
-    int ret;
+    int ret = 0;
     if ((ret = mbedtls_ssl_config_defaults(conf,
                                            MBEDTLS_SSL_IS_CLIENT,
                                            MBEDTLS_SSL_TRANSPORT_DATAGRAM,
@@ -229,7 +230,7 @@ np_error_code initialize_context(struct np_platform* pl)
     mbedtls_pk_init( &ctx->privateKey );
     mbedtls_x509_crt_init(&ctx->rootCerts);
 
-    int ret;
+    int ret = 0;
     const char *pers = "dtls_client";
 
     if( ( ret = mbedtls_ctr_drbg_seed( &ctx->ctr_drbg, mbedtls_entropy_func, &ctx->entropy,
@@ -289,6 +290,9 @@ np_error_code create_connection(struct np_platform* pl, struct np_dtls_cli_conne
 
     ec = np_completion_event_init(&pl->eq, &conn->senderEvent,
                                   &dtls_udp_send_callback, conn);
+    if (ec != NABTO_EC_OK) {
+        return ec;
+    }
 
     mbedtls_ssl_set_bio( &conn->ssl, conn,
                          nm_dtls_mbedtls_send, nm_dtls_mbedtls_recv, NULL );
@@ -319,7 +323,7 @@ static np_error_code create_client_connection(
         *connection = NULL;
         return ec;
     }
-    int ret;
+    int ret = 0;
 
     struct nm_mbedtls_cli_context* ctx = (struct nm_mbedtls_cli_context*)pl->dtlsCData;
 
@@ -355,7 +359,7 @@ static np_error_code create_attach_connection(
 
     }
 
-    int ret;
+    int ret = 0;
     if( ( ret = mbedtls_ssl_setup( &(*connection)->ssl, &ctx->attachConf ) ) != 0 )
     {
         NABTO_LOG_INFO(LOG,  " failed  ! mbedtls_ssl_setup returned %d", ret );
@@ -471,7 +475,7 @@ np_error_code set_keys(struct np_platform *pl,
     if (ctx == NULL) {
         return NABTO_EC_INVALID_STATE;
     }
-    int ret;
+    int ret = 0;
     mbedtls_x509_crt_init( &ctx->publicKey );
     mbedtls_pk_init( &ctx->privateKey );
     ret = mbedtls_x509_crt_parse( &ctx->publicKey, publicKeyL, publicKeySize+1);
@@ -512,7 +516,7 @@ np_error_code set_root_certs(struct np_platform* pl, const char* rootCerts)
     if (ctx == NULL) {
         return NABTO_EC_INVALID_STATE;
     }
-    int ret;
+    int ret = 0;
     ret = mbedtls_x509_crt_parse (&ctx->rootCerts, (const unsigned char *)rootCerts, strlen(rootCerts)+1);
     if (ret == MBEDTLS_ERR_PEM_ALLOC_FAILED) {
         return NABTO_EC_OUT_OF_MEMORY;
@@ -564,68 +568,11 @@ np_error_code dtls_connect(struct np_dtls_cli_connection* conn)
 void event_do_one(void* data)
 {
     struct np_dtls_cli_connection* conn = data;
-    int ret;
+    int ret = 0;
     if(conn->state == CONNECTING) {
-        ret = mbedtls_ssl_handshake( &conn->ssl );
-        if( ret == MBEDTLS_ERR_SSL_WANT_READ ||
-            ret == MBEDTLS_ERR_SSL_WANT_WRITE ) {
-            //Keep State CONNECTING
-        } else if (ret == MBEDTLS_ERR_SSL_FATAL_ALERT_MESSAGE &&
-                   conn->ssl.MBEDTLS_PRIVATE(in_msg)[1] == MBEDTLS_SSL_ALERT_MSG_ACCESS_DENIED)
-        {
-            conn->state = CLOSING;
-            nm_mbedtls_timer_cancel(&conn->timer);
-            conn->eventHandler(NP_DTLS_EVENT_ACCESS_DENIED, conn->callbackData);
-            return;
-        } else {
-            if( ret != 0 )
-            {
-                enum np_dtls_event event = NP_DTLS_EVENT_CLOSED;
-                if (ret == MBEDTLS_ERR_X509_CERT_VERIFY_FAILED) {
-                    char info[128];
-                    info[sizeof(info)-1] = 0;
-                    uint32_t validationStatus = mbedtls_ssl_get_verify_result(&conn->ssl);
-                    int s = mbedtls_x509_crt_verify_info(info, sizeof(info), "", validationStatus);
-                    if (s > 0) {
-                        NABTO_LOG_ERROR(LOG, "Certificate verification failed %s", info);
-                    } else {
-                        NABTO_LOG_ERROR(LOG,
-                                        "Certificate verification failed with "
-                                        "error code: %u",
-                                        validationStatus);
-                    }
-                    if (validationStatus == MBEDTLS_X509_BADCERT_FUTURE ||
-                        validationStatus == MBEDTLS_X509_BADCERT_EXPIRED) {
-                        NABTO_LOG_ERROR(
-                            LOG,
-                            "Time may not be configured on this system. "
-                            "Certificates which are expired or starting in the "
-                            "future are often caused by mis-configured timezone or"
-                            " system time.");
-                    }
-                    event = NP_DTLS_EVENT_CERTIFICATE_VERIFICATION_FAILED;
-                } else {
-                    NABTO_LOG_INFO(LOG,  " failed  ! mbedtls_ssl_handshake returned %i", ret );
-                }
-                conn->state = CLOSING;
-                nm_mbedtls_timer_cancel(&conn->timer);
-                conn->eventHandler(event, conn->callbackData);
-                return;
-            } else if (mbedtls_ssl_get_alpn_protocol(&conn->ssl) == NULL) {
-                NABTO_LOG_ERROR(LOG, "Application Layer Protocol Negotiation failed for DTLS client connection");
-                conn->state = CLOSING;
-                nm_mbedtls_timer_cancel(&conn->timer);
-                conn->eventHandler(NP_DTLS_EVENT_CLOSED, conn->callbackData);
-                return;
-            }
-
-            NABTO_LOG_TRACE(LOG, "State changed to DATA");
-            conn->state = DATA;
-            conn->eventHandler(NP_DTLS_EVENT_HANDSHAKE_COMPLETE, conn->callbackData);
-        }
-        return;
+        event_handle_connecting_state(conn);
     } else if(conn->state == DATA) {
-        uint8_t* recvBuffer;
+        uint8_t* recvBuffer = NULL;
         ret = nm_mbedtls_recv_data(&conn->ssl, &recvBuffer);
         if (ret == 0) {
             // EOF
@@ -794,7 +741,7 @@ void dtls_udp_send_callback(const np_error_code ec, void* data)
     event_do_one(data);
 }
 
-uint64_t uint64_from_bigendian( uint8_t* bytes )
+uint64_t uint64_from_bigendian( const uint8_t* bytes )
 {
     return( ( (uint64_t) bytes[0] << 56 ) |
             ( (uint64_t) bytes[1] << 48 ) |
@@ -843,9 +790,8 @@ int nm_dtls_mbedtls_send(void* data, const unsigned char* buffer,
             return (int)bufferSize;
         }
         return (int)bufferSize;
-    } else {
-        return MBEDTLS_ERR_SSL_WANT_WRITE;
     }
+    return MBEDTLS_ERR_SSL_WANT_WRITE;
 }
 
 int nm_dtls_mbedtls_recv(void* data, unsigned char* buffer, size_t bufferSize)
@@ -853,23 +799,86 @@ int nm_dtls_mbedtls_recv(void* data, unsigned char* buffer, size_t bufferSize)
     struct np_dtls_cli_connection* conn = data;
     if (conn->recvBufferSize == 0) {
         return MBEDTLS_ERR_SSL_WANT_READ;
-    } else {
-        size_t maxCp = bufferSize > conn->recvBufferSize ? conn->recvBufferSize : bufferSize;
-        memcpy(buffer, conn->recvBuffer, maxCp);
-        if (maxCp < conn->recvBufferSize) {
-            conn->recvBuffer += maxCp;
-            conn->recvBufferSize -= maxCp;
-        } else {
-            conn->recvBufferSize = 0;
-        }
-        return (int)maxCp;
     }
+    size_t maxCp = bufferSize > conn->recvBufferSize ? conn->recvBufferSize : bufferSize;
+    memcpy(buffer, conn->recvBuffer, maxCp);
+    if (maxCp < conn->recvBufferSize) {
+        conn->recvBuffer += maxCp;
+        conn->recvBufferSize -= maxCp;
+    } else {
+        conn->recvBufferSize = 0;
+    }
+    return (int)maxCp;
 }
 
-void nm_dtls_timed_event_do_one(void* data) {
+void nm_dtls_timed_event_do_one(void* data)
+{
     struct np_dtls_cli_connection* conn = data;
     if (conn->state == CLOSING) {
         return;
     }
     event_do_one(data);
+}
+
+static void event_handle_connecting_state(struct np_dtls_cli_connection* conn)
+{
+    int ret = 0;
+    ret = mbedtls_ssl_handshake( &conn->ssl );
+    if( ret == MBEDTLS_ERR_SSL_WANT_READ ||
+        ret == MBEDTLS_ERR_SSL_WANT_WRITE ) {
+        //Keep State CONNECTING
+    } else if (ret == MBEDTLS_ERR_SSL_FATAL_ALERT_MESSAGE &&
+               conn->ssl.MBEDTLS_PRIVATE(in_msg)[1] == MBEDTLS_SSL_ALERT_MSG_ACCESS_DENIED)
+    {
+        conn->state = CLOSING;
+        nm_mbedtls_timer_cancel(&conn->timer);
+        conn->eventHandler(NP_DTLS_EVENT_ACCESS_DENIED, conn->callbackData);
+        return;
+    } else {
+        if( ret != 0 )
+        {
+            enum np_dtls_event event = NP_DTLS_EVENT_CLOSED;
+            if (ret == MBEDTLS_ERR_X509_CERT_VERIFY_FAILED) {
+                char info[128];
+                info[sizeof(info)-1] = 0;
+                uint32_t validationStatus = mbedtls_ssl_get_verify_result(&conn->ssl);
+                int s = mbedtls_x509_crt_verify_info(info, sizeof(info), "", validationStatus);
+                if (s > 0) {
+                    NABTO_LOG_ERROR(LOG, "Certificate verification failed %s", info);
+                } else {
+                    NABTO_LOG_ERROR(LOG,
+                                    "Certificate verification failed with "
+                                    "error code: %u",
+                                    validationStatus);
+                }
+                if (validationStatus == MBEDTLS_X509_BADCERT_FUTURE ||
+                    validationStatus == MBEDTLS_X509_BADCERT_EXPIRED) {
+                    NABTO_LOG_ERROR(
+                        LOG,
+                        "Time may not be configured on this system. "
+                        "Certificates which are expired or starting in the "
+                        "future are often caused by mis-configured timezone or"
+                        " system time.");
+                }
+                event = NP_DTLS_EVENT_CERTIFICATE_VERIFICATION_FAILED;
+            } else {
+                NABTO_LOG_INFO(LOG,  " failed  ! mbedtls_ssl_handshake returned %i", ret );
+            }
+            conn->state = CLOSING;
+            nm_mbedtls_timer_cancel(&conn->timer);
+            conn->eventHandler(event, conn->callbackData);
+            return;
+        }
+        if (mbedtls_ssl_get_alpn_protocol(&conn->ssl) == NULL) {
+            NABTO_LOG_ERROR(LOG, "Application Layer Protocol Negotiation failed for DTLS client connection");
+            conn->state = CLOSING;
+            nm_mbedtls_timer_cancel(&conn->timer);
+            conn->eventHandler(NP_DTLS_EVENT_CLOSED, conn->callbackData);
+            return;
+        }
+
+        NABTO_LOG_TRACE(LOG, "State changed to DATA");
+        conn->state = DATA;
+        conn->eventHandler(NP_DTLS_EVENT_HANDSHAKE_COMPLETE, conn->callbackData);
+    }
 }

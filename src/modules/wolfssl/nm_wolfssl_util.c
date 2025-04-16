@@ -49,7 +49,7 @@ np_error_code nm_wolfssl_create_crt_from_private_key(const char* privateKey,
 {
     uint8_t derBuffer[256];
 
-    int ret;
+    int ret = 0;
 
     Cert cert; // cert does not need an free function.
     ret = wc_InitCert(&cert);
@@ -116,7 +116,7 @@ np_error_code nm_wolfssl_create_crt_from_private_key(const char* privateKey,
         }
     }
 
-    int certLen;
+    int certLen = 0;
     if (ec == NABTO_EC_OK) {
         certLen = wc_SignCert(cert.bodySz, cert.sigType, derCert,
                               sizeof(derCert), NULL, &eccKey, &rng);
@@ -153,11 +153,11 @@ np_error_code nm_wolfssl_get_fingerprint_from_private_key(
     const char* privateKey, uint8_t* hash)
 {
     uint8_t publicKeyDer[256];
-    int publicKeyDerSize;
+    int publicKeyDerSize = 0;
 
     np_error_code ec = NABTO_EC_OK;
 
-    int ret;
+    int ret = 0;
     {
         uint8_t derBuffer[256];
         ecc_key eccKey;
@@ -218,7 +218,7 @@ np_error_code nm_wolfssl_get_fingerprint_from_private_key(
 np_error_code nm_wolfssl_util_create_private_key(char** privateKey)
 {
     ecc_key key;
-    int ret;
+    int ret = 0;
     ret = wc_ecc_init(&key);
     if (ret != 0) {
         return NABTO_EC_FAILED;

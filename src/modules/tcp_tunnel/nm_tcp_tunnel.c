@@ -143,8 +143,7 @@ np_error_code nm_tcp_tunnel_service_init_stream_listener(struct nm_tcp_tunnel_se
 {
     struct nc_device_context* device = service->tunnels->device;
     struct nc_stream_manager_context* streamManager = &device->streamManager;
-    np_error_code ec;
-    ec = nc_stream_manager_add_listener(streamManager, &service->streamListener, service->streamPort, &nm_tcp_tunnel_service_stream_listener_callback, service);
+    np_error_code ec = nc_stream_manager_add_listener(streamManager, &service->streamListener, service->streamPort, &nm_tcp_tunnel_service_stream_listener_callback, service);
     if (!ec) {
         service->streamPort = service->streamListener.type;
     }
@@ -157,28 +156,27 @@ void nm_tcp_tunnel_service_stream_listener_callback(np_error_code ec, struct nc_
     if (ec) {
         // probably stopped
         return;
-    } else {
-        // Service is guaranteed to be valid since removal of a service removes the listener.
-        struct nm_tcp_tunnel_service* service = servicePtr;
-
-        // we are not guaranteed that the service is not removed
-        // during the authorization request, so use a weakPtr instead.
-        void* serviceWeakPtr = service->weakPtr;
-
-
-        struct np_platform* pl = service->tunnels->device->pl;
-        struct np_authorization_request* authReq = pl->authorization.create_request(pl, stream->connectionRef, "TcpTunnel:Connect");
-        if (authReq &&
-            pl->authorization.add_string_attribute(authReq, "TcpTunnel:ServiceId", service->id) == NABTO_EC_OK &&
-            pl->authorization.add_string_attribute(authReq, "TcpTunnel:ServiceType", service->type) == NABTO_EC_OK)
-        {
-            pl->authorization.check_access(authReq, service_stream_iam_callback, service->tunnels, serviceWeakPtr, stream);
-            return;
-        }
-
-        pl->authorization.discard_request(authReq);
-        nc_stream_destroy(stream);
     }
+    // Service is guaranteed to be valid since removal of a service removes the listener.
+    struct nm_tcp_tunnel_service* service = servicePtr;
+
+    // we are not guaranteed that the service is not removed
+    // during the authorization request, so use a weakPtr instead.
+    void* serviceWeakPtr = service->weakPtr;
+
+
+    struct np_platform* pl = service->tunnels->device->pl;
+    struct np_authorization_request* authReq = pl->authorization.create_request(pl, stream->connectionRef, "TcpTunnel:Connect");
+    if (authReq &&
+        pl->authorization.add_string_attribute(authReq, "TcpTunnel:ServiceId", service->id) == NABTO_EC_OK &&
+        pl->authorization.add_string_attribute(authReq, "TcpTunnel:ServiceType", service->type) == NABTO_EC_OK)
+    {
+        pl->authorization.check_access(authReq, service_stream_iam_callback, service->tunnels, serviceWeakPtr, stream);
+        return;
+    }
+
+    pl->authorization.discard_request(authReq);
+    nc_stream_destroy(stream);
 }
 
 void service_stream_iam_callback(bool allow, void* tunnelsData, void* serviceWeakPtr, void* streamData)
@@ -262,7 +260,7 @@ struct nm_tcp_tunnel_service* nm_tcp_tunnels_find_service(struct nm_tcp_tunnels*
         return NULL;
     }
 
-    struct nm_tcp_tunnel_service* service;
+    struct nm_tcp_tunnel_service* service = NULL;
     NN_LLIST_FOREACH(service, &tunnels->services)
     {
         if (strcmp(service->id, id) == 0) {
@@ -273,7 +271,7 @@ struct nm_tcp_tunnel_service* nm_tcp_tunnels_find_service(struct nm_tcp_tunnels*
 }
 struct nm_tcp_tunnel_service* nm_tcp_tunnels_find_service_by_weak_ptr(struct nm_tcp_tunnels* tunnels, void* weakPtr)
 {
-    struct nm_tcp_tunnel_service* service;
+    struct nm_tcp_tunnel_service* service = NULL;
     NN_LLIST_FOREACH(service, &tunnels->services)
     {
         if (service->weakPtr == weakPtr) {
@@ -286,7 +284,7 @@ struct nm_tcp_tunnel_service* nm_tcp_tunnels_find_service_by_weak_ptr(struct nm_
 size_t nm_tcp_tunnel_connections_by_type(struct nm_tcp_tunnels* tunnels, const char* type)
 {
     size_t connections = 0;
-    struct nm_tcp_tunnel_service* service;
+    struct nm_tcp_tunnel_service* service = NULL;
     NN_LLIST_FOREACH(service, &tunnels->services)
     {
         if (strcmp(service->type, type) == 0) {

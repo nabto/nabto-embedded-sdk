@@ -72,7 +72,7 @@ uint8_t* var_uint_write_forward(uint8_t* buf, uint64_t val)
     uint8_t b0 = (uint8_t)(val >> 56);
 
     if (val < (1 << 6)) { // val fits in 6 bits
-        lengthBits = 0x00; // 00xxxxxx
+        // lengthBits = 0x00; // 00xxxxxx
         *buf = b7;
         buf++;
     } else if (val < (1 << 14)) { // val fits in 14 bits

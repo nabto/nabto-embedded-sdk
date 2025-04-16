@@ -60,7 +60,7 @@ void signal_handler(int s)
 
 int main(int argc, char** argv)
 {
-    NabtoDeviceFuture* listenerFuture;
+    NabtoDeviceFuture* listenerFuture = NULL;
     NabtoDeviceError ec = NABTO_DEVICE_EC_OK;
     head.next = NULL;
 
@@ -206,9 +206,9 @@ void closed(NabtoDeviceFuture* future, NabtoDeviceError ec, void* userData)
 
 bool start_device(NabtoDevice* dev, const char* productId, const char* deviceId)
 {
-    NabtoDeviceError ec;
-    char* privateKey;
-    char* fp;
+    NabtoDeviceError ec = 0;
+    char* privateKey = NULL;
+    char* fp = NULL;
 
     struct nm_fs fsImpl = nm_fs_posix_get_impl();
 

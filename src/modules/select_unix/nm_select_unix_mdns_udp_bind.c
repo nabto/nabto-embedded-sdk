@@ -51,8 +51,7 @@ np_error_code nm_select_unix_async_bind_mdns_ipv4_ec(struct np_udp_socket* sock)
         return NABTO_EC_ABORTED;
     }
 
-    np_error_code ec;
-    ec = create_socket_ipv4(sock);
+    np_error_code ec = create_socket_ipv4(sock);
 
     if (ec != NABTO_EC_OK) {
         return ec;
@@ -113,7 +112,7 @@ void nm_select_unix_async_bind_mdns_ipv6(struct np_udp_socket* sock, struct np_c
 np_error_code create_socket_ipv6(struct np_udp_socket* s)
 {
     int sock = nm_select_unix_udp_nonblocking_socket(AF_INET6, SOCK_DGRAM);
-    if (sock == -1) {
+    if (sock == NM_SELECT_UNIX_INVALID_SOCKET) {
         return NABTO_EC_UDP_SOCKET_CREATION_ERROR;
     }
 
@@ -132,7 +131,7 @@ np_error_code create_socket_ipv6(struct np_udp_socket* s)
 np_error_code create_socket_ipv4(struct np_udp_socket* s)
 {
     int sock = nm_select_unix_udp_nonblocking_socket(AF_INET, SOCK_DGRAM);
-    if (sock == -1) {
+    if (sock == NM_SELECT_UNIX_INVALID_SOCKET) {
         return NABTO_EC_UDP_SOCKET_CREATION_ERROR;
     }
     s->type = NABTO_IPV4;
@@ -222,6 +221,7 @@ void mdns_update_ipv4_socket_registration(int sock)
                 memset(&group, 0, sizeof(struct ip_mreq));
                 group.imr_multiaddr.s_addr = inet_addr("224.0.0.251");
                 //struct sockaddr_in* in = (struct sockaddr_in*)iterator->ifa_addr;
+                // TODO check return value
                 int index = if_nametoindex(iterator->ifa_name);
                 group.imr_ifindex = index;
                 int status = setsockopt(sock, IPPROTO_IP, IP_ADD_MEMBERSHIP, (char *)&group, sizeof(group));
@@ -250,6 +250,7 @@ void mdns_update_ipv6_socket_registration(int sock)
         while (iterator != NULL) {
             if (iterator->ifa_addr != NULL)
             {
+                // TODO check return value
                 int index = if_nametoindex(iterator->ifa_name);
 
                 struct ipv6_mreq group;

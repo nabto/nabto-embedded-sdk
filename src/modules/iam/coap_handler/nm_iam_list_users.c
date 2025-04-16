@@ -22,15 +22,24 @@ static size_t encode_users(struct nm_iam* iam, void* buffer, size_t bufferSize)
     CborEncoder encoder;
     cbor_encoder_init(&encoder, buffer, bufferSize, 0);
     CborEncoder array;
-    cbor_encoder_create_array(&encoder, &array, CborIndefiniteLength);
-
-    struct nn_llist* users = &iam->state->users;
-    struct nm_iam_user* user;
-    NN_LLIST_FOREACH(user, users) {
-        cbor_encode_text_stringz(&array, user->username);
+    CborError ec = cbor_encoder_create_array(&encoder, &array, CborIndefiniteLength);
+    if (ec != CborNoError) {
+        return 0;
     }
 
-    cbor_encoder_close_container(&encoder, &array);
+    struct nn_llist* users = &iam->state->users;
+    struct nm_iam_user* user = NULL;
+    NN_LLIST_FOREACH(user, users) {
+        ec = cbor_encode_text_stringz(&array, user->username);
+        if (ec != CborNoError) {
+            return 0;
+        }
+    }
+
+    ec = cbor_encoder_close_container(&encoder, &array);
+    if (ec != CborNoError) {
+        return 0;
+    }
 
      return cbor_encoder_get_extra_bytes_needed(&encoder);
 }

@@ -1,4 +1,4 @@
-find_package(Boost COMPONENTS asio)
+find_package(Boost CONFIG COMPONENTS asio)
 
 set(src
   udp_server.cpp

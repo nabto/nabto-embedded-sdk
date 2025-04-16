@@ -123,7 +123,7 @@ nabto_device_password_authentication_request_get_username(NabtoDevicePasswordAut
     struct nabto_device_password_authentication_request* req = (struct nabto_device_password_authentication_request*)request;
     struct nabto_device_context* dev = req->dev;
     struct nc_spake2_password_request* passwordRequest = req->passwordRequest;
-    const char* response;
+    const char* response = NULL;
     nabto_device_threads_mutex_lock(dev->eventMutex);
     if (req->handled) {
         response = NULL;

@@ -10,7 +10,7 @@
 void NABTO_DEVICE_API nabto_device_test_local_ip(NabtoDevice* device)
 {
     struct nabto_device_context* dev = (struct nabto_device_context*)device;
-    size_t localIpsSize;
+    size_t localIpsSize = 0;
     struct np_ip_address ips[4];
     localIpsSize = np_local_ip_get_local_ips(&dev->pl.localIp, ips, 4);
     NABTO_LOG_INFO(LOG, "Found %d local ips", localIpsSize);

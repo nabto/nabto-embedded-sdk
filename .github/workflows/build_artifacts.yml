@@ -9,7 +9,7 @@ jobs:
   build:
     strategy:
       matrix:
-        os: [windows-2022, ubuntu-20.04, macos-12]
+        os: [windows-2022, ubuntu-22.04, macos-15]
         include:
           - os: windows-2022
             exe_postfix: .zip
@@ -17,12 +17,12 @@ jobs:
             workflow: windows_vcpkg_static
             generate_extra_options: -DNABTO_DEVICE_USE_VCPKG=ON -DNABTO_DEVICE_PREFER_SYSTEM_LIBS=ON
             build_command: cmake --build build-dir --parallel --target install --config Release
-          - os: ubuntu-20.04
+          - os: ubuntu-22.04
             workflow: linux_vcpkg
             exe_postfix:
             friendly_name: linux_x86_64
             build_command: cmake --build build-dir --parallel --target install
-          - os: macos-12
+          - os: macos-15
             workflow: mac_fetchcontent_universal
             exe_postfix:
             friendly_name: macos
@@ -37,15 +37,31 @@ jobs:
         with:
           submodules: recursive
           fetch-depth: 0
-      - if: matrix.os == 'ubuntu-20.04'
+
+      # Temporarily ping CMake version to 3.31 (see #47)
+      - name: Install cmake
+        uses: jwlawson/actions-setup-cmake@v2
+        with:
+          cmake-version: '3.31.x'
+
+      - name: Export GitHub Actions cache environment variables
+        uses: actions/github-script@v7
+        with:
+          script: |
+            core.exportVariable('ACTIONS_CACHE_URL', process.env.ACTIONS_CACHE_URL || '');
+            core.exportVariable('ACTIONS_RUNTIME_TOKEN', process.env.ACTIONS_RUNTIME_TOKEN || '');
+
+      - if: matrix.os == 'ubuntu-22.04'
         name: Install Ninja
         run: sudo apt-get update && sudo apt-get install -y ninja-build
 
-      - if: matrix.os == 'macos-12'
+      - if: matrix.os == 'macos-15'
         name: Install Ninja
         run: brew install ninja
 
       - name: Build
+        env:
+          VCPKG_BINARY_SOURCES: "clear;x-gha,readwrite"
         run: cmake --workflow --preset ${{matrix.workflow}}
 
       - if: matrix.os != 'windows-2022'
@@ -70,13 +86,15 @@ jobs:
 
       - name: Upload artifacts to github actions workspace artifacts
         if: ${{ success() }}
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
-          # omit name and upload to defaults artifacts archive called artifact.
+          name: ${{ matrix.friendly_name }}
+
           path: |
             ${{ github.workspace }}/artifacts/bin/tcp_tunnel_device_${{matrix.friendly_name}}${{ matrix.exe_postfix }}
             ${{ github.workspace }}/artifacts/bin/thermostat_device_${{matrix.friendly_name}}${{ matrix.exe_postfix }}
           if-no-files-found: error
+          overwrite: true
 
   build-linux-arm:
     timeout-minutes: 20
@@ -134,18 +152,21 @@ jobs:
 
     - name: Upload artifacts
       if: ${{ success() }}
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
+        name: linux_${{ matrix.arch }}
         path: |
           ${{ github.workspace }}/artifacts/bin/tcp_tunnel_device_linux_${{matrix.arch}}
           ${{ github.workspace }}/artifacts/bin/thermostat_device_linux_${{matrix.arch}}
         if-no-files-found: error
+        overwrite: true
 
 
   upload-artifacts:
     timeout-minutes: 20
     strategy:
       matrix:
+        friendly_name: [linux_x86_64, linux_armv6, linux_armhf, linux_aarch64, windows, macos]
         binary: [tcp_tunnel_device, thermostat_device]
         suffix: [linux_x86_64, linux_armv6, linux_armhf, linux_aarch64, windows.zip, macos]
     name: Release Assets
@@ -158,7 +179,7 @@ jobs:
     if: github.event_name == 'release'
     steps:
       - name: download artifacts
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4
         with:
           path: ./
       - name: list files
@@ -169,6 +190,6 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           upload_url: ${{ github.event.release.upload_url }}
-          asset_path: ./artifact/${{matrix.binary}}_${{matrix.suffix}}
+          asset_path: ./${{matrix.friendly_name}}/${{matrix.binary}}_${{matrix.suffix}}
           asset_name: ${{matrix.binary}}_${{matrix.suffix}}
           asset_content_type: application/octet-stream

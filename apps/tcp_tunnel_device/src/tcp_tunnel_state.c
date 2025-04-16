@@ -20,7 +20,7 @@ static bool write_state_to_file(struct nm_fs* fsImpl, const char* stateFile, str
 
 bool load_tcp_tunnel_state(struct nm_iam_state* state, struct nm_fs* fsImpl, const char* stateFile, struct nn_log* logger)
 {
-    char* str;
+    char* str = NULL;
     if (!string_file_load(fsImpl, stateFile, &str)) {
         return false;
     }
@@ -43,7 +43,7 @@ bool load_tcp_tunnel_state(struct nm_iam_state* state, struct nm_fs* fsImpl, con
 
 bool write_state_to_file(struct nm_fs* fsImpl, const char* stateFile, struct nm_iam_state* state)
 {
-    char* str;
+    char* str = NULL;
     if (!nm_iam_serializer_state_dump_json(state, &str)) {
         //nm_iam_state_free(state);
         return false;

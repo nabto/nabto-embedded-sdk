@@ -70,14 +70,12 @@ void nabto_device_logging_std_out_callback(NabtoDeviceLogMessage* msg, void* dat
     struct datetime ts = getTimestamp();
 
     size_t fileLen = strlen(msg->file);
-    char fileTmp[NM_API_LOGGING_FILE_LENGTH+4];
+    const char* fileTmp = msg->file;
+
     if(fileLen > NM_API_LOGGING_FILE_LENGTH) {
-        strcpy(fileTmp, "...");
-        strcpy(fileTmp + 3, msg->file + fileLen - NM_API_LOGGING_FILE_LENGTH);
-    } else {
-        strcpy(fileTmp, msg->file);
+        fileTmp = msg->file + fileLen - NM_API_LOGGING_FILE_LENGTH;
     }
-    const char* level;
+    const char* level = NULL;
     switch(msg->severity) {
         case NABTO_DEVICE_LOG_ERROR:
             level = "ERROR";

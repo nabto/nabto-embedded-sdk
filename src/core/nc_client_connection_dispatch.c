@@ -84,13 +84,12 @@ void nc_client_connection_dispatch_handle_packet(struct nc_client_connection_dis
     if (bufferSize < 17) {
         return; // this is not a valid packet with atleast a nabto connection id header and a dtls packet type
     }
-    uint8_t* id;
+    uint8_t* id = NULL;
     id = buffer;
 
     struct nc_connection* connection = nc_connections_connection_from_id(ctx->connections, id);
     if (connection != NULL) {
-        np_error_code ec;
-        ec = nc_client_connection_handle_packet(ctx->pl, connection->connectionImplCtx, sock, ep, buffer, bufferSize);
+        np_error_code ec = nc_client_connection_handle_packet(ctx->pl, connection->connectionImplCtx, sock, ep, buffer, bufferSize);
         if (ec != NABTO_EC_OK) {
             //nc_client_connection_close_connection(&ctx->elms[i].conn);
         }

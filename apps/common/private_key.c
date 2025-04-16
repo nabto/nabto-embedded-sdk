@@ -9,7 +9,7 @@ static const char* LOGM = "private_key";
 
 bool create_private_key(NabtoDevice* device, struct nm_fs* fsImpl, const char* filename, struct nn_log* logger)
 {
-    char* privateKey;
+    char* privateKey = NULL;
     NabtoDeviceError ec = nabto_device_create_private_key(device, &privateKey);
     if (ec != NABTO_DEVICE_EC_OK) {
         NN_LOG_ERROR(logger, LOGM, "Could not generate a new private key. %s", nabto_device_error_get_message(ec));
@@ -30,7 +30,7 @@ bool load_or_create_private_key(NabtoDevice* device, struct nm_fs* fsImpl,const 
         }
     }
 
-    char* privateKey;
+    char* privateKey = NULL;
     bool status = string_file_load(fsImpl, filename, &privateKey);
     if (status == false) {
         NN_LOG_ERROR(logger, LOGM, "The private key could not be loaded from the key file %s", filename);

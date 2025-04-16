@@ -18,7 +18,6 @@ NabtoDeviceError nm_iam_delete_user_init(struct nm_iam_coap_handler* handler, Na
 
 void handle_request(struct nm_iam_coap_handler* handler, NabtoDeviceCoapRequest* request)
 {
-    enum nm_iam_error ec;
     const char* username = nabto_device_coap_request_get_parameter(request, "user");
     if (username == NULL) {
         nabto_device_coap_error_response(request, 500, NULL);
@@ -35,8 +34,8 @@ void handle_request(struct nm_iam_coap_handler* handler, NabtoDeviceCoapRequest*
         return;
     }
     nn_string_map_deinit(&attributes);
-
-    if ((ec = nm_iam_internal_delete_user(handler->iam, username)) == NM_IAM_ERROR_NO_SUCH_USER) {
+    enum nm_iam_error ec = nm_iam_internal_delete_user(handler->iam, username);
+    if (ec == NM_IAM_ERROR_NO_SUCH_USER) {
         nabto_device_coap_error_response(request, 404, "No Such User");
     } else if (ec == NM_IAM_ERROR_OK) {
         nabto_device_coap_response_set_code(request, 202);

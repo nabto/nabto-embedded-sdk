@@ -63,7 +63,7 @@ enum nm_iam_effect nm_policy_eval_get_effect(struct nm_policy_eval_state* state)
 
 void nm_policy_eval(struct nm_policy_eval_state* state, struct nm_iam_policy* policy, const char* action, const struct nn_string_map* attributes)
 {
-    struct nm_iam_statement* stmt;
+    struct nm_iam_statement* stmt = NULL;
     NN_LLIST_FOREACH(stmt, &policy->statements) {
         nm_policy_statement_eval(state, stmt, action, attributes);
     }

@@ -26,7 +26,7 @@ bool nm_wolfssl_random_init(struct np_platform* pl)
     if (ctx == NULL) {
         return false;
     }
-    int ret;
+    int ret = 0;
     ret = wc_InitRng(&ctx->rng);
     if (ret != 0) {
         free_random_ctx(ctx);

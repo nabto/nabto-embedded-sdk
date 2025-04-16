@@ -21,6 +21,8 @@ const int NABTO_DEVICE_EVENT_UNKNOWN_FINGERPRINT   = (int)NC_DEVICE_EVENT_UNKNOW
 const int NABTO_DEVICE_EVENT_WRONG_PRODUCT_ID   = (int)NC_DEVICE_EVENT_WRONG_PRODUCT_ID;
 const int NABTO_DEVICE_EVENT_WRONG_DEVICE_ID   = (int)NC_DEVICE_EVENT_WRONG_DEVICE_ID;
 const int NABTO_DEVICE_EVENT_CERTIFICATE_VALIDATION_FAILED   = (int)NC_DEVICE_EVENT_CERTIFICATE_VALIDATION_FAILED;
+const int NABTO_DEVICE_EVENT_WATCHDOG_FAILURE   = (int)NC_DEVICE_EVENT_WATCHDOG_FAILURE;
+const int NABTO_DEVICE_EVENT_PLATFORM_FAILURE   = (int)NC_DEVICE_EVENT_PLATFORM_FAILURE;
 
 struct nabto_device_listen_device_event{
     NabtoDeviceEvent coreEvent;
@@ -38,7 +40,7 @@ np_error_code nabto_device_events_listener_cb(const np_error_code ec, struct nab
 {
     (void)future;
     struct nabto_device_listen_device_context* ctx = (struct nabto_device_listen_device_context*)listenerData;
-    np_error_code retEc;
+    np_error_code retEc = NABTO_EC_FAILED;
     if (ec == NABTO_EC_OK) {
         struct nabto_device_listen_device_event* ev = (struct nabto_device_listen_device_event*)eventData;
         if (ctx->userEvent != NULL) {

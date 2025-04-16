@@ -255,7 +255,7 @@ struct nm_iam_state* nm_iam_state_copy(struct nm_iam_state* state)
         }
     }
 
-    struct nm_iam_user* user;
+    struct nm_iam_user* user = NULL;
     NN_LLIST_FOREACH(user, &state->users) {
         struct nm_iam_user* userCopy = nm_iam_user_copy(user);
         if (userCopy == NULL) {
@@ -267,9 +267,8 @@ struct nm_iam_state* nm_iam_state_copy(struct nm_iam_state* state)
     if (failed) {
         nm_iam_state_free(copy);
         return NULL;
-    } else {
-        return copy;
     }
+    return copy;
 }
 
 
@@ -278,7 +277,7 @@ struct nm_iam_user* nm_iam_state_find_user_by_username(struct nm_iam_state* stat
     if (username == NULL) {
         return NULL;
     }
-    struct nm_iam_user* user;
+    struct nm_iam_user* user = NULL;
     NN_LLIST_FOREACH(user, &state->users) {
         if (user->username != NULL && strcmp(user->username, username) == 0) {
             return user;
@@ -292,7 +291,7 @@ struct nm_iam_user* nm_iam_state_find_user_by_oauth_subject(struct nm_iam_state*
     if (subject == NULL) {
         return NULL;
     }
-    struct nm_iam_user* user;
+    struct nm_iam_user* user = NULL;
     NN_LLIST_FOREACH(user, &state->users) {
         if (user->oauthSubject != NULL && strcmp(user->oauthSubject, subject) == 0) {
             return user;

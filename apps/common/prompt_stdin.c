@@ -28,7 +28,7 @@ static inline bool is_printable(char c)
 
 bool prompt(const char* msg, char* buffer, size_t bufferSize, ...)
 {
-    char c;
+    char c = 0;
     int i = 0;
     int n = (int)bufferSize-1;
 
@@ -71,7 +71,7 @@ bool prompt_yes_no(const char* msg)
         char buffer[4];
         char n = ARRAY_SIZE(buffer);
 
-        bool valid;
+        bool valid = 0;
         if (msg == NULL) {
             valid = prompt("[y/n]", buffer, n);
         } else {
@@ -100,7 +100,7 @@ bool prompt_yes_no_default(const char* msg, bool def)
         char buffer[4];
         char n = ARRAY_SIZE(buffer);
 
-        bool valid;
+        bool valid = 0;
         if (msg == NULL) {
             valid = prompt("(default: %s) [y/n]", buffer, n, def ? "y" : "n");
         } else {
@@ -134,7 +134,7 @@ uint16_t prompt_uint16(const char* msg, uint16_t max)
         char buffer[16] = {0};
         int n = ARRAY_SIZE(buffer);
 
-        bool valid;
+        bool valid = 0;
         if (msg == NULL) {
             valid = prompt("[0-%d]", buffer, n, max);
         } else {
@@ -167,7 +167,7 @@ uint16_t prompt_uint16_default(const char* msg, uint16_t max, uint16_t def)
         char buffer[16] = {0};
         int n = ARRAY_SIZE(buffer);
 
-        bool valid;
+        bool valid = 0;
         if (msg == NULL) {
             valid = prompt("(default: %i) [0-%d]", buffer, n, def, max);
         } else {

@@ -54,7 +54,8 @@ void request_callback(NabtoDeviceFuture* future, NabtoDeviceError ec, void* user
     if (ec != NABTO_DEVICE_EC_OK) {
         NN_LOG_TRACE(iam->logger, LOGM, "IAM connection events listener returned with error: %s", nabto_device_error_get_string(ec));
         return;
-    } else if (ctx->ev == NABTO_DEVICE_CONNECTION_EVENT_CLOSED){
+    }
+    if (ctx->ev == NABTO_DEVICE_CONNECTION_EVENT_CLOSED){
         NN_LOG_TRACE(iam->logger, LOGM, "IAM received connection closed event for ref: %d", ctx->ref);
         nm_iam_lock(iam);
 

@@ -38,7 +38,7 @@ cJSON* nm_condition_to_json(const struct nm_iam_condition* condition)
 cJSON* nm_conditions_to_json(const struct nn_llist* conditions)
 {
     cJSON* array = cJSON_CreateArray();
-    struct nm_iam_condition* condition;
+    struct nm_iam_condition* condition = NULL;
     NN_LLIST_FOREACH(condition, conditions) {
         cJSON_AddItemToArray(array, nm_condition_to_json(condition));
     }
@@ -48,7 +48,7 @@ cJSON* nm_conditions_to_json(const struct nn_llist* conditions)
 cJSON* nm_string_set_to_json(const struct nn_string_set* set)
 {
     cJSON* array = cJSON_CreateArray();
-    const char* str;
+    const char* str = NULL;
     NN_STRING_SET_FOREACH(str, set) {
         cJSON_AddItemToArray(array, cJSON_CreateString(str));
     }
@@ -76,7 +76,7 @@ cJSON* nm_statement_to_json(const struct nm_iam_statement* statement)
 cJSON* nm_statements_to_json(const struct nn_llist* statements)
 {
     cJSON* array = cJSON_CreateArray();
-    struct nm_iam_statement* statement;
+    struct nm_iam_statement* statement = NULL;
     NN_LLIST_FOREACH(statement, statements) {
         cJSON_AddItemToArray(array, nm_statement_to_json(statement));
     }

@@ -127,14 +127,15 @@ void signal_handler(int s)
 void wait_for_device_events(NabtoDevice* device) {
     NabtoDeviceFuture* fut = nabto_device_future_new(device);
     NabtoDeviceListener* listener = nabto_device_listener_new(device);
-    NabtoDeviceEvent event;
+    NabtoDeviceEvent event = 0;
     nabto_device_device_events_init_listener(device, listener);
     while(true) {
         nabto_device_listener_device_event(listener, fut, &event);
         if (nabto_device_future_wait(fut) != NABTO_DEVICE_EC_OK ||
             event == NABTO_DEVICE_EVENT_CLOSED) {
             break;
-        } else if (event == NABTO_DEVICE_EVENT_ATTACHED) {
+        }
+        if (event == NABTO_DEVICE_EVENT_ATTACHED) {
             printf("Attached to the basestation\n");
         } else if (event == NABTO_DEVICE_EVENT_DETACHED) {
             printf("Detached from the basestation\n");
@@ -153,9 +154,9 @@ void wait_for_device_events(NabtoDevice* device) {
 
 bool start_device(NabtoDevice* device, const char* productId, const char* deviceId)
 {
-    NabtoDeviceError ec;
-    char* privateKey;
-    char* fp;
+    NabtoDeviceError ec = 0;
+    char* privateKey = NULL;
+    char* fp = NULL;
 
     struct nm_fs fsImpl = nm_fs_posix_get_impl();
 

@@ -154,7 +154,7 @@ NabtoDeviceConnectionRef NABTO_DEVICE_API nabto_device_stream_get_connection_ref
 {
     struct nabto_device_stream* str = (struct nabto_device_stream*)stream;
 
-    NabtoDeviceConnectionRef ref;
+    NabtoDeviceConnectionRef ref = 0;
     nabto_device_threads_mutex_lock(str->dev->eventMutex);
     ref = str->stream->connectionRef;
 
@@ -281,7 +281,7 @@ np_error_code nabto_device_stream_listener_callback(const np_error_code ec, stru
 {
     (void)future;
     struct nabto_device_stream_listener_context* listenerContext = (struct nabto_device_stream_listener_context*)listenerData;
-    np_error_code retEc;
+    np_error_code retEc = NABTO_EC_FAILED;
     if (ec == NABTO_EC_OK) {
         struct nabto_device_stream* str = (struct nabto_device_stream*)eventData;
         if (listenerContext->stream != NULL) {
@@ -328,7 +328,6 @@ void nabto_device_stream_core_callback(np_error_code ec, struct nc_stream_contex
             nabto_device_stream_free_internal(str);
         }
         return;
-    } else {
-        nabto_device_listener_set_error_code(listenerContext->listener, ec);
     }
+    nabto_device_listener_set_error_code(listenerContext->listener, ec);
 }

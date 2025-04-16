@@ -19,8 +19,13 @@ void handle_request(struct nm_iam_coap_handler* handler, NabtoDeviceCoapRequest*
     CborParser parser;
     CborValue value;
     const char* oldUsername = nabto_device_coap_request_get_parameter(request, "user");
-    if (oldUsername == NULL || !nm_iam_cbor_init_parser(request, &parser, &value)) {
+    if (oldUsername == NULL) {
         nabto_device_coap_error_response(request, 400, "Bad request");
+        return;
+    }
+    enum nm_iam_cbor_error ec = nm_iam_cbor_init_parser(request, &parser, &value);
+    if ( ec != IAM_CBOR_OK ) {
+        nm_iam_cbor_send_error_response(request, ec);
         return;
     }
 
@@ -29,15 +34,18 @@ void handle_request(struct nm_iam_coap_handler* handler, NabtoDeviceCoapRequest*
         nabto_device_coap_error_response(request, 400, "Bad request");
         nm_iam_free(newUsername);
         return;
-    } else if (newUsername == NULL) {
+    }
+    if (newUsername == NULL) {
         nabto_device_coap_error_response(request, 400, "Username missing");
         nm_iam_free(newUsername);
         return;
-    } else if (!nm_iam_user_validate_username(newUsername)) {
+    }
+    if (!nm_iam_user_validate_username(newUsername)) {
         nabto_device_coap_error_response(request, 400, "Invalid username");
         nm_iam_free(newUsername);
         return;
-    } else if (strlen(newUsername) > handler->iam->usernameMaxLength) {
+    }
+    if (strlen(newUsername) > handler->iam->usernameMaxLength) {
         nabto_device_coap_error_response(request, 400, "Username too long");
         nm_iam_free(newUsername);
         return;

@@ -33,7 +33,7 @@ struct nm_fs nm_fs_posix_get_impl()
     impl.read_file = read_file;
     impl.write_file = write_file;
     return impl;
-};
+}
 
 static enum nm_fs_error create_directory(void* impl, const char* path)
 {
@@ -47,7 +47,7 @@ static enum nm_fs_error create_directory(void* impl, const char* path)
 
 static enum nm_fs_error exists(void* impl, const char* path)
 {
-    int ec;
+    int ec = 0;
 #if defined(HAVE_IO_H)
     ec = _access( path, 0 );
 #else
@@ -55,21 +55,19 @@ static enum nm_fs_error exists(void* impl, const char* path)
 #endif
     if (ec == 0) {
         return NM_FS_OK;
-    } else {
-        return NM_FS_NO_ENTRY;
     }
+    return NM_FS_NO_ENTRY;
 }
 
 static enum nm_fs_error size(void* impl, const char* path, size_t* fileSize)
 {
     FILE* f = fopen(path, "rb");
-    enum nm_fs_error status;
+    enum nm_fs_error status = NM_FS_UNKNOWN;
     if (f == NULL) {
         if (errno == ENOENT) {
             return NM_FS_NO_ENTRY;
-        } else {
-            return NM_FS_UNKNOWN;
         }
+        return NM_FS_UNKNOWN;
     }
     fseek(f, 0, SEEK_END);
     long fsize = ftell(f);
@@ -92,9 +90,8 @@ static enum nm_fs_error read_file(void* impl, const char* path, void* buffer, si
     if (f == NULL) {
         if (errno == ENOENT) {
             return NM_FS_NO_ENTRY;
-        } else {
-            return NM_FS_UNKNOWN;
         }
+        return NM_FS_UNKNOWN;
     }
 
     enum nm_fs_error status = NM_FS_OK;

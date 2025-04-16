@@ -150,9 +150,8 @@ NabtoDeviceError NABTO_DEVICE_API nabto_device_coap_request_get_content_format(N
     if (cf >= 0) {
         *contentFormat = (uint16_t)cf;
         return NABTO_DEVICE_EC_OK;
-    } else {
-        return NABTO_DEVICE_EC_UNKNOWN;
     }
+    return NABTO_DEVICE_EC_UNKNOWN;
 }
 
 NabtoDeviceError NABTO_DEVICE_API nabto_device_coap_request_get_payload(NabtoDeviceCoapRequest* request,
@@ -164,9 +163,8 @@ NabtoDeviceError NABTO_DEVICE_API nabto_device_coap_request_get_payload(NabtoDev
     nabto_device_threads_mutex_unlock(req->dev->eventMutex);
     if(*payload == NULL) {
         return NABTO_DEVICE_EC_UNKNOWN;
-    } else {
-        return NABTO_DEVICE_EC_OK;
     }
+    return NABTO_DEVICE_EC_OK;
 }
 
 NabtoDeviceConnectionRef NABTO_DEVICE_API nabto_device_coap_request_get_connection_ref(NabtoDeviceCoapRequest* request)
@@ -178,7 +176,7 @@ NabtoDeviceConnectionRef NABTO_DEVICE_API nabto_device_coap_request_get_connecti
 const char* NABTO_DEVICE_API nabto_device_coap_request_get_parameter(NabtoDeviceCoapRequest* request, const char* parameterName)
 {
     struct nabto_device_coap_request* req = (struct nabto_device_coap_request*)request;
-    const char* value;
+    const char* value = NULL;
     nabto_device_threads_mutex_lock(req->dev->eventMutex);
     value = nc_coap_server_request_get_parameter(req->req, parameterName);
     nabto_device_threads_mutex_unlock(req->dev->eventMutex);
@@ -206,7 +204,7 @@ np_error_code nabto_device_coap_listener_callback(const np_error_code ec, struct
 {
     (void)future;
     struct nabto_device_coap_resource* res = (struct nabto_device_coap_resource*)listenerData;
-    np_error_code retEc;
+    np_error_code retEc = NABTO_EC_FAILED;
     if (ec == NABTO_EC_OK) {
         struct nabto_device_coap_request* req = (struct nabto_device_coap_request*)eventData;
         if (res->futureRequest != NULL) {

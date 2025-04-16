@@ -21,8 +21,7 @@ np_error_code nc_rendezvous_init(struct nc_rendezvous_context* ctx,
 {
     memset(ctx, 0, sizeof(struct nc_rendezvous_context));
     ctx->sendBuffer = NULL;
-    np_error_code ec;
-    ec = np_completion_event_init(&pl->eq, &ctx->sendCompletionEvent, nc_rendezvous_packet_sent, ctx);
+    np_error_code ec = np_completion_event_init(&pl->eq, &ctx->sendCompletionEvent, nc_rendezvous_packet_sent, ctx);
     if (ec != NABTO_EC_OK) {
         return ec;
     }

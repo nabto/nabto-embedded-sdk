@@ -3,6 +3,8 @@
 #include <nabto/nabto_device.h>
 #include <nabto/nabto_device_test.h>
 
+#include <modules/libevent/nm_libevent_udp.h>
+
 #include <api/nabto_device_defines.h>
 
 #include <thread>
@@ -90,6 +92,38 @@ BOOST_AUTO_TEST_CASE(remove_log_callback)
     nabto_device_stop(dev);
     nabto_device_free(dev);
 }
+
+BOOST_AUTO_TEST_CASE(udp_recv_error_event, *boost::unit_test::timeout(10))
+{
+    NabtoDevice* dev = nabto::test::createTestDevice();
+
+    auto listener = nabto_device_listener_new(dev);
+    NabtoDeviceEvent event = NABTO_DEVICE_EVENT_ATTACHED;
+
+    NabtoDeviceFuture* evFut = nabto_device_future_new(dev);
+    nabto_device_device_events_init_listener(dev, listener);
+    nabto_device_listener_device_event(listener, evFut, &event);
+
+
+    NabtoDeviceFuture* fut = nabto_device_future_new(dev);
+    nabto_device_start(dev, fut);
+
+    BOOST_TEST(nabto_device_future_wait(fut) == NABTO_DEVICE_EC_OK);
+    nabto_device_future_free(fut);
+
+    struct nabto_device_context* internalDevice = (struct nabto_device_context*)dev;
+
+    nm_libevent_udp_test_recv_failure(internalDevice->core.udp.sock);
+
+    BOOST_TEST(nabto_device_future_wait(evFut) == NABTO_DEVICE_EC_OK);
+    std::this_thread::sleep_for(std::chrono::milliseconds(20));
+    BOOST_TEST(event == NABTO_DEVICE_EVENT_PLATFORM_FAILURE);
+    nabto_device_stop(dev);
+    nabto_device_future_free(evFut);
+    nabto_device_listener_free(listener);
+    nabto_device_free(dev);
+}
+
 
 BOOST_AUTO_TEST_CASE(stop_without_close, *boost::unit_test::timeout(10))
 {

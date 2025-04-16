@@ -9,7 +9,7 @@
 #include <platform/np_logging.h>
 #include <platform/np_allocator.h>
 
-
+#include <nn/string.h>
 
 #include <string.h>
 
@@ -83,18 +83,17 @@ void nc_spake2_password_ready(struct nc_spake2_password_request* req, const char
         nc_connection_get_client_fingerprint(connection, req->clientFingerprint);
         nc_connection_get_device_fingerprint(connection, req->deviceFingerprint);
 
-        size_t olen;
+        size_t olen = 0;
         uint8_t buffer[256];
         olen = sizeof(buffer);
-        if (req->pl->spake2.calculate_key(NULL, req, password, buffer, &olen,
+        if (req->pl->spake2.calculate_key(req, password, buffer, &olen,
                                       connection->spake2Key) == NABTO_EC_OK) {
             connection->hasSpake2Key = true;
             np_free(connection->username);
-            connection->username = np_calloc(1, strlen(req->username)+1);
+            connection->username = nn_strdup(req->username, np_allocator_get());
             if (connection->username == NULL) {
                 nc_coap_server_send_error_response(coap, (nabto_coap_code)NABTO_COAP_CODE(5,00), NULL);
             } else {
-                strcpy(connection->username, req->username);
 
                 // respond with S
                 nc_coap_server_response_set_payload(coap, buffer, olen);

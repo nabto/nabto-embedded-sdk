@@ -54,7 +54,7 @@ np_error_code resolve_one_ec(struct nm_dns_resolve_event* event)
     struct np_ip_address* ips = event->ips;
     *event->ipsResolved = 0;
     struct addrinfo hints;
-    struct addrinfo *infoptr;
+    struct addrinfo *infoptr = NULL;
     memset(&hints, 0, sizeof (struct addrinfo));
 
     hints.ai_socktype = SOCK_DGRAM;

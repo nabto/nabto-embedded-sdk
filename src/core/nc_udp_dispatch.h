@@ -3,12 +3,15 @@
 
 #include <platform/np_platform.h>
 #include <platform/np_completion_event.h>
+#include <core/nc_device_defines.h>
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
 struct nc_stun_context;
+
+typedef void (*nc_udp_dispatch_event_listener)(enum nc_device_event event, void* data);
 
 struct nc_udp_dispatch_context {
     struct np_platform* pl;
@@ -19,9 +22,11 @@ struct nc_udp_dispatch_context {
     struct nc_rendezvous_context* rendezvous;
 
     struct np_completion_event recvCompletionEvent;
+    nc_udp_dispatch_event_listener listener;
+    void* listenerData;
 };
 
-np_error_code nc_udp_dispatch_init(struct nc_udp_dispatch_context* ctx, struct np_platform* pl);
+np_error_code nc_udp_dispatch_init(struct nc_udp_dispatch_context* ctx, struct np_platform* pl, nc_udp_dispatch_event_listener listener, void* listenerData);
 void nc_udp_dispatch_deinit(struct nc_udp_dispatch_context* ctx);
 
 /**

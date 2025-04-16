@@ -1,6 +1,6 @@
-
 #include "nc_attacher.h"
 
+#include <core/nc_cbor.h>
 #include <core/nc_coap.h>
 #include <platform/np_logging.h>
 #include <platform/np_allocator.h>
@@ -13,11 +13,7 @@ const char* sctUploadPath[2] = {"device", "sct"};
 
 static void sct_request_handler(struct nabto_coap_client_request* request, void* data);
 
-/**
- * return the number of bytes needed to encode the scts if an encoder
- * without a buffer is used. Else return 0.
- */
-static size_t encode_scts(CborEncoder* encoder, struct nn_string_set* scts);
+static CborError encode_scts(CborEncoder* encoder, struct nn_string_set* scts);
 
 np_error_code nc_attacher_sct_upload(struct nc_attach_context* attacher, nc_attacher_sct_callback cb, void* userData)
 {
@@ -31,11 +27,15 @@ np_error_code nc_attacher_sct_upload(struct nc_attach_context* attacher, nc_atta
         return NABTO_EC_OPERATION_IN_PROGRESS;
     }
 
-    size_t bufferSize;
+    size_t bufferSize = 0;
     {
         CborEncoder encoder;
         cbor_encoder_init(&encoder, NULL, 0, 0);
-        bufferSize = encode_scts(&encoder, &sctCtx->scts);
+        if (encode_scts(&encoder, &sctCtx->scts) != CborErrorOutOfMemory) {
+            NABTO_LOG_ERROR(LOG, "Cannot determine size for sct cbor structure.");
+            return NABTO_EC_FAILED;
+        }
+        bufferSize = cbor_encoder_get_extra_bytes_needed(&encoder);
     }
     uint8_t* buffer = np_calloc(1, bufferSize);
     if (!buffer) {
@@ -45,10 +45,14 @@ np_error_code nc_attacher_sct_upload(struct nc_attach_context* attacher, nc_atta
     {
         CborEncoder encoder;
         cbor_encoder_init(&encoder, buffer, bufferSize, 0);
-        encode_scts(&encoder, &sctCtx->scts);
+        if (encode_scts(&encoder, &sctCtx->scts) != CborNoError) {
+            NABTO_LOG_ERROR(LOG, "Cannot encode scts as cbor.");
+            np_free(buffer);
+            return NABTO_EC_FAILED;
+        }
     }
 
-    struct nabto_coap_client_request* req;
+    struct nabto_coap_client_request* req = NULL;
     req = nabto_coap_client_request_new(nc_coap_client_get_client(attacher->coapClient),
                                         NABTO_COAP_METHOD_PUT,
                                         2, sctUploadPath,
@@ -80,7 +84,7 @@ void sct_request_handler(struct nabto_coap_client_request* request, void* userDa
     struct nc_attacher_sct_context* sctCtx = userData;
     nc_attacher_sct_callback cb = sctCtx->callback;
     void* cbUserData = sctCtx->callbackUserData;
-    np_error_code status;
+    np_error_code status = NABTO_EC_FAILED;
     struct nabto_coap_client_response* res = nabto_coap_client_request_get_response(request);
     uint16_t resCode = nabto_coap_client_response_get_code(res);
     if (nc_coap_is_status_ok(resCode)) {
@@ -97,16 +101,15 @@ void sct_request_handler(struct nabto_coap_client_request* request, void* userDa
     cb(status, cbUserData);
 }
 
-size_t encode_scts(CborEncoder* encoder, struct nn_string_set* scts)
+CborError encode_scts(CborEncoder* encoder, struct nn_string_set* scts)
 {
     CborEncoder array;
-    cbor_encoder_create_array(encoder, &array, CborIndefiniteLength);
+    NC_CBOR_CHECK_FOR_ERROR_EXCEPT_OOM(cbor_encoder_create_array(encoder, &array, CborIndefiniteLength));
 
-    const char* str;
+    const char* str = NULL;
     NN_STRING_SET_FOREACH(str, scts) {
-        cbor_encode_text_stringz(&array, str);
+        NC_CBOR_CHECK_FOR_ERROR_EXCEPT_OOM(cbor_encode_text_stringz(&array, str));
     }
-    cbor_encoder_close_container(encoder, &array);
 
-    return cbor_encoder_get_extra_bytes_needed(encoder);
+    return cbor_encoder_close_container(encoder, &array);
 }

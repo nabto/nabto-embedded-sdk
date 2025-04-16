@@ -11,6 +11,8 @@
 
 #include <array>
 
+#include <stdio.h>
+
 namespace nabto {
 namespace test {
 
@@ -29,7 +31,6 @@ static uint8_t Ndata[] = {
     0x07, 0xd6, 0x0a, 0xa6, 0xbf, 0xad, 0xe4, 0x50, 0x08, 0xa6, 0x36,
     0x33, 0x7f, 0x51, 0x68, 0xc6, 0x4d, 0x9b, 0xd3, 0x60, 0x34, 0x80,
     0x8c, 0xd5, 0x64, 0x49, 0x0b, 0x1e, 0x65, 0x6e, 0xdb, 0xe7};
-
 
 class Spake2Client {
  public:
@@ -84,19 +85,29 @@ class Spake2Client {
 
     int calculateT(std::vector<uint8_t>& out)
     {
-        mbedtls_ecp_point X;
-        mbedtls_ecp_point_init(&X);
-
         mbedtls_entropy_context entropy;
         mbedtls_ctr_drbg_context ctr_drbg;
         mbedtls_ctr_drbg_init(&ctr_drbg);
 
         mbedtls_entropy_init(&entropy);
+
         int status = 0;
-        status |= mbedtls_ctr_drbg_seed(&ctr_drbg, mbedtls_entropy_func,
-                                        &entropy, NULL, 0);
+        status |= mbedtls_ctr_drbg_seed(&ctr_drbg, mbedtls_entropy_func, &entropy, NULL, 0);
+        status |= calculateTWithCustomRandom(out, mbedtls_ctr_drbg_random, &ctr_drbg);
+
+        mbedtls_ctr_drbg_free(&ctr_drbg);
+        mbedtls_entropy_free(&entropy);
+        return status;
+    }
+
+    int calculateTWithCustomRandom(std::vector<uint8_t>& out, int (*f_rng)(void *, unsigned char *, size_t), void *p_rng)
+    {
+        mbedtls_ecp_point X;
+        mbedtls_ecp_point_init(&X);
+
+        int status = 0;
         status |= mbedtls_ecp_gen_keypair(&grp_, &x_, &X,
-                                          mbedtls_ctr_drbg_random, &ctr_drbg);
+                                          f_rng, p_rng);
 
         mbedtls_mpi tmp;
         mbedtls_mpi_init(&tmp);
@@ -108,8 +119,6 @@ class Spake2Client {
         writePoint(out, &grp_, &T_);
 
         mbedtls_mpi_free(&tmp);
-        mbedtls_entropy_free(&entropy);
-        mbedtls_ctr_drbg_free(&ctr_drbg);
         mbedtls_ecp_point_free(&X);
         return status;
     }

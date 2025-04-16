@@ -1,4 +1,4 @@
-find_package(Boost COMPONENTS system asio)
+find_package(Boost CONFIG COMPONENTS system asio)
 find_package(NabtoCommon REQUIRED)
 set(coap_src
   coap_server.cpp

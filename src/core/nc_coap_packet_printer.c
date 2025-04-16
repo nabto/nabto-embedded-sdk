@@ -14,6 +14,8 @@ static const char* blockToString(uint32_t value)
     uint32_t more = (value & 0xF) >> 3;
     uint32_t num = value >> 4;
 
+
+    //strlen("4294967296/256/65536") + 1 == 21;
     static char buffer[21];
     memset(buffer, 0, 21);
 
@@ -96,23 +98,19 @@ const char* coapOptionToString(uint16_t option)
     return buffer;
 }
 
-char* safeWrite(char* buffer, char* end, const char* format, ...)
+static char* safeWrite(char* buffer, char* end, const char* format, ...)
 {
     va_list args;
-    int written;
+    int written = 0;
     if (buffer == NULL) {
         return NULL;
     }
     if (end < buffer) {
         return NULL;
     }
-
-    if (end - buffer < 40) {
-        return NULL;
-    }
-
+    size_t maxLength = (end - buffer);
     va_start(args, format);
-    written = vsprintf(buffer, format, args);
+    written = vsnprintf(buffer, maxLength, format, args);
     va_end(args);
     if (written < 0) {
         return NULL;
@@ -130,7 +128,8 @@ np_error_code nc_coap_packet_print(const char* header, const uint8_t* packet, si
     }
 
     char* ptr = buffer;
-    char* end = buffer+bufferLength;
+    // Ensure room for a null terminator.
+    char* end = buffer+(bufferLength-1);
     ptr = safeWrite(ptr, end, "%s", header);
     struct nabto_coap_incoming_message message;
     if (!nabto_coap_parse_message(packet, packetSize, &message)) {
@@ -146,7 +145,7 @@ np_error_code nc_coap_packet_print(const char* header, const uint8_t* packet, si
         ptr = safeWrite(ptr, end, ", Options:");
         while (iterator != NULL) {
             size_t optionDataLength = iterator->optionDataEnd - iterator->optionDataBegin;
-            uint32_t value;
+            uint32_t value = 0;
             if (iterator->option == NABTO_COAP_OPTION_URI_PATH) {
                 ptr = safeWrite(ptr, end, ", Uri-Path: %.*s", optionDataLength, iterator->optionDataBegin);
             } else if (iterator->option == NABTO_COAP_OPTION_URI_HOST) {

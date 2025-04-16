@@ -71,7 +71,7 @@ void nm_select_unix_stop(struct nm_select_unix* ctx)
 
 int nm_select_unix_inf_wait(struct nm_select_unix* ctx)
 {
-    int nfds;
+    int nfds = 0;
     build_fd_sets(ctx);
     nfds = select(NP_MAX(ctx->maxReadFd, ctx->maxWriteFd)+1, &ctx->readFds, &ctx->writeFds, NULL, NULL);
     if (nfds < 0) {
@@ -85,7 +85,7 @@ int nm_select_unix_inf_wait(struct nm_select_unix* ctx)
 int nm_select_unix_timed_wait(struct nm_select_unix* ctx, uint32_t ms)
 {
     NABTO_LOG_TRACE(LOG, "timed wait %d", ms);
-    int nfds;
+    int nfds = 0;
     struct timeval timeout_val;
     timeout_val.tv_sec = (ms/1000);
     timeout_val.tv_usec = ((ms)%1000)*1000;
@@ -99,7 +99,7 @@ int nm_select_unix_timed_wait(struct nm_select_unix* ctx, uint32_t ms)
 
 void nm_select_unix_read(struct nm_select_unix* ctx, int nfds)
 {
-    char one;
+    char one = 0;
     NABTO_LOG_TRACE(LOG, "read: %i", nfds);
 
     if (FD_ISSET(ctx->pipefd[0], &ctx->readFds)) {
@@ -144,17 +144,16 @@ void* network_thread(void* data)
 {
     struct nm_select_unix* ctx = data;
     while(true) {
-        int nfds;
+        int nfds = 0;
         nm_select_unix_lock(ctx);
         bool stopped = ctx->stopped;
         nm_select_unix_unlock(ctx);
         if (stopped) {
             return NULL;
-        } else {
-            // Wait for events.
-            nfds = nm_select_unix_inf_wait(ctx);
-            nm_select_unix_read(ctx, nfds);
         }
+        // Wait for events.
+        nfds = nm_select_unix_inf_wait(ctx);
+        nm_select_unix_read(ctx, nfds);
     }
     return NULL;
 }

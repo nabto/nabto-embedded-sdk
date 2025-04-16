@@ -86,16 +86,15 @@ bool nm_iam_user_set_fingerprint(struct nm_iam_user* user, const char* fingerpri
     }
     if (nn_llist_empty(&user->fingerprints)) {
         return nm_iam_user_add_fingerprint(user, fingerprint, NULL);
-    } else {
-        struct nn_llist_iterator it = nn_llist_begin(&user->fingerprints);
-        struct nm_iam_user_fingerprint* fp = nn_llist_get_item(&it);
-        char* tmp = nn_strdup(fingerprint, nm_iam_allocator_get());
-        if (tmp != NULL) {
-            nm_iam_free(fp->fingerprint);
-            fp->fingerprint = tmp;
-        }
-        return (tmp != NULL);
     }
+    struct nn_llist_iterator it = nn_llist_begin(&user->fingerprints);
+    struct nm_iam_user_fingerprint* fp = nn_llist_get_item(&it);
+    char* tmp = nn_strdup(fingerprint, nm_iam_allocator_get());
+    if (tmp != NULL) {
+        nm_iam_free(fp->fingerprint);
+        fp->fingerprint = tmp;
+    }
+    return (tmp != NULL);
 }
 
 bool nm_iam_user_add_fingerprint(struct nm_iam_user* user, const char* fingerprint, const char* fpName)
@@ -194,7 +193,7 @@ bool nm_iam_user_set_fcm_project_id(struct nm_iam_user* user, const char* projec
 bool nm_iam_user_set_notification_categories(struct nm_iam_user* user, struct nn_string_set* categories)
 {
     nn_string_set_clear(&user->notificationCategories);
-    const char* s;
+    const char* s = NULL;
     NN_STRING_SET_FOREACH(s, categories) {
         nn_string_set_insert(&user->notificationCategories, s);
     }
@@ -331,7 +330,7 @@ struct nm_iam_user* nm_iam_user_copy(struct nm_iam_user* user)
         }
     }
 
-    const char* p;
+    const char* p = NULL;
     NN_STRING_SET_FOREACH(p, &user->notificationCategories) {
         if (!nn_string_set_insert(&copy->notificationCategories, p)) {
             failed = true;

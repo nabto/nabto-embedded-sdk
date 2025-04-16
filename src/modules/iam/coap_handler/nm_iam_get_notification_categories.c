@@ -14,21 +14,18 @@ NabtoDeviceError nm_iam_get_notification_categories_init(struct nm_iam_coap_hand
     return nm_iam_coap_handler_init(handler, device, iam, NABTO_DEVICE_COAP_GET, paths, &handle_request);
 }
 
-static size_t encode_categories(struct nm_iam* iam, void* buffer, size_t bufferSize)
+static CborError encode_categories(struct nm_iam* iam, CborEncoder* encoder)
 {
-    CborEncoder encoder;
-    cbor_encoder_init(&encoder, buffer, bufferSize, 0);
     CborEncoder array;
-    cbor_encoder_create_array(&encoder, &array, CborIndefiniteLength);
 
-    const char* s;
+    NM_IAM_CBOR_ERROR_RETURN_EXCEPT_OOM(cbor_encoder_create_array(encoder, &array, CborIndefiniteLength));
+
+    const char* s = NULL;
     NN_STRING_SET_FOREACH(s, &iam->notificationCategories) {
-        cbor_encode_text_stringz(&array, s);
+        NM_IAM_CBOR_ERROR_RETURN_EXCEPT_OOM(cbor_encode_text_stringz(&array, s));
     }
 
-    cbor_encoder_close_container(&encoder, &array);
-
-    return cbor_encoder_get_extra_bytes_needed(&encoder);
+    return cbor_encoder_close_container(encoder, &array);
 }
 
 void handle_request(struct nm_iam_coap_handler* handler, NabtoDeviceCoapRequest* request)
@@ -38,13 +35,32 @@ void handle_request(struct nm_iam_coap_handler* handler, NabtoDeviceCoapRequest*
         return;
     }
 
-    size_t payloadSize = encode_categories(handler->iam, NULL, 0);
+    size_t payloadSize = 0;
+    {
+        CborEncoder encoder;
+        cbor_encoder_init(&encoder, NULL, 0, 0);
+
+        if (encode_categories(handler->iam, &encoder) != CborErrorOutOfMemory) {
+            nabto_device_coap_error_response(request, 500, "Encoding error");
+            return;
+        }
+        payloadSize = cbor_encoder_get_extra_bytes_needed(&encoder);
+    }
     uint8_t* payload = nm_iam_calloc(1, payloadSize);
     if (payload == NULL) {
+        nabto_device_coap_error_response(request, 500, "Insufficient resources");
         return;
     }
 
-    encode_categories(handler->iam, payload, payloadSize);
+    {
+        CborEncoder encoder;
+        cbor_encoder_init(&encoder, payload, payloadSize, 0);
+
+        if (encode_categories(handler->iam, &encoder) != CborNoError) {
+            nabto_device_coap_error_response(request, 500, "Encoding error");
+            return;
+        }
+    }
 
     nabto_device_coap_response_set_code(request, 205);
     nabto_device_coap_response_set_content_format(request, NABTO_DEVICE_COAP_CONTENT_FORMAT_APPLICATION_CBOR);
