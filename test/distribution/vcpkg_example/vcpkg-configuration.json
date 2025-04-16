@@ -1,5 +1,6 @@
 {
     "overlay-ports": [
-      "./ports"
+      "./ports",
+      "../../../build-scripts/vcpkg/ports"
      ]
 }

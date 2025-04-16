@@ -1,17 +1,13 @@
-set(REF "b05465f002a6b00722e14ba7955758fe919a5b08")
-
-vcpkg_from_github(
-    OUT_SOURCE_PATH SOURCE_PATH
-    REPO nabto/nabto-embedded-sdk
-    REF ${REF}
-    SHA512 83491c30f02045e8c3428b4316297196a9e3baae508ec5571c657488efb4499958e728589ed7b00530d555664ebef204a94ffad6fef6fe3809b3915d50db48e4
-    HEAD_REF "master"
-)
+string(TIMESTAMP CURRENT_TIME UTC)
+configure_file(
+    ${CMAKE_CURRENT_LIST_DIR}/timestamp.txt.in
+    ${CMAKE_CURRENT_LIST_DIR}/timestamp.txt
+    @ONLY)
 
 vcpkg_cmake_configure(
-    SOURCE_PATH "${SOURCE_PATH}"
+    SOURCE_PATH "${CMAKE_CURRENT_LIST_DIR}/../../../../.."
     OPTIONS
-        -DCMAKE_MODULE_PATH=${SOURCE_PATH}/cmake/vcpkg
+        -DCMAKE_MODULE_PATH=${CMAKE_CURRENT_LIST_DIR}/../../../../../cmake/vcpkg
         -DDEVICE_BUILD_EXAMPLES=FALSE
         -DDEVICE_BUILD_TESTS=FALSE
         -DDEVICE_BUILD_APPS=FALSE
@@ -22,7 +18,6 @@ vcpkg_cmake_configure(
         -DNABTO_DEVICE_USE_SYSTEM_NLOHMANNJSON=ON
         -DNABTO_DEVICE_USE_SYSTEM_TINYCBOR=ON
         -DNABTO_DEVICE_BUILD_WITH_VCPKG_DEPENDENCIES=TRUE
-        -DNABTO_DEVICE_VERSION="0.0.0+${REF}"
 )
 
 vcpkg_cmake_install()
