@@ -15,3 +15,4 @@ device.key
 simple_push_state.json
 /build-scripts/mallocfail/test-client/node_modules
 build-scripts/vcpkg/ports/nabto-common/timestamp.txt
+test/distribution/vcpkg_example/ports/nabto-embedded-sdk/timestamp.txt

@@ -25,7 +25,7 @@ else()
             @ONLY)
 
     vcpkg_cmake_configure(
-        SOURCE_PATH "../../../../../nabto-common"
+        SOURCE_PATH "${CMAKE_CURRENT_LIST_DIR}/../../../../nabto-common"
     )
 
 endif()

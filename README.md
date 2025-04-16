@@ -117,6 +117,35 @@ When installing WolfSSL, the following build options can be used:
 ./configure --prefix=/usr --enable-ecc --enable-dsa --enable-dtls --enable-aesccm --enable-alpn --enable-debug --enable-certgen --enable-keygen --enable-harden --enable-sni --enable-sp-math-all=small CFLAGS="-DKEEP_PEER_CERT -DWOLFSSL_PUBLIC_MP -DWOLFSSL_PUBLIC_ECC_ADD_DBL"
 ```
 
+## Using Nabto Embedded SDK as a library
+
+Nabto Embedded SDK can be used as a library for Linux, Windows and Mac if it is
+built using the default build file in this repository.
+
+The build output contains a nabto_device library which can be linked into the
+executable. In the case of a static library it can be quite complicated to get
+all the dependencies correctly setup, in that scenario it is recommended to use
+tooling to make the process easier. Such tooling could be the vcpkg package
+manager or another tool which you are currently using in the project.
+
+### Using the NabtoEmbeddedSDK as a library through vcpkg
+
+There is no official NabtoEmbeddedSDK package in the vcpkg package registry, so
+to use this library a [overlay
+port](https://learn.microsoft.com/en-us/vcpkg/concepts/overlay-ports) or custom
+registry is needed.
+
+The easiest way is to create a local ports folder and create a port for the
+NabtoEmbeddedSDK and the NabtoCommon module inside that ports directory.
+
+An example of such ports files and integration can be found in
+`test/distribution/vcpkg_example`. The example builds a simple application which
+links against nabto_device and prints the version number. the build.sh script
+serves both as an example and as a CI job such that the provided information is
+tested regularly to be correct.
+
+Run `./test/distribution/vcpkg_example/build.sh` to build and run the example.
+
 ## Overview
 
 An application using this SDK is going to use the `nabto_device`
