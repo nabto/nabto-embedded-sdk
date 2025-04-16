@@ -283,40 +283,63 @@ void nm_mdns_recv_packet(struct nm_mdns_server_instance* instance)
 void nm_mdns_packet_recv_wait_completed(const np_error_code ecIn, void* userData)
 {
     struct nm_mdns_server_instance* instance = userData;
-    if (ecIn == NABTO_EC_OK && !instance->server->stopped) {
-        size_t recvSize = 0;
-        size_t recvBufferSize = 1500;
-        uint8_t* recvBuffer = np_calloc(1, recvBufferSize);
-        if (recvBuffer == NULL) {
-            // Discard udp packet.
-            uint8_t dummyBuffer[1];
-            // TODO(tfk): returned error code is ignored
-            np_udp_recv_from(&instance->server->udp, instance->socket, &instance->recvEp, dummyBuffer, sizeof(dummyBuffer), &recvSize);
+
+    if (instance->server->stopped) {
+        return;
+    }
+
+    if (ecIn == NABTO_EC_ABORTED) {
+        // Ok, the application has closed the socket.
+        return;
+    }
+
+    if (ecIn != NABTO_EC_OK) {
+        NABTO_LOG_ERROR(LOG, "The mDNS server has received an unrecoverable error while receiving from the UDP socket. '%s'", np_error_code_to_string(ecIn));
+        return;
+    }
+
+    size_t recvSize = 0;
+    size_t recvBufferSize = 1500;
+    uint8_t* recvBuffer = np_calloc(1, recvBufferSize);
+    if (recvBuffer == NULL) {
+        // Discard the UDP packet.
+        uint8_t dummyBuffer[1];
+        np_error_code ec = np_udp_recv_from(&instance->server->udp, instance->socket, &instance->recvEp, dummyBuffer, sizeof(dummyBuffer), &recvSize);
+        if (ec == NABTO_EC_OK || ec == NABTO_EC_AGAIN) {
             nm_mdns_recv_packet(instance);
-            return;
+        } else if (ec == NABTO_EC_ABORTED) {
+            // Ok since the application has closed the socket
+        } else {
+            NABTO_LOG_ERROR(LOG, "The mDNS server has stopped receiving packets as an unrecoverable error occured on the UDP socket. '%s'", np_error_code_to_string(ec));
         }
-        bool doRecv = true; // set to false if the nm_mdns_send_packet initiates the next recv.
+        return;
+    }
+    bool doRecv = true;  // set to false if the nm_mdns_send_packet initiates the next recv.
 
-        np_error_code ec = np_udp_recv_from(&instance->server->udp, instance->socket, &instance->recvEp, recvBuffer, recvBufferSize, &recvSize);
-        if (ec == NABTO_EC_OK) {
-            uint16_t id = 0;
+    np_error_code ec = np_udp_recv_from(&instance->server->udp, instance->socket, &instance->recvEp, recvBuffer, recvBufferSize, &recvSize);
+    if (ec == NABTO_EC_OK) {
+        uint16_t id = 0;
 
-            if (nabto_mdns_server_handle_packet(&instance->server->mdnsServer,
-                                                recvBuffer, recvSize, &id))
-            {
-                bool unicastResponse = false;
-                if (instance->recvEp.port != 5353) {
-                    unicastResponse = true;
-                }
-                nm_mdns_send_packet(instance, id, unicastResponse);
-                doRecv = false;
+        if (nabto_mdns_server_handle_packet(&instance->server->mdnsServer,
+                                            recvBuffer, recvSize, &id)) {
+            bool unicastResponse = false;
+            if (instance->recvEp.port != 5353) {
+                unicastResponse = true;
             }
+            nm_mdns_send_packet(instance, id, unicastResponse);
+            doRecv = false;
         }
+    }
 
-        np_free(recvBuffer);
-        if (ec == NABTO_EC_OK && doRecv) {
+    np_free(recvBuffer);
+    if (ec == NABTO_EC_OK || ec == NABTO_EC_AGAIN) {
+        if (doRecv) {
             nm_mdns_recv_packet(instance);
         }
+    } else if (ec == NABTO_EC_ABORTED) {
+        // Ok since the application has closed the socket.
+    } else {
+        NABTO_LOG_ERROR(LOG, "The mDNS server has stopped receiving packets as an unrecoverable error occured on the UDP socket. '%s'", np_error_code_to_string(ec));
     }
 }
 
@@ -336,7 +359,7 @@ void nm_mdns_send_packet(struct nm_mdns_server_instance* instance, uint16_t id, 
         if (instance->sendBuffer == NULL) {
             NABTO_LOG_ERROR(LOG, "Cannot allocate buffer for sending mdns packet");
         } else {
-            if (nabto_mdns_server_build_packet(&instance->server->mdnsServer, id, unicastResponse, false, instance->server->localIps, instance->server->localIpsSize, port, instance->sendBuffer, 1500, &written))
+            if (nabto_mdns_server_build_packet(&instance->server->mdnsServer, id, unicastResponse, false, instance->server->localIps, instance->server->localIpsSize, port, instance->sendBuffer, NM_MDNS_SEND_BUFFER_SIZE, &written))
             {
                 np_udp_async_send_to(&instance->server->udp, instance->socket,
                                      ep, instance->sendBuffer, (uint16_t)written,
