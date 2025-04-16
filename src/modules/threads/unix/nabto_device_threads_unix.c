@@ -68,8 +68,14 @@ void nabto_device_threads_free_mutex(struct nabto_device_mutex* mutex)
     if (mutex == NULL) {
         return;
     }
-    pthread_mutex_destroy(&mutex->mut);
+
+    int status = pthread_mutex_destroy(&mutex->mut);
+    if (status != 0)
+    {
+        NABTO_LOG_ERROR(LOG, "Cannot destroy pthread mutex. '%s'", strerror(status));
+    }
     np_free(mutex);
+
 }
 
 void nabto_device_threads_free_cond(struct nabto_device_condition* cond)
@@ -77,23 +83,35 @@ void nabto_device_threads_free_cond(struct nabto_device_condition* cond)
     if (cond == NULL) {
         return;
     }
-    pthread_cond_destroy(&cond->cond);
+    int status = pthread_cond_destroy(&cond->cond);
+    if (status != 0) {
+        NABTO_LOG_ERROR(LOG, "Cannor destroy pthread condition. '%s'", strerror(status));
+    }
     np_free(cond);
 }
 
 void nabto_device_threads_join(struct nabto_device_thread* thread)
 {
-    pthread_join(thread->thread, NULL);
+    int status = pthread_join(thread->thread, NULL);
+    if (status != 0) {
+        NABTO_LOG_ERROR(LOG, "pthread_join failed. '%s'", strerror(status));
+    }
 }
 
 void nabto_device_threads_mutex_lock(struct nabto_device_mutex* mutex)
 {
-    pthread_mutex_lock(&mutex->mut);
+    int status = pthread_mutex_lock(&mutex->mut);
+    if (status != 0) {
+        NABTO_LOG_ERROR(LOG, "pthread_mutex_lock failed. '%s'", strerror(status));
+    }
 }
 
 void nabto_device_threads_mutex_unlock(struct nabto_device_mutex* mutex)
 {
-    pthread_mutex_unlock(&mutex->mut);
+    int status = pthread_mutex_unlock(&mutex->mut);
+    if (status != 0) {
+        NABTO_LOG_ERROR(LOG, "pthread_mutex_unlock failed. '%s'", strerror(status));
+    }
 }
 
 np_error_code nabto_device_threads_run(struct nabto_device_thread* thread, void *(*run_routine) (void *), void* data)
@@ -109,13 +127,19 @@ np_error_code nabto_device_threads_run(struct nabto_device_thread* thread, void 
 
 void nabto_device_threads_cond_signal(struct nabto_device_condition* cond)
 {
-    pthread_cond_signal(&cond->cond);
+    int status = pthread_cond_signal(&cond->cond);
+    if (status != 0) {
+        NABTO_LOG_ERROR(LOG, "pthread_cond_signal failed. '%s'", strerror(status));
+    }
 }
 
 void nabto_device_threads_cond_wait(struct nabto_device_condition* cond,
                                     struct nabto_device_mutex* mut)
 {
-    pthread_cond_wait(&cond->cond, &mut->mut);
+    int status = pthread_cond_wait(&cond->cond, &mut->mut);
+    if (status != 0) {
+        NABTO_LOG_ERROR(LOG, "pthread_cond_wait failed. '%s'", strerror(status));
+    }
 }
 
 void nabto_device_threads_cond_timed_wait(struct nabto_device_condition* cond,
@@ -124,9 +148,16 @@ void nabto_device_threads_cond_timed_wait(struct nabto_device_condition* cond,
 {
     struct timespec ts;
     struct timeval tp;
-    gettimeofday(&tp, NULL);
+    int status = gettimeofday(&tp, NULL);
+    if (status < 0) {
+        NABTO_LOG_ERROR(LOG, "gettimeofday failed. '%s'", strerror(status));
+        // TODO we cannot really fail.
+    }
     long future_us = tp.tv_usec+ms*1000;
     ts.tv_nsec = (future_us % 1000000) * 1000;
     ts.tv_sec = tp.tv_sec + future_us / 1000000;
-    pthread_cond_timedwait(&cond->cond, &mut->mut, &ts);
+    status = pthread_cond_timedwait(&cond->cond, &mut->mut, &ts);
+    if (status != 0) {
+        NABTO_LOG_ERROR(LOG, "pthread_cond_wait failed. '%s'", strerror(status));
+    }
 }

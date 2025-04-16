@@ -311,11 +311,13 @@ np_error_code tcp_do_write_ec(struct np_tcp_socket* sock)
 {
     int sent = send(sock->fd, sock->write.data, sock->write.dataLength, MSG_NOSIGNAL);
     if (sent < 0) {
-        if (sent == EAGAIN || sent == EWOULDBLOCK) {
+        int err = errno;
+        if (err == EAGAIN || err == EWOULDBLOCK) {
             // Wait for next event which triggers write.
             return NABTO_EC_AGAIN;
         }
-        return NABTO_EC_UNKNOWN;
+        NABTO_LOG_TRACE(LOG, "TCP send failed '%s'", strerror(err));
+        return NABTO_EC_FAILED;
     }
     sock->write.data = (uint8_t*)sock->write.data + sent;
     sock->write.dataLength -= sent;
@@ -379,7 +381,7 @@ np_error_code tcp_do_read_ec(struct np_tcp_socket* sock)
             return NABTO_EC_AGAIN;
         }
         NABTO_LOG_ERROR(LOG, "recv error %s", strerror(errno));
-        return NABTO_EC_UNKNOWN;
+        return NABTO_EC_FAILED;
     }
     if (readen == 0) {
         return NABTO_EC_EOF;
