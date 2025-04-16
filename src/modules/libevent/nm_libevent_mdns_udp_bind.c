@@ -255,20 +255,21 @@ void nm_libevent_mdns_update_ipv4_socket_registration(evutil_socket_t sock)
                 struct ip_mreqn group;
                 memset(&group, 0, sizeof(struct ip_mreq));
                 group.imr_multiaddr.s_addr = inet_addr("224.0.0.251");
-                //struct sockaddr_in* in = (struct sockaddr_in*)iterator->ifa_addr;
-                // TODO check return value
                 unsigned int index = if_nametoindex(iterator->ifa_name);
-                group.imr_ifindex = (int)index;
-                int status = setsockopt(sock, IPPROTO_IP, IP_ADD_MEMBERSHIP, (char *)&group, sizeof(group));
-                if (status < 0) {
-                    int e = EVUTIL_SOCKET_ERROR();
-                    if (ERR_IS_EADDRINUSE(e)) {
-                        // ok probable already registered
-                    } else {
-                        NABTO_LOG_TRACE(LOG, "Cannot add ipv4 membership (%d) %s, interface %s", e, evutil_socket_error_to_string(e), iterator->ifa_name);
+                if (index == 0) {
+                    NABTO_LOG_ERROR(LOG, "Cannot get index for interface '%s'", iterator->ifa_name);
+                } else {
+                    group.imr_ifindex = (int)index;
+                    int status = setsockopt(sock, IPPROTO_IP, IP_ADD_MEMBERSHIP, (char*)&group, sizeof(group));
+                    if (status < 0) {
+                        int e = EVUTIL_SOCKET_ERROR();
+                        if (ERR_IS_EADDRINUSE(e)) {
+                            // ok probable already registered
+                        } else {
+                            NABTO_LOG_TRACE(LOG, "Cannot add ipv4 membership (%d) %s, interface %s", e, evutil_socket_error_to_string(e), iterator->ifa_name);
+                        }
                     }
                 }
-
             }
 
             iterator = iterator->ifa_next;
@@ -290,22 +291,24 @@ void nm_libevent_mdns_update_ipv6_socket_registration(evutil_socket_t sock)
         while (iterator != NULL) {
             if (iterator->ifa_addr != NULL)
             {
-                // TODO check return value
                 unsigned int index = if_nametoindex(iterator->ifa_name);
-
-                struct ipv6_mreq group;
-                memset(&group, 0, sizeof(struct ipv6_mreq));
-                inet_pton(AF_INET6, "ff02::fb", &group.ipv6mr_multiaddr);
-                group.ipv6mr_interface = index;
-                int status = setsockopt(sock, IPPROTO_IPV6, IPV6_JOIN_GROUP, (char *)&group, sizeof(struct ipv6_mreq));
-                if (status < 0) {
-                    int e = EVUTIL_SOCKET_ERROR();
-                    if (ERR_IS_EADDRINUSE(e)) {
-                        // some interface indexes occurs more than
-                        // once, the interface can only be joined for
-                        // a multicast group once for each socket.
-                    } else {
-                        NABTO_LOG_TRACE(LOG, "Cannot add ipv6 membership (%d) %s,  interface name %s", e, evutil_socket_error_to_string(e), iterator->ifa_name);
+                if (index == 0) {
+                    NABTO_LOG_ERROR(LOG, "Cannot get index for interface '%s'", iterator->ifa_name);
+                } else {
+                    struct ipv6_mreq group;
+                    memset(&group, 0, sizeof(struct ipv6_mreq));
+                    inet_pton(AF_INET6, "ff02::fb", &group.ipv6mr_multiaddr);
+                    group.ipv6mr_interface = index;
+                    int status = setsockopt(sock, IPPROTO_IPV6, IPV6_JOIN_GROUP, (char*)&group, sizeof(struct ipv6_mreq));
+                    if (status < 0) {
+                        int e = EVUTIL_SOCKET_ERROR();
+                        if (ERR_IS_EADDRINUSE(e)) {
+                            // some interface indexes occurs more than
+                            // once, the interface can only be joined for
+                            // a multicast group once for each socket.
+                        } else {
+                            NABTO_LOG_TRACE(LOG, "Cannot add ipv6 membership (%d) %s,  interface name %s", e, evutil_socket_error_to_string(e), iterator->ifa_name);
+                        }
                     }
                 }
             }

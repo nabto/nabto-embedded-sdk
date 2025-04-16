@@ -315,7 +315,7 @@ np_error_code udp_send_to(struct np_udp_socket* s, const struct np_udp_endpoint*
             // expected
             // just drop the packet and the upper layers will take care of retransmissions.
             NABTO_LOG_TRACE(LOG, "UDP sendto returned an expected error status (%i) '%s'", status, strerror(status));
-            return NABTO_EC_OK;
+            return NABTO_EC_FAILED_TO_SEND_PACKET;
         } else if (status == EADDRNOTAVAIL || // if we send to ipv6 scopes we do not have
                    status == ENETUNREACH || // if we send ipv6 on a system without it.
                    status == EAFNOSUPPORT) // if we send ipv6 on an ipv4 only socket
@@ -400,15 +400,23 @@ uint16_t get_local_port(struct np_udp_socket* s)
         struct sockaddr_in6 addr;
         addr.sin6_port = 0;
         socklen_t length = sizeof(struct sockaddr_in6);
-        // TODO handle errors
-        getsockname(s->sock, (struct sockaddr*)(&addr), &length);
+        int status = getsockname(s->sock, (struct sockaddr*)(&addr), &length);
+        if (status < 0) {
+            int err = errno;
+            NABTO_LOG_ERROR(LOG, "getsockname returned an error: '%s'", strerror(err));
+            return 0;
+        }
         return htons(addr.sin6_port);
     }
     struct sockaddr_in addr;
     addr.sin_port = 0;
     socklen_t length = sizeof(struct sockaddr_in);
-    // TODO handle errors
-    getsockname(s->sock, (struct sockaddr*)(&addr), &length);
+    int status = getsockname(s->sock, (struct sockaddr*)(&addr), &length);
+    if (status < 0) {
+        int err = errno;
+        NABTO_LOG_ERROR(LOG, "getsockname returned an error: '%s'", strerror(err));
+        return 0;
+    }
     return htons(addr.sin_port);
 }
 
