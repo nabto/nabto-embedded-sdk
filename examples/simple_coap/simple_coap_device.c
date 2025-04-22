@@ -84,7 +84,7 @@ int main_with_ctx(int argc, char* argv[], struct context* ctx)
     char* productId = argv[1];
     char* deviceId = argv[2];
 
-    memcpy(helloWorld, defaultString, strlen(defaultString));
+    memcpy(helloWorld, defaultString, strlen(defaultString)+1);
 
     printf("Nabto Embedded SDK Version %s\n", nabto_device_version());
 
