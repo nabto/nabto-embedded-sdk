@@ -1,5 +1,7 @@
 Checks: '
 # bugprone*,
+bugprone-narrowing-conversions,
+bugprone-implicit-widening-of-multiplication-result,
 # readability*,
 -clang-analyzer-optin.core.EnumCastOutOfRange,
 llvm-include-order,

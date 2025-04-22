@@ -10,12 +10,14 @@ static inline float decode_halff(uint16_t half)
     int mant = half & 0x3ff;
     float mantf = NAN, expf = NAN, val = NAN;
     if (exp == 0) {
-        mantf = mant;
+        // mant is max 10 bit
+        mantf = (float)mant;
         expf = 1.0f / (1 << 24);
         val = mantf * expf;
     } else if (exp != 31) {
-        mantf = mant + 1024.0f;
-        expf = exp >= 25 ? 1 << (exp - 25) : 1.0f / (1 << (25 - exp));
+        // mant is max 10 bit
+        mantf = (float)mant + 1024.0f;
+        expf = exp >= 25 ? (float)(1 << (exp - 25)) : 1.0f / (float)(1 << (25 - exp));
         val = mantf * expf;
     } else {
         val = mant == 0 ? INFINITY : NAN;

@@ -88,7 +88,8 @@ int nm_select_unix_timed_wait(struct nm_select_unix* ctx, uint32_t ms)
     int nfds = 0;
     struct timeval timeout_val;
     timeout_val.tv_sec = (ms/1000);
-    timeout_val.tv_usec = ((ms)%1000)*1000;
+    // %1000 means this cannot be bigger than 1000000
+    timeout_val.tv_usec = (long)((ms)%1000)*1000;
     build_fd_sets(ctx);
     nfds = select(NP_MAX(ctx->maxReadFd, ctx->maxWriteFd)+1, &ctx->readFds, &ctx->writeFds, NULL, &timeout_val);
     if (nfds < 0) {
