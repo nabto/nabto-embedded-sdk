@@ -1,8 +1,8 @@
 #ifndef NC_COAP_PACKET_PRINTER_H_
 #define NC_COAP_PACKET_PRINTER_H_
 
-#include <string.h>
 #include <stdint.h>
+#include <string.h>
 
 #include <platform/np_error_code.h>
 

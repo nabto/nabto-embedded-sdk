@@ -1,8 +1,8 @@
 #ifndef NC_CBOR_H_
 #define NC_CBOR_H_
 
-#include <string.h>
 #include <stdbool.h>
+#include <string.h>
 
 #include <tinycbor/cbor.h>
 

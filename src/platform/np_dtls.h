@@ -5,6 +5,7 @@
 
 #define NP_DTLS_DEFAULT_CHANNEL_ID 0xff
 
+struct np_communication_buffer;
 
 enum np_dtls_event {
     NP_DTLS_EVENT_CLOSED, // The connection is closed
