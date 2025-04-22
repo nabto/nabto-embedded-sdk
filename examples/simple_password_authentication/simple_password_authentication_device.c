@@ -58,7 +58,8 @@ int main(int argc, char* argv[]) {
         return -1;
     }
 
-    if ((device_ = nabto_device_new()) == NULL) {
+    device_ = nabto_device_new();
+    if (device_ == NULL) {
         handle_device_error(NULL, NULL, NULL, "Failed to allocate device");
         return -1;
     }
@@ -69,7 +70,8 @@ int main(int argc, char* argv[]) {
     }
 
     // Get handler setup
-    if ((ctx.passwordAuthenticationListener = nabto_device_listener_new(device_)) == NULL) {
+    ctx.passwordAuthenticationListener = nabto_device_listener_new(device_);
+    if (ctx.passwordAuthenticationListener == NULL) {
         handle_device_error(device_, NULL, NULL, "Failed to allocate listener");
         return -1;
     }
@@ -161,7 +163,8 @@ bool start_device(NabtoDevice* device, const char* productId, const char* device
     struct nm_fs fsImpl = nm_fs_posix_get_impl();
 
     if (!string_file_exists(&fsImpl, keyFile)) {
-        if ((ec = nabto_device_create_private_key(device, &privateKey)) != NABTO_DEVICE_EC_OK) {
+        ec = nabto_device_create_private_key(device, &privateKey);
+        if (ec != NABTO_DEVICE_EC_OK) {
             printf("Failed to create private key, ec=%s\n", nabto_device_error_get_message(ec));
             return false;
         }
@@ -178,7 +181,8 @@ bool start_device(NabtoDevice* device, const char* productId, const char* device
         return false;
     }
 
-    if ((ec = nabto_device_set_private_key(device, privateKey)) != NABTO_DEVICE_EC_OK) {
+    ec = nabto_device_set_private_key(device, privateKey);
+    if (ec != NABTO_DEVICE_EC_OK) {
         printf("Failed to set private key, ec=%s\n", nabto_device_error_get_message(ec));
         return false;
     }

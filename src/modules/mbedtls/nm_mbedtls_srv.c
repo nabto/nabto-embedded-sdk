@@ -210,7 +210,6 @@ np_error_code nm_mbedtls_srv_create_connection(struct np_dtls_srv* server,
                                             np_dtls_data_handler dataHandler,
                                             np_dtls_event_handler eventHandler, void* data)
 {
-    int ret = 0;
     struct np_dtls_srv_connection* ctx = (struct np_dtls_srv_connection*)np_calloc(1, sizeof(struct np_dtls_srv_connection));
     if(!ctx) {
         return NABTO_EC_OUT_OF_MEMORY;
@@ -248,7 +247,8 @@ np_error_code nm_mbedtls_srv_create_connection(struct np_dtls_srv* server,
     NABTO_LOG_TRACE(LOG, "New DTLS srv connection was allocated.");
     //mbedtls connection initialization
     mbedtls_ssl_init( &ctx->ssl );
-    if( ( ret = mbedtls_ssl_setup( &ctx->ssl, &server->conf ) ) != 0 )
+    int ret = mbedtls_ssl_setup( &ctx->ssl, &server->conf );
+    if( ret != 0 )
     {
         NABTO_LOG_ERROR(LOG, " failed ! mbedtls_ssl_setup returned %d", ret );
         return NABTO_EC_UNKNOWN;
@@ -259,7 +259,8 @@ np_error_code nm_mbedtls_srv_create_connection(struct np_dtls_srv* server,
     mbedtls_ssl_set_timer_cb(&ctx->ssl, &ctx->timer, &nm_mbedtls_timer_set_delay,
                               &nm_mbedtls_timer_get_delay );
 
-    if ( ( ret = mbedtls_ssl_session_reset( &ctx->ssl ) ) != 0) {
+    ret = mbedtls_ssl_session_reset( &ctx->ssl );
+    if ( ret != 0) {
         NABTO_LOG_ERROR(LOG, " failed ! mbedtls_ssl_session_reset returned %d", ret );
         return NABTO_EC_UNKNOWN;
     }
@@ -508,12 +509,12 @@ np_error_code nm_mbedtls_srv_init_config(struct np_dtls_srv* server,
                                       const unsigned char* privateKeyL, size_t privateKeySize)
 {
     const char *pers = "dtls_server";
-    int ret = 0;
+    int ret = mbedtls_ssl_config_defaults( &server->conf,
+        MBEDTLS_SSL_IS_SERVER,
+        MBEDTLS_SSL_TRANSPORT_DATAGRAM,
+        MBEDTLS_SSL_PRESET_DEFAULT );
 
-    if( ( ret = mbedtls_ssl_config_defaults( &server->conf,
-                                             MBEDTLS_SSL_IS_SERVER,
-                                             MBEDTLS_SSL_TRANSPORT_DATAGRAM,
-                                             MBEDTLS_SSL_PRESET_DEFAULT ) ) != 0 )
+    if( ret != 0 )
     {
         NABTO_LOG_ERROR(LOG, " failed ! mbedtls_ssl_config_defaults returned %i", ret);
         return NABTO_EC_UNKNOWN;
@@ -524,9 +525,10 @@ np_error_code nm_mbedtls_srv_init_config(struct np_dtls_srv* server,
 
     mbedtls_ssl_conf_alpn_protocols(&server->conf, nm_mbedtls_srv_alpnList );
 
-    if( ( ret = mbedtls_ctr_drbg_seed( &server->ctr_drbg, mbedtls_entropy_func, &server->entropy,
-                                       (const unsigned char *) pers,
-                                       strlen( pers ) ) ) != 0 )
+    ret = mbedtls_ctr_drbg_seed( &server->ctr_drbg, mbedtls_entropy_func, &server->entropy,
+        (const unsigned char *) pers,
+        strlen( pers ) );
+    if( ret != 0 )
     {
         NABTO_LOG_ERROR(LOG, " failed ! mbedtls_ctr_drbg_seed returned %d", ret );
         return NABTO_EC_UNKNOWN;
@@ -555,7 +557,8 @@ np_error_code nm_mbedtls_srv_init_config(struct np_dtls_srv* server,
         return NABTO_EC_UNKNOWN;
     }
 
-    if( ( ret = mbedtls_ssl_conf_own_cert( &server->conf, &server->publicKey, &server->privateKey ) ) != 0 )
+    ret = mbedtls_ssl_conf_own_cert( &server->conf, &server->publicKey, &server->privateKey );
+    if( ret != 0 )
     {
         NABTO_LOG_ERROR(LOG,"mbedtls_ssl_conf_own_cert returned %d", ret);
         return NABTO_EC_UNKNOWN;

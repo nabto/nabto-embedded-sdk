@@ -1,5 +1,6 @@
 Checks: '
 # bugprone*,
+bugprone-assignment-in-if-condition,
 bugprone-switch-missing-default-case,
 bugprone-macro-parentheses,
 bugprone-reserved-identifier,

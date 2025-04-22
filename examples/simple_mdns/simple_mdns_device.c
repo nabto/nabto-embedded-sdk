@@ -38,11 +38,11 @@ int main(int argc, char* argv[]) {
     char* txtKey = argv[4];
     char* txtVal = argv[5];
 
-    NabtoDevice* device = NULL;
 
     printf("Nabto Embedded SDK Version %s\n", nabto_device_version());
 
-    if ((device = nabto_device_new()) == NULL) {
+    NabtoDevice* device = nabto_device_new();
+    if (device == NULL) {
         die("Allocation error");
     }
 

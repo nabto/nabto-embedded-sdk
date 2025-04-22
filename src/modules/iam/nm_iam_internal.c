@@ -189,17 +189,18 @@ enum nm_iam_error nm_iam_internal_pair_new_client(struct nm_iam* iam, const char
     const char* role = iam->state->openPairingRole;
 
     char* sct = NULL;
-    struct nm_iam_user* user = NULL;
     if (role == NULL ||
         nabto_device_create_server_connect_token(iam->device, &sct) != NABTO_DEVICE_EC_OK ||
-        strlen(sct) > iam->sctMaxLength ||
-        (user = nm_iam_user_new(username)) == NULL)
+        strlen(sct) > iam->sctMaxLength)
     {
         nabto_device_string_free(sct);
         return NM_IAM_ERROR_INTERNAL;
     }
 
-    if (!nm_iam_user_set_role(user, role) ||
+    struct nm_iam_user* user = nm_iam_user_new(username);
+
+    if (user == NULL ||
+        !nm_iam_user_set_role(user, role) ||
         !nm_iam_user_add_fingerprint(user, fingerprint, fpName) ||
         !nm_iam_user_set_sct(user, sct) ||
         !nm_iam_internal_add_user(iam, user) )

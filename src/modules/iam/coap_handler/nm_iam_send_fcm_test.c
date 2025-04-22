@@ -124,14 +124,22 @@ void handle_request(struct nm_iam_coap_handler* handler, NabtoDeviceCoapRequest*
         return;
     }
 
-    struct nm_iam_fcm_ctx* ctx = NULL;
-    char* payload = NULL;
     const size_t payloadLen = strlen(noti1) + strlen(noti2) + strlen(user->fcmToken)+1;
 
-    if ((ctx = (struct nm_iam_fcm_ctx*)nm_iam_calloc(1, sizeof(struct nm_iam_fcm_ctx))) == NULL ||
-        (payload = nm_iam_calloc(1, payloadLen)) == NULL ||
-        (ctx->msg = nabto_device_fcm_notification_new(handler->iam->device)) == NULL)
+    struct nm_iam_fcm_ctx* ctx = (struct nm_iam_fcm_ctx*)nm_iam_calloc(1, sizeof(struct nm_iam_fcm_ctx));
+    char* payload = nm_iam_calloc(1, payloadLen);
+    if (ctx == NULL ||
+        payload == NULL)
     {
+        NN_LOG_INFO(handler->iam->logger, LOGM, "failed to alloc. ctx: %p, payload: %p, ctx->msg: %p", ctx, payload, ctx?ctx->msg:NULL);
+        nabto_device_coap_error_response(request, 500, "Insufficient resources");
+        nm_iam_free(ctx);
+        nm_iam_free(payload);
+        nm_iam_coap_handler_async_request_end(handler);
+        return;
+    }
+    ctx->msg = nabto_device_fcm_notification_new(handler->iam->device);
+    if (ctx->msg == NULL) {
         NN_LOG_INFO(handler->iam->logger, LOGM, "failed to alloc. ctx: %p, payload: %p, ctx->msg: %p", ctx, payload, ctx?ctx->msg:NULL);
         nabto_device_coap_error_response(request, 500, "Insufficient resources");
         nm_iam_free(ctx);

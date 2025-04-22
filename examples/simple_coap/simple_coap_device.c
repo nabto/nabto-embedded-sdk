@@ -200,7 +200,8 @@ bool start_device(struct context* ctx, const char* productId, const char* device
 
 
     if (!string_file_exists(&fsImpl, keyFile)) {
-        if ((ec = nabto_device_create_private_key(ctx->device, &privateKey)) != NABTO_DEVICE_EC_OK) {
+        ec = nabto_device_create_private_key(ctx->device, &privateKey);
+        if (ec != NABTO_DEVICE_EC_OK) {
             printf("Failed to create private key, ec=%s\n", nabto_device_error_get_message(ec));
             return false;
         }
@@ -217,7 +218,8 @@ bool start_device(struct context* ctx, const char* productId, const char* device
         return false;
     }
 
-    if ((ec = nabto_device_set_private_key(ctx->device, privateKey)) != NABTO_DEVICE_EC_OK) {
+    ec = nabto_device_set_private_key(ctx->device, privateKey);
+    if (ec != NABTO_DEVICE_EC_OK) {
         printf("Failed to set private key, ec=%s\n", nabto_device_error_get_message(ec));
         return false;
     }

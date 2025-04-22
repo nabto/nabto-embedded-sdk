@@ -471,7 +471,13 @@ nabto_coap_method method, const char** segments, void* payload, size_t payloadSi
 {
     struct nc_coap_server_request* req = np_calloc(1, sizeof(struct nc_coap_server_request));
     struct nc_coap_server_virtual_request* virReq = np_calloc(1, sizeof(struct nc_coap_server_virtual_request));
-    if (req == NULL || virReq == NULL || (virReq->reqPayload = np_calloc(1, payloadSize)) == NULL) {
+    if (req == NULL || virReq == NULL) {
+        np_free(req);
+        np_free(virReq);
+        return NULL;
+    }
+    virReq->reqPayload = np_calloc(1, payloadSize);
+    if (virReq->reqPayload == NULL) {
         np_free(req);
         np_free(virReq);
         return NULL;
