@@ -1,7 +1,7 @@
 Checks: '
 # bugprone*,
-# readability*
-llvm-else-after-return,
+# readability*,
+-clang-analyzer-optin.core.EnumCastOutOfRange,
 llvm-include-order,
 # misc-no-recursion,
 # misc-unused-parameters,
