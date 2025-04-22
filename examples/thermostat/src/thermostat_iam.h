@@ -1,9 +1,9 @@
 #ifndef THERMOSTAT_IAM_H_
 #define THERMOSTAT_IAM_H_
 
-#include <nabto/nabto_device.h>
-#include <modules/iam/nm_iam_state.h>
 #include <modules/iam/nm_iam.h>
+#include <modules/iam/nm_iam_state.h>
+#include <nabto/nabto_device.h>
 #include <nn/log.h>
 
 struct thermostat_iam {

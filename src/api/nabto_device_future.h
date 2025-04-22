@@ -1,8 +1,8 @@
 #ifndef NABTO_DEVICE_FUTURE_H
 #define NABTO_DEVICE_FUTURE_H
 
-#include <nabto/nabto_device.h>
 #include <api/nabto_device_threads.h>
+#include <nabto/nabto_device.h>
 
 #include <nn/llist.h>
 

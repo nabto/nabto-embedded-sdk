@@ -5,8 +5,8 @@
 #include <nabto/nabto_device_experimental.h>
 
 #include <api/nabto_device_future.h>
-#include <platform/np_error_code.h>
 #include <nn/llist.h>
+#include <platform/np_error_code.h>
 
 #ifdef __cplusplus
 extern "C" {

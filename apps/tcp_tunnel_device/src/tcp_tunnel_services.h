@@ -1,8 +1,8 @@
 #ifndef TCP_TUNNEL_SERVICES_H_
 #define TCP_TUNNEL_SERVICES_H_
 
-#include <nn/vector.h>
 #include <nn/string_map.h>
+#include <nn/vector.h>
 
 #include <nn/log.h>
 

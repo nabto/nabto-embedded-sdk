@@ -1,9 +1,9 @@
 #ifndef NABTO_DEVICE_LOGGING_H_
 #define NABTO_DEVICE_LOGGING_H_
 
-#include <stdarg.h>
-#include <platform/np_logging.h>
 #include <nabto/nabto_device.h>
+#include <platform/np_logging.h>
+#include <stdarg.h>
 
 #ifdef __cplusplus
 extern "C" {

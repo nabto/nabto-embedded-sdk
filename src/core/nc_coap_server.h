@@ -4,10 +4,10 @@
 #include <platform/np_dtls_cli.h>
 #include <platform/np_platform.h>
 
-#include <core/nc_client_connection.h>
-
 #include <nabto_coap/nabto_coap_server.h>
 #include <nn/string_map.h>
+
+struct nc_client_connection;
 
 struct nc_coap_server_context {
     struct np_platform* pl;

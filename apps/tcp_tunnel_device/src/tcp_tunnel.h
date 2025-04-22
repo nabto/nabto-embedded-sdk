@@ -1,8 +1,8 @@
 #ifndef TCP_TUNNEL_H_
 #define TCP_TUNNEL_H_
 
-#include <nn/vector.h>
 #include <nabto/nabto_device.h>
+#include <nn/vector.h>
 
 #include <modules/fs/posix/nm_fs_posix.h>
 

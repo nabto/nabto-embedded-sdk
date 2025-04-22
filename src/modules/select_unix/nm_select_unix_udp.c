@@ -369,7 +369,9 @@ np_error_code udp_recv_from(struct np_udp_socket* sock, struct np_udp_endpoint* 
 np_error_code bind_port(struct np_udp_socket* s, uint16_t port)
 {
     int status = 0;
-
+    if (s->sock < 0) {
+        return NABTO_EC_INVALID_ARGUMENT;
+    }
     if (s->type == NABTO_IPV6) {
         struct sockaddr_in6 si_me6;
         memset(&si_me6, 0, sizeof(si_me6));
