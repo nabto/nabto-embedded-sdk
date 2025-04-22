@@ -195,6 +195,7 @@ struct nc_attach_context {
     uint8_t redirectAttempts;
     struct np_event* reattachTimer;
     struct np_event* closeEv;
+    struct np_event* deferredHandleStateChange;
 
     nc_attacher_attach_start_callback startCallback;
     void* startCallbackUserData;

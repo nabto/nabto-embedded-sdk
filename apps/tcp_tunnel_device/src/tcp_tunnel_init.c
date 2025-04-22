@@ -113,6 +113,7 @@ bool create_state_interactive(struct nm_fs* fsImpl, const char* file)
     return create_state_default(fsImpl, file);
 }
 
+// NOLINTNEXTLINE(misc-no-recursion) recursion is ok since it only happens during interactive setup.
 bool create_state_interactive_custom(struct nm_fs* fsImpl, const char* file) {
     const char* roles[] = {"Unpaired", "Guest", "Standard", "Administrator"};
     bool enableLocalInitialPairing = 0;
