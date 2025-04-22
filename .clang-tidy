@@ -1,6 +1,5 @@
 Checks: '
 bugprone*,
--bugprone-misplaced-widening-cast,
 -bugprone-multi-level-implicit-pointer-conversion,
 -bugprone-branch-clone,
 -clang-analyzer-unix.StdCLibraryFunctions,
