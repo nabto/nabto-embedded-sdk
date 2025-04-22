@@ -1,5 +1,5 @@
-#ifndef _NM_LIBEVENT_TYPES_H_
-#define _NM_LIBEVENT_TYPES_H_
+#ifndef NM_LIBEVENT_TYPES_H_
+#define NM_LIBEVENT_TYPES_H_
 
 
 #include <errno.h>

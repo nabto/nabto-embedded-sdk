@@ -1,5 +1,5 @@
-#ifndef _NC_DEVICE_DEFINES_H_
-#define _NC_DEVICE_DEFINES_H_
+#ifndef NC_DEVICE_DEFINES_H_
+#define NC_DEVICE_DEFINES_H_
 
 enum nc_device_event {
     NC_DEVICE_EVENT_ATTACHED,

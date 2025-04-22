@@ -1,8 +1,8 @@
-#ifndef _NM_EVENT_QUEUE_H_
-#define _NM_EVENT_QUEUE_H_
+#ifndef NM_EVENT_QUEUE_H_
+#define NM_EVENT_QUEUE_H_
 
-#include <platform/np_platform.h>
 #include <nn/llist.h>
+#include <platform/np_platform.h>
 
 struct nm_event_queue {
     struct nn_llist events;

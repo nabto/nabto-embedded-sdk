@@ -1,9 +1,9 @@
 #ifndef NC_RENDEZVOUS_H
 #define NC_RENDEZVOUS_H
 
-#include <platform/np_platform.h>
-#include <platform/np_dtls_srv.h>
 #include <platform/np_completion_event.h>
+#include <platform/np_dtls_srv.h>
+#include <platform/np_platform.h>
 
 #ifdef __cplusplus
 extern "C" {

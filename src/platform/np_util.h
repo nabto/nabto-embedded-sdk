@@ -1,9 +1,9 @@
-#ifndef _NP_UTIL_H_
-#define _NP_UTIL_H_
+#ifndef NP_UTIL_H_
+#define NP_UTIL_H_
 
+#include <stdbool.h>
 #include <stdint.h>
 #include <string.h>
-#include <stdbool.h>
 
 #ifdef __cplusplus
 extern "C" {

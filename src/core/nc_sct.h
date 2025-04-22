@@ -1,5 +1,5 @@
-#ifndef _NC_SCT_H_
-#define _NC_SCT_H_
+#ifndef NC_SCT_H_
+#define NC_SCT_H_
 
 typedef void (*nc_sct_callback)(np_error_code ec, void* userData);
 

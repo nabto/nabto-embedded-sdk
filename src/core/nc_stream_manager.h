@@ -1,10 +1,10 @@
 #ifndef NC_STREAM_MANAGER_H
 #define NC_STREAM_MANAGER_H
 
-#include <platform/np_platform.h>
-#include <platform/np_dtls_cli.h>
-#include <nabto_stream/nabto_stream_window.h>
 #include <core/nc_stream.h>
+#include <nabto_stream/nabto_stream_window.h>
+#include <platform/np_dtls_cli.h>
+#include <platform/np_platform.h>
 
 typedef void (*nc_stream_manager_listen_callback)(np_error_code ec, struct nc_stream_context* stream, void* data);
 

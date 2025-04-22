@@ -1,5 +1,5 @@
-#ifndef _THERMOSTAT_STATE_H_
-#define _THERMOSTAT_STATE_H_
+#ifndef THERMOSTAT_STATE_H_
+#define THERMOSTAT_STATE_H_
 
 // data interface needed by the thermostat coap calls. This can have different
 // implementations depending on the platform which the code runs on.

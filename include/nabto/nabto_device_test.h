@@ -1,5 +1,5 @@
-#ifndef _NABTO_DEVICE_TEST_H_
-#define _NABTO_DEVICE_TEST_H_
+#ifndef NABTO_DEVICE_TEST_H_
+#define NABTO_DEVICE_TEST_H_
 
 #include "nabto_device.h"
 

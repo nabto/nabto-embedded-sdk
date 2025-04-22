@@ -1,5 +1,5 @@
-#ifndef _LOGGING_H_
-#define _LOGGING_H_
+#ifndef LOGGING_H_
+#define LOGGING_H_
 
 #include <nabto/nabto_device.h>
 #include <nn/log.h>

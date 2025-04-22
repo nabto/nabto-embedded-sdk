@@ -1,17 +1,17 @@
 #ifndef NC_STREAM_H
 #define NC_STREAM_H
 
-#include <platform/np_platform.h>
 #include <platform/np_dtls_cli.h>
+#include <platform/np_platform.h>
 
 #include <nabto_stream/nabto_stream.h>
 #include <nabto_stream/nabto_stream_interface.h>
-#include <nabto_stream/nabto_stream_protocol.h>
-#include <nabto_stream/nabto_stream_packet.h>
-#include <nabto_stream/nabto_stream_window.h>
-#include <nabto_stream/nabto_stream_util.h>
-#include <nabto_stream/nabto_stream_memory.h>
 #include <nabto_stream/nabto_stream_log_helper.h>
+#include <nabto_stream/nabto_stream_memory.h>
+#include <nabto_stream/nabto_stream_packet.h>
+#include <nabto_stream/nabto_stream_protocol.h>
+#include <nabto_stream/nabto_stream_util.h>
+#include <nabto_stream/nabto_stream_window.h>
 
 struct nc_stream_manager_context;
 struct nc_client_connection;

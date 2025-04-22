@@ -1,12 +1,12 @@
 #ifndef NC_ATTACHER_H
 #define NC_ATTACHER_H
 
-#include <platform/np_platform.h>
-#include <platform/np_completion_event.h>
-#include <core/nc_udp_dispatch.h>
 #include <core/nc_coap_client.h>
 #include <core/nc_device_defines.h>
 #include <core/nc_dns_multi_resolver.h>
+#include <core/nc_udp_dispatch.h>
+#include <platform/np_completion_event.h>
+#include <platform/np_platform.h>
 
 #include <nn/string_set.h>
 

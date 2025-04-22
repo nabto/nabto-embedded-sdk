@@ -1,8 +1,8 @@
-#ifndef _NP_TCP_H_
-#define _NP_TCP_H_
+#ifndef NP_TCP_H_
+#define NP_TCP_H_
 
-#include <platform/np_ip_address.h>
 #include <platform/np_error_code.h>
+#include <platform/np_ip_address.h>
 
 #ifdef __cplusplus
 extern "C" {

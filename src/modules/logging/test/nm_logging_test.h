@@ -1,5 +1,5 @@
-#ifndef _NM_LOGGING_TEST_H_
-#define _NM_LOGGING_TEST_H_
+#ifndef NM_LOGGING_TEST_H_
+#define NM_LOGGING_TEST_H_
 
 #ifdef __cplusplus
 extern "C" {

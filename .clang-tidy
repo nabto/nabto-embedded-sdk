@@ -1,9 +1,14 @@
 Checks: '
 # bugprone*,
+bugprone-reserved-identifier,
 bugprone-narrowing-conversions,
 bugprone-implicit-widening-of-multiplication-result,
 # readability*,
--clang-analyzer-optin.core.EnumCastOutOfRange,
+
+# These should possibly be fixed and reincluded
+-clang-analyzer-unix.StdCLibraryFunctions,
+-clang-analyzer-optin.performance.Padding,
+
 llvm-include-order,
 misc-no-recursion,
 # misc-unused-parameters,
@@ -12,3 +17,4 @@ misc-no-recursion,
 -bugprone-easily-swappable-parameters,
 '
 WarningsAsErrors: '*'
+HeaderFilterRegex: '.*'

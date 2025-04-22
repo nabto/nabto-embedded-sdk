@@ -1,11 +1,11 @@
 #ifndef NC_ATTACHER_WATCHDOG_H
 #define NC_ATTACHER_WATCHDOG_H
 
-#include <platform/np_platform.h>
 #include <platform/np_completion_event.h>
+#include <platform/np_platform.h>
 
-#include "nc_device.h"
 #include "nc_attacher.h"
+#include "nc_device.h"
 
 #ifdef __cplusplus
 extern "C" {

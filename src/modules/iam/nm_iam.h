@@ -1,5 +1,5 @@
-#ifndef _NM_IAM_H_
-#define _NM_IAM_H_
+#ifndef NM_IAM_H_
+#define NM_IAM_H_
 
 /*
  * Nabto Devce IAM Module.
@@ -14,8 +14,8 @@
 
 #include "coap_handler/nm_iam_coap_handler.h"
 #include "nm_iam_auth_handler.h"
-#include "nm_iam_pake_handler.h"
 #include "nm_iam_connection_events.h"
+#include "nm_iam_pake_handler.h"
 
 #include <nn/log.h>
 

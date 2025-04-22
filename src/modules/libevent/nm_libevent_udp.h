@@ -1,11 +1,11 @@
-#ifndef _NM_LIBEVENT_UDP_H_
-#define _NM_LIBEVENT_UDP_H_
+#ifndef NM_LIBEVENT_UDP_H_
+#define NM_LIBEVENT_UDP_H_
 
 #include <platform/np_completion_event.h>
 #include <platform/np_ip_address.h>
 
-#include <event2/util.h>
 #include <event.h>
+#include <event2/util.h>
 
 #include <stdbool.h>
 

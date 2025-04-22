@@ -1,15 +1,15 @@
-#ifndef _NC_SPAKE2_H_
-#define _NC_SPAKE2_H_
+#ifndef NC_SPAKE2_H_
+#define NC_SPAKE2_H_
 
 #include <nabto/nabto_device_config.h>
 
 #if defined(NABTO_DEVICE_PASSWORD_AUTHENTICATION)
 
+#include <nabto_coap/nabto_coap.h>
 #include <platform/np_error_code.h>
 #include <platform/np_event_queue_wrapper.h>
-#include <platform/np_spake2.h>
 #include <platform/np_platform.h>
-#include <nabto_coap/nabto_coap.h>
+#include <platform/np_spake2.h>
 
 #ifdef __cplusplus
 extern "C" {

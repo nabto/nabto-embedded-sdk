@@ -1,5 +1,5 @@
-#ifndef _NABTO_DEVICE_INTEGRATION_H_
-#define _NABTO_DEVICE_INTEGRATION_H_
+#ifndef NABTO_DEVICE_INTEGRATION_H_
+#define NABTO_DEVICE_INTEGRATION_H_
 
 #include <nabto/nabto_device.h>
 

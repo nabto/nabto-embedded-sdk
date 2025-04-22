@@ -1,9 +1,9 @@
 #ifndef NC_VIRTUAL_STREAM_H
 #define NC_VIRTUAL_STREAM_H
 
-#include <platform/np_platform.h>
-#include <platform/np_completion_event.h>
 #include <core/nc_stream.h>
+#include <platform/np_completion_event.h>
+#include <platform/np_platform.h>
 
 // Initialize a new virtual stream. Called by virtual API.
 np_error_code nc_virtual_stream_init(struct np_platform* pl, struct nc_stream_context* ctx, struct nc_connection* conn, struct nc_stream_manager_context* streamManager, uint32_t port, struct np_completion_event* openedEv);

@@ -1,5 +1,5 @@
-#ifndef _DEVICE_EVENT_HANDLER_H_
-#define _DEVICE_EVENT_HANDLER_H_
+#ifndef DEVICE_EVENT_HANDLER_H_
+#define DEVICE_EVENT_HANDLER_H_
 
 #include <nabto/nabto_device.h>
 

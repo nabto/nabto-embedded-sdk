@@ -1,5 +1,5 @@
-#ifndef _NC_COAP_REST_ERROR_H_
-#define _NC_COAP_REST_ERROR_H_
+#ifndef NC_COAP_REST_ERROR_H_
+#define NC_COAP_REST_ERROR_H_
 
 #include <core/nc_coap_client.h>
 

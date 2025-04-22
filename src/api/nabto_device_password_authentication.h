@@ -1,8 +1,8 @@
-#ifndef _NABTO_DEVICE_PASSWORD_AUTHENTICATION_H_
-#define _NABTO_DEVICE_PASSWORD_AUTHENTICATION_H_
+#ifndef NABTO_DEVICE_PASSWORD_AUTHENTICATION_H_
+#define NABTO_DEVICE_PASSWORD_AUTHENTICATION_H_
 
-#include <nabto/nabto_device_config.h>
 #include <nabto/nabto_device.h>
+#include <nabto/nabto_device_config.h>
 #include <nabto/nabto_device_experimental.h>
 
 #include <nn/llist.h>

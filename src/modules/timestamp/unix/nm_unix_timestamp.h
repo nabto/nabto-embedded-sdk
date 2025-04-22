@@ -1,5 +1,5 @@
-#ifndef _NP_UNIX_TIMESTAMP_H_
-#define _NP_UNIX_TIMESTAMP_H_
+#ifndef NP_UNIX_TIMESTAMP_H_
+#define NP_UNIX_TIMESTAMP_H_
 
 #include <platform/np_platform.h>
 #include <platform/np_types.h>

@@ -1,5 +1,5 @@
-#ifndef _NM_MDNS_UDP_BIND_H_
-#define _NM_MDNS_UDP_BIND_H_
+#ifndef NM_MDNS_UDP_BIND_H_
+#define NM_MDNS_UDP_BIND_H_
 
 
 

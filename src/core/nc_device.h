@@ -1,25 +1,25 @@
 #ifndef NC_DEVICE_H
 #define NC_DEVICE_H
 
-#include <nabto/nabto_device_config.h>
-#include <core/nc_device_defines.h>
 #include <core/nc_attacher.h>
-#include <core/nc_stream_manager.h>
 #include <core/nc_client_connection_dispatch.h>
-#include <core/nc_connection.h>
-#include <core/nc_stun.h>
 #include <core/nc_coap_server.h>
-#include <core/nc_stun_coap.h>
-#include <core/nc_rendezvous_coap.h>
-#include <core/nc_connection_event.h>
-#include <core/nc_spake2.h>
-#include <core/nc_rendezvous.h>
 #include <core/nc_config.h>
+#include <core/nc_connection.h>
+#include <core/nc_connection_event.h>
+#include <core/nc_device_defines.h>
+#include <core/nc_rendezvous.h>
+#include <core/nc_rendezvous_coap.h>
+#include <core/nc_spake2.h>
+#include <core/nc_stream_manager.h>
+#include <core/nc_stun.h>
+#include <core/nc_stun_coap.h>
+#include <nabto/nabto_device_config.h>
 
 #include <platform/np_error_code.h>
 
-#include <nn/string_set.h>
 #include <nn/string_map.h>
+#include <nn/string_set.h>
 
 enum nc_device_state {
     NC_DEVICE_STATE_SETUP,

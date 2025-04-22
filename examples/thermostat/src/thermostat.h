@@ -1,5 +1,5 @@
-#ifndef _THERMOSTAT_H_
-#define _THERMOSTAT_H_
+#ifndef THERMOSTAT_H_
+#define THERMOSTAT_H_
 
 #include "thermostat_coap_handler.h"
 #include "thermostat_iam.h"

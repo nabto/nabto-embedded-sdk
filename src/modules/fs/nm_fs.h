@@ -1,8 +1,8 @@
-#ifndef _NM_FS_H_
-#define _NM_FS_H_
+#ifndef NM_FS_H_
+#define NM_FS_H_
 
-#include <string.h>
 #include <stdint.h>
+#include <string.h>
 
 enum nm_fs_error {
     NM_FS_OK = 0,

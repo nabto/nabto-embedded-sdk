@@ -1,5 +1,5 @@
-#ifndef _NP_LOCAL_IP_WRAPPER_H_
-#define _NP_LOCAL_IP_WRAPPER_H_
+#ifndef NP_LOCAL_IP_WRAPPER_H_
+#define NP_LOCAL_IP_WRAPPER_H_
 
 #include "interfaces/np_local_ip.h"
 

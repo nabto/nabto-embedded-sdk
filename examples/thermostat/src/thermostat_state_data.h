@@ -1,5 +1,5 @@
-#ifndef _THERMOSTAT_STATE_DATA_H_
-#define _THERMOSTAT_STATE_DATA_H_
+#ifndef THERMOSTAT_STATE_DATA_H_
+#define THERMOSTAT_STATE_DATA_H_
 
 #include "thermostat_state.h"
 

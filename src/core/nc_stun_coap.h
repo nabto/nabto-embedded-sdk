@@ -1,5 +1,5 @@
-#ifndef _NC_STUN_COAP_H_
-#define _NC_STUN_COAP_H_
+#ifndef NC_STUN_COAP_H_
+#define NC_STUN_COAP_H_
 
 #include "nc_stun.h"
 #include <platform/np_error_code.h>

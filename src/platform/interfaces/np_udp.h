@@ -1,9 +1,9 @@
 #ifndef NP_UDP_H
 #define NP_UDP_H
 
-#include <platform/np_ip_address.h>
-#include <platform/np_error_code.h>
 #include <platform/np_communication_buffer.h>
+#include <platform/np_error_code.h>
+#include <platform/np_ip_address.h>
 
 #ifdef __cplusplus
 extern "C" {

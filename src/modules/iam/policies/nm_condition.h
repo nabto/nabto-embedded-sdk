@@ -1,5 +1,5 @@
-#ifndef _NM_CONDITION_H_
-#define _NM_CONDITION_H_
+#ifndef NM_CONDITION_H_
+#define NM_CONDITION_H_
 
 #include "../nm_iam_configuration.h"
 #include <nn/string_set.h>

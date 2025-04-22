@@ -1,12 +1,12 @@
 #ifndef NC_STUN_H
 #define NC_STUN_H
 
-#include <platform/np_platform.h>
-#include <platform/np_completion_event.h>
 #include <nabto_stun/nabto_stun_client.h>
+#include <platform/np_completion_event.h>
+#include <platform/np_platform.h>
 
-#include <core/nc_udp_dispatch.h>
 #include <core/nc_dns_multi_resolver.h>
+#include <core/nc_udp_dispatch.h>
 #include <nn/ip_address.h>
 
 

@@ -1,5 +1,5 @@
-#ifndef _IAM_CONFIG_H_
-#define _IAM_CONFIG_H_
+#ifndef IAM_CONFIG_H_
+#define IAM_CONFIG_H_
 
 #include <modules/iam/nm_iam_configuration.h>
 #include <stdbool.h>

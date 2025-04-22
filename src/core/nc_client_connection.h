@@ -1,14 +1,14 @@
 #ifndef NC_CLIENT_CONNECTION_H
 #define NC_CLIENT_CONNECTION_H
 
-#include <nabto/nabto_device_config.h>
-#include <platform/np_platform.h>
-#include <platform/np_completion_event.h>
-#include <core/nc_stream_manager.h>
 #include <core/nc_coap_server.h>
-#include <core/nc_keep_alive.h>
 #include <core/nc_connection_event.h>
+#include <core/nc_keep_alive.h>
 #include <core/nc_spake2.h>
+#include <core/nc_stream_manager.h>
+#include <nabto/nabto_device_config.h>
+#include <platform/np_completion_event.h>
+#include <platform/np_platform.h>
 
 #include <nn/llist.h>
 

@@ -1,8 +1,8 @@
 #ifndef NM_MBEDTLS_SRV_H
 #define NM_MBEDTLS_SRV_H
 
-#include <platform/np_platform.h>
 #include <platform/np_dtls_srv.h>
+#include <platform/np_platform.h>
 
 #ifdef __cplusplus
 extern "C" {

@@ -1,5 +1,9 @@
-#ifndef _NC_CONNECTION_EVENT_H_
-#define _NC_CONNECTION_EVENT_H_
+#ifndef NC_CONNECTION_EVENT_H_
+#define NC_CONNECTION_EVENT_H_
+
+#include <nn/llist.h>
+
+#include <stdint.h>
 
 enum nc_connection_event {
     NC_CONNECTION_EVENT_OPENED,

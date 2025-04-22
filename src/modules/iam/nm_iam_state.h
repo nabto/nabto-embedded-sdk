@@ -1,5 +1,5 @@
-#ifndef _NM_IAM_STATE_H_
-#define _NM_IAM_STATE_H_
+#ifndef NM_IAM_STATE_H_
+#define NM_IAM_STATE_H_
 
 #include <nn/llist.h>
 #include <nn/string_set.h>

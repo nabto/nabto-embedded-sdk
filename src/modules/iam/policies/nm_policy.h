@@ -1,5 +1,5 @@
-#ifndef _NM_POLICY_H_
-#define _NM_POLICY_H_
+#ifndef NM_POLICY_H_
+#define NM_POLICY_H_
 
 #include "../nm_iam_configuration.h"
 #include "nm_statement.h"

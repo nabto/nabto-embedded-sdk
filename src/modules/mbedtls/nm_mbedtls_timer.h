@@ -1,10 +1,10 @@
-#ifndef _NM_MBEDTLS_TIMER_H_
-#define _NM_MBEDTLS_TIMER_H_
+#ifndef NM_MBEDTLS_TIMER_H_
+#define NM_MBEDTLS_TIMER_H_
 
 #include <stdint.h>
 
-#include <platform/np_platform.h>
 #include <platform/interfaces/np_timestamp.h>
+#include <platform/np_platform.h>
 
 typedef void (*nm_mbedtls_timer_callback)(void* data);
 

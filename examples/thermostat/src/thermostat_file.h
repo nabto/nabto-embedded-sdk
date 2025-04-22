@@ -1,5 +1,5 @@
-#ifndef _THERMOSTAT_FILE_H_
-#define _THERMOSTAT_FILE_H_
+#ifndef THERMOSTAT_FILE_H_
+#define THERMOSTAT_FILE_H_
 
 #include "stdbool.h"
 

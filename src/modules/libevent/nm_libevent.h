@@ -1,5 +1,5 @@
-#ifndef _NM_LIBEVENT_H_
-#define _NM_LIBEVENT_H_
+#ifndef NM_LIBEVENT_H_
+#define NM_LIBEVENT_H_
 
 #include <platform/np_communication_buffer.h>
 

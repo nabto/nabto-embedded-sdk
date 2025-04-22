@@ -1,5 +1,5 @@
-#ifndef _NM_STATEMENT_H_
-#define _NM_STATEMENT_H_
+#ifndef NM_STATEMENT_H_
+#define NM_STATEMENT_H_
 
 #include "../nm_iam_configuration.h"
 
