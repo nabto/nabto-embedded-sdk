@@ -24,8 +24,8 @@ const char* NABTO_DEVICE_API nabto_device_error_get_string(NabtoDeviceError ec)
 #define XX_ERROR(name) case NABTO_EC_##name: return "NABTO_DEVICE_"#name;
         NABTO_DEVICE_ERROR_CODE_MAPPING(XX_ERROR)
 #undef XX_ERROR
+        default: return "Unknown error code, this should not happen";
     }
-    return "Unknown error code, this should not happen";
 }
 
 NabtoDeviceError nabto_device_error_core_to_api(np_error_code ec)

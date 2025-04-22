@@ -392,6 +392,7 @@ bool tcp_tunnel_demo_config(struct tcp_tunnel* tcpTunnel)
                 printf("Added rtsp service on localhost port %i with metadata rtsp-path => %s" NEWLINE, service->port, endpoint);
                 break;
             }
+            default: break;
         }
 
         cJSON_AddItemToArray(root, tcp_tunnel_service_as_json(service));
