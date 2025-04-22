@@ -21,4 +21,4 @@ jobs:
       - name: Build werror
         run: cmake --workflow --preset werror
       - name: Build clang tidy
-        run: cmake --workflow --preset clang-tidy
+        run: cmake --workflow --preset clang_tidy
