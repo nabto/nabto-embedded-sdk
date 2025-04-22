@@ -309,7 +309,7 @@ void is_connected(struct np_tcp_socket* sock) {
 
 np_error_code tcp_do_write_ec(struct np_tcp_socket* sock)
 {
-    int sent = send(sock->fd, sock->write.data, sock->write.dataLength, MSG_NOSIGNAL);
+    ssize_t sent = send(sock->fd, sock->write.data, sock->write.dataLength, MSG_NOSIGNAL);
     if (sent < 0) {
         int err = errno;
         if (err == EAGAIN || err == EWOULDBLOCK) {
@@ -375,8 +375,8 @@ void async_write(struct np_tcp_socket* sock, const void* data, size_t dataLength
 
 np_error_code tcp_do_read_ec(struct np_tcp_socket* sock)
 {
-    int readen = recv(sock->fd, sock->read.buffer, sock->read.bufferSize, 0);
-    if (readen == -1) {
+    ssize_t readen = recv(sock->fd, sock->read.buffer, sock->read.bufferSize, 0);
+    if (readen < 0) {
         if (errno == EAGAIN || errno == EWOULDBLOCK) {
             return NABTO_EC_AGAIN;
         }

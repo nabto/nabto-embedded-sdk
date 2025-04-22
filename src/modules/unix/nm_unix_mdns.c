@@ -100,7 +100,8 @@ void nm_unix_mdns_update_ipv4_socket_registration(int sock)
                 if (index == 0) {
                     NABTO_LOG_ERROR(LOG, "Cannot get index for interface '%s'", iterator->ifa_name);
                 } else {
-                    group.imr_ifindex = index;
+                    // we assume there is not so many interfaces that the index will wrap the int
+                    group.imr_ifindex = (int)index;
                     int status = setsockopt(sock, IPPROTO_IP, IP_ADD_MEMBERSHIP, (char*)&group, sizeof(group));
                     if (status < 0) {
                         if (errno == EADDRINUSE) {
