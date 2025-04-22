@@ -20,6 +20,8 @@ static void nc_stream_event_queue_callback(void* data);
 static void nc_stream_free(struct nc_stream_context* stream);
 
 void event(struct nc_stream_context* ctx);
+void nc_stream_event(struct nc_stream_context* ctx);
+void nc_stream_event_deferred(struct nc_stream_context* ctx);
 void nc_stream_send_packet(struct nc_stream_context* ctx, enum nabto_stream_next_event_type eventType);
 void nc_stream_handle_wait(struct nc_stream_context* ctx);
 void nc_stream_handle_timeout(void* data);
@@ -241,7 +243,7 @@ void nc_stream_send_packet(struct nc_stream_context* ctx, enum nabto_stream_next
     }
     if (ctx->conn == NULL) {
         nabto_stream_event_handled(&ctx->stream, eventType);
-        nc_stream_event(ctx);
+        nc_stream_event_deferred(ctx);
         return;
     }
 
@@ -294,6 +296,17 @@ void nc_stream_event_queue_callback(void* data)
     nc_stream_ref_count_dec(stream);
 }
 
+// invoke a deferred nc_stream_event
+void nc_stream_event_deferred(struct nc_stream_context* ctx) {
+    if (ctx->stopped) {
+        return;
+    }
+    if(np_event_queue_post_maybe_double(&ctx->pl->eq, ctx->ev)) {
+        nc_stream_ref_count_inc(ctx);
+    }
+}
+
+
 // Called from streaming module when an event happens, e.g. there's
 // data to be sent on the stream or it has been closed or data has
 // been read.
@@ -301,12 +314,7 @@ void nc_stream_event_callback(enum nabto_stream_module_event event, void* data)
 {
     (void)event;
     struct nc_stream_context* ctx = (struct nc_stream_context*) data;
-    if (ctx->stopped) {
-        return;
-    }
-    if(np_event_queue_post_maybe_double(&ctx->pl->eq, ctx->ev)) {
-        nc_stream_ref_count_inc(ctx);
-    }
+    nc_stream_event_deferred(ctx);
 }
 
 struct nabto_stream_send_segment* nc_stream_alloc_send_segment(size_t bufferSize, void* data)
@@ -522,10 +530,8 @@ void nc_stream_do_read(struct nc_stream_context* stream)
                 if (stream->readAllEv) {
                     if (stream->readBufferLength == 0) {
                         nc_stream_resolve_read(stream, NABTO_EC_OK);
-                    } else {
-                        // read more until 0 or error
-                        nc_stream_do_read(stream);
                     }
+                    // else a new event will fire when more data is available.
                 } else if (stream->readSomeEv) {
                     nc_stream_resolve_read(stream, NABTO_EC_OK);
                 } else {
@@ -555,7 +561,7 @@ void nc_stream_do_write_all(struct nc_stream_context* stream)
         } else {
             stream->writeBuffer = ((uint8_t*)stream->writeBuffer) + written;
             stream->writeBufferLength -= written;
-            nc_stream_do_write_all(stream);
+            // We get a new event from the stream when more data can be written.
         }
     } else {
         np_completion_event_resolve(stream->writeEv, nc_stream_status_to_ec(status));
