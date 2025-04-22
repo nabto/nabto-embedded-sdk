@@ -1,5 +1,7 @@
 Checks: '
 # bugprone*,
+bugprone-switch-missing-default-case,
+bugprone-macro-parentheses,
 bugprone-reserved-identifier,
 bugprone-narrowing-conversions,
 bugprone-implicit-widening-of-multiplication-result,

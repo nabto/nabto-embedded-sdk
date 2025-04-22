@@ -48,6 +48,8 @@ void nm_unix_log (uint32_t severity, uint32_t module, uint32_t line, const char*
             case NABTO_LOG_SEVERITY_TRACE:
                 strcpy(level, "TRACE");
                 break;
+            default:
+                strcpy(level, "TRACE");
         }
 
         printf("%02u:%02u:%02u:%03u %s(%03u)[%s] ",
