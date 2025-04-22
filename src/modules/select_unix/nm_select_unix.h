@@ -15,7 +15,7 @@
 extern "C" {
 #endif
 
-#define NM_SELECT_UNIX_INVALID_SOCKET -1
+#define NM_SELECT_UNIX_INVALID_SOCKET (-1)
 
 struct nm_select_unix_udp_recv_wait_context {
     struct np_completion_event* completionEvent;
