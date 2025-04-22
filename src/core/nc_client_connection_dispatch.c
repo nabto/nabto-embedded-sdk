@@ -1,12 +1,12 @@
 #include "nc_client_connection_dispatch.h"
-#include "nc_udp_dispatch.h"
 #include "nc_connection.h"
 #include "nc_device.h"
+#include "nc_udp_dispatch.h"
 
-#include <platform/np_logging.h>
-#include <platform/np_allocator.h>
-#include <string.h>
 #include <limits.h>
+#include <platform/np_allocator.h>
+#include <platform/np_logging.h>
+#include <string.h>
 
 #define LOG NABTO_LOG_MODULE_CLIENT_CONNECTION_DISPATCH
 

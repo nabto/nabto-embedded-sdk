@@ -3,8 +3,8 @@
 #include "../nm_iam_allocator.h"
 
 #include <math.h>
-#include <nn/string_map.h>
 #include <nn/string.h>
+#include <nn/string_map.h>
 
 
 #include <string.h>

@@ -11,8 +11,8 @@
 #include <core/nc_virtual_connection.h>
 #include <core/nc_virtual_stream.h>
 #include <platform/np_allocator.h>
-#include <platform/np_util.h>
 #include <platform/np_completion_event.h>
+#include <platform/np_util.h>
 
 #include <nn/string.h>
 

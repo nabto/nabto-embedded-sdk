@@ -1,13 +1,13 @@
 
 #include "nc_attacher.h"
 
-#include <core/nc_packet.h>
 #include <core/nc_coap.h>
-#include <platform/np_logging.h>
-#include <core/nc_version.h>
 #include <core/nc_device.h>
-#include <platform/np_event_queue_wrapper.h>
+#include <core/nc_packet.h>
+#include <core/nc_version.h>
 #include <platform/np_allocator.h>
+#include <platform/np_event_queue_wrapper.h>
+#include <platform/np_logging.h>
 
 #include <string.h>
 

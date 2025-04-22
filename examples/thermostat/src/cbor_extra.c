@@ -1,8 +1,8 @@
 #include "cbor_extra.h"
 
 #include <math.h>
-#include <stdint.h>
 #include <math.h>
+#include <stdint.h>
 
 static inline float decode_halff(uint16_t half)
 {

@@ -1,10 +1,10 @@
 #include "nm_tcp_tunnel.h"
 #include "nm_tcp_tunnel_coap.h"
 
-#include <core/nc_coap_server.h>
 #include <core/nc_coap.h>
-#include <platform/np_logging.h>
+#include <core/nc_coap_server.h>
 #include <platform/np_allocator.h>
+#include <platform/np_logging.h>
 
 #include <tinycbor/cbor.h>
 

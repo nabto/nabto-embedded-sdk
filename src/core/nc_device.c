@@ -1,11 +1,11 @@
-#include <nabto/nabto_device_config.h>
 #include "nc_device.h"
 #include "nc_config.h"
-#include <platform/np_logging.h>
-#include <platform/np_mdns_wrapper.h>
-#include <platform/np_allocator.h>
+#include <nabto/nabto_device_config.h>
 #include <nn/llist.h>
 #include <nn/string.h>
+#include <platform/np_allocator.h>
+#include <platform/np_logging.h>
+#include <platform/np_mdns_wrapper.h>
 
 #define LOG NABTO_LOG_MODULE_CORE
 

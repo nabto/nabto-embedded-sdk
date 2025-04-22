@@ -1,22 +1,22 @@
 #include "nm_select_unix_udp.h"
 
+#include <platform/np_completion_event.h>
 #include <platform/np_logging.h>
 #include <platform/np_util.h>
-#include <platform/np_completion_event.h>
 
 #include <modules/mdns/nm_mdns_udp_bind.h>
 
 
 
-#include <sys/socket.h>
-#include <netinet/in.h>
-#include <errno.h>
-#include <string.h>
-#include <unistd.h>
-#include <fcntl.h>
 #include <arpa/inet.h>
-#include <net/if.h>
+#include <errno.h>
+#include <fcntl.h>
 #include <ifaddrs.h>
+#include <net/if.h>
+#include <netinet/in.h>
+#include <string.h>
+#include <sys/socket.h>
+#include <unistd.h>
 
 #define LOG NABTO_LOG_MODULE_UDP
 

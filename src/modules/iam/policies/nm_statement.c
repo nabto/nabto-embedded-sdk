@@ -1,9 +1,9 @@
 #include "nm_statement.h"
 #include "nm_condition.h"
 
-#include <nn/string_set.h>
-#include <nn/string_map.h>
 #include <nn/llist.h>
+#include <nn/string_map.h>
+#include <nn/string_set.h>
 
 #include "../nm_iam_allocator.h"
 

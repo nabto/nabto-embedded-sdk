@@ -1,15 +1,15 @@
-#include <nabto/nabto_device_config.h>
 #include "nabto_device_password_authentication.h"
-#include <nabto/nabto_device_experimental.h>
-#include <api/nabto_device_threads.h>
 #include <api/nabto_device_defines.h>
-#include <api/nabto_device_event_handler.h>
 #include <api/nabto_device_error.h>
+#include <api/nabto_device_event_handler.h>
+#include <api/nabto_device_threads.h>
+#include <nabto/nabto_device_config.h>
+#include <nabto/nabto_device_experimental.h>
 
 #include <core/nc_spake2.h>
 
-#include <platform/np_allocator.h>
 #include <nn/string.h>
+#include <platform/np_allocator.h>
 
 #if defined(NABTO_DEVICE_PASSWORD_AUTHENTICATION)
 

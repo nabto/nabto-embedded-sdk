@@ -1,7 +1,7 @@
 #include "nm_iam_pake_handler.h"
-#include "nm_iam_user.h"
-#include "nm_iam_internal.h"
 #include "nm_iam.h"
+#include "nm_iam_internal.h"
+#include "nm_iam_user.h"
 
 #include <nn/log.h>
 

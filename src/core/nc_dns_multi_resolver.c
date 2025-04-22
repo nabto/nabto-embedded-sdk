@@ -1,10 +1,10 @@
 #include "nc_dns_multi_resolver.h"
 
-#include <platform/np_dns_wrapper.h>
-#include <platform/np_platform.h>
-#include <platform/np_logging.h>
-#include <platform/np_allocator.h>
 #include <nn/string.h>
+#include <platform/np_allocator.h>
+#include <platform/np_dns_wrapper.h>
+#include <platform/np_logging.h>
+#include <platform/np_platform.h>
 
 #define LOG NABTO_LOG_MODULE_DNS
 

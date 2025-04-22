@@ -6,8 +6,8 @@
 
 #include <core/nc_attacher.h>
 
-#include <platform/np_allocator.h>
 #include <nn/string.h>
+#include <platform/np_allocator.h>
 
 const int NABTO_DEVICE_SERVICE_INVOKE_MESSAGE_FORMAT_BINARY =
     (int)NC_SERVICE_INVOKE_MESSAGE_FORMAT_BINARY;

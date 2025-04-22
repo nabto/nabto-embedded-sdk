@@ -1,6 +1,6 @@
+#include <apps/common/string_file.h>
 #include <nabto/nabto_device.h>
 #include <nabto/nabto_device_experimental.h>
-#include <apps/common/string_file.h>
 
 #include <modules/fs/posix/nm_fs_posix.h>
 
@@ -12,9 +12,9 @@
 #define NEWLINE "\n"
 #endif
 
+#include <signal.h>
 #include <stdbool.h>
 #include <stdio.h>
-#include <signal.h>
 #include <stdlib.h>
 
 #include <3rdparty/tinyalloc/tinyalloc/tinyalloc.h>

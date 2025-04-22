@@ -1,23 +1,23 @@
-#include <nabto/nabto_device_config.h>
-#include <nabto/nabto_device.h>
-#include <nabto/nabto_device_experimental.h>
-#include "nabto_device_threads.h"
 #include "nabto_device_defines.h"
+#include "nabto_device_threads.h"
+#include <nabto/nabto_device.h>
+#include <nabto/nabto_device_config.h>
+#include <nabto/nabto_device_experimental.h>
 
+#include <platform/np_allocator.h>
 #include <platform/np_logging.h>
 #include <platform/np_logging_defines.h>
 #include <platform/np_timestamp_wrapper.h>
-#include <platform/np_allocator.h>
 
 #if defined(NABTO_DEVICE_MBEDTLS)
 #if !defined(DEVICE_MBEDTLS_2)
 #include <mbedtls/build_info.h>
 #endif
-#include <mbedtls/sha256.h>
-#include <mbedtls/ecp.h>
 #include <mbedtls/bignum.h>
-#include <mbedtls/entropy.h>
 #include <mbedtls/ctr_drbg.h>
+#include <mbedtls/ecp.h>
+#include <mbedtls/entropy.h>
+#include <mbedtls/sha256.h>
 
 #define LOG NABTO_LOG_MODULE_PLATFORM
 

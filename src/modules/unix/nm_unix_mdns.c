@@ -2,12 +2,12 @@
 
 #include <platform/np_logging.h>
 
-#include <sys/socket.h>
-#include <errno.h>
-#include <string.h>
-#include <ifaddrs.h>
 #include <arpa/inet.h>
+#include <errno.h>
+#include <ifaddrs.h>
 #include <net/if.h>
+#include <string.h>
+#include <sys/socket.h>
 
 #define LOG NABTO_LOG_MODULE_UDP
 

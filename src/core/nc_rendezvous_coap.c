@@ -1,7 +1,7 @@
 #include "nc_rendezvous_coap.h"
 
-#include <core/nc_coap_server.h>
 #include <core/nc_coap.h>
+#include <core/nc_coap_server.h>
 #include <core/nc_packet.h>
 #include <core/nc_rendezvous.h>
 #include <platform/np_logging.h>

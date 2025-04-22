@@ -1,14 +1,14 @@
 #include <nabto/nabto_device_test.h>
 
-#include <api/nabto_device_future.h>
 #include <api/nabto_device_defines.h>
 #include <api/nabto_device_error.h>
+#include <api/nabto_device_future.h>
 
+#include <platform/np_allocator.h>
+#include <platform/np_completion_event.h>
 #include <platform/np_dns_wrapper.h>
 #include <platform/np_ip_address.h>
-#include <platform/np_completion_event.h>
 #include <platform/np_logging.h>
-#include <platform/np_allocator.h>
 
 #define LOG NABTO_LOG_MODULE_TEST
 

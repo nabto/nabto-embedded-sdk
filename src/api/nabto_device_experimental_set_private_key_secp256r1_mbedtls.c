@@ -15,12 +15,12 @@ static uint8_t secp2566r1GroupOrder[32] = {
 #if !defined(DEVICE_MBEDTLS_2)
 #include <mbedtls/build_info.h>
 #endif
-#include <mbedtls/ecp.h>
 #include <mbedtls/bignum.h>
+#include <mbedtls/ctr_drbg.h>
+#include <mbedtls/ecp.h>
+#include <mbedtls/entropy.h>
 #include <mbedtls/error.h>
 #include <mbedtls/pk.h>
-#include <mbedtls/entropy.h>
-#include <mbedtls/ctr_drbg.h>
 
 #ifndef MBEDTLS_PRIVATE
 #define MBEDTLS_PRIVATE(m) m

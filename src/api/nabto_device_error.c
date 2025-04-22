@@ -1,6 +1,6 @@
+#include "nabto_device_error.h"
 #include <nabto/nabto_device.h>
 #include <nabto/nabto_device_experimental.h>
-#include "nabto_device_error.h"
 #include <platform/np_error_code.h>
 
 #define XX_ERROR(name) const NabtoDeviceError NABTO_DEVICE_EC_##name = NABTO_EC_##name;

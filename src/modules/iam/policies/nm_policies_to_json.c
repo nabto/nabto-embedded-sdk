@@ -1,8 +1,8 @@
 #include "nm_policies_to_json.h"
 
-#include "nm_statement.h"
-#include "nm_policy.h"
 #include "nm_condition.h"
+#include "nm_policy.h"
+#include "nm_statement.h"
 
 #include <nn/llist.h>
 #include <nn/string_set.h>

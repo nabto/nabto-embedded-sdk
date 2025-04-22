@@ -5,8 +5,8 @@
 
 #include <modules/fs/posix/nm_fs_posix.h>
 
-#include <stdio.h>
 #include <signal.h>
+#include <stdio.h>
 #include <stdlib.h>
 
 const char* appName = "simple_tunnel";

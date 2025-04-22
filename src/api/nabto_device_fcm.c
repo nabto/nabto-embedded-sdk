@@ -6,8 +6,8 @@
 
 #include <core/nc_attacher.h>
 
-#include <platform/np_allocator.h>
 #include <nn/string.h>
+#include <platform/np_allocator.h>
 
 struct nabto_device_fcm_notification {
     struct nabto_device_context* dev;

@@ -1,15 +1,15 @@
 #include "nc_coap_server.h"
-#include "nc_coap.h"
 #include "nc_client_connection.h"
-#include "nc_virtual_connection.h"
-#include "nc_connection.h"
+#include "nc_coap.h"
 #include "nc_coap_packet_printer.h"
+#include "nc_connection.h"
 #include "nc_device.h"
+#include "nc_virtual_connection.h"
 
+#include <platform/np_allocator.h>
+#include <platform/np_event_queue_wrapper.h>
 #include <platform/np_logging.h>
 #include <platform/np_timestamp_wrapper.h>
-#include <platform/np_event_queue_wrapper.h>
-#include <platform/np_allocator.h>
 
 #include <nn/string.h>
 

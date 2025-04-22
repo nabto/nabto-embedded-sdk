@@ -18,5 +18,7 @@ jobs:
         with:
           submodules: recursive
           fetch-depth: 0
-      - name: Build
+      - name: Build werror
         run: cmake --workflow --preset werror
+      - name: Build clang tidy
+        run: cmake --workflow --preset clang_tidy

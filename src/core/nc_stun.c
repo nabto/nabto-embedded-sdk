@@ -1,13 +1,13 @@
 #include "nc_stun.h"
 #include "nc_device.h"
 
+#include <platform/np_allocator.h>
+#include <platform/np_event_queue_wrapper.h>
 #include <platform/np_logging.h>
 #include <platform/np_timestamp_wrapper.h>
-#include <platform/np_event_queue_wrapper.h>
-#include <platform/np_allocator.h>
 
-#include <string.h>
 #include <nn/string.h>
+#include <string.h>
 
 #define LOG NABTO_LOG_MODULE_STUN
 

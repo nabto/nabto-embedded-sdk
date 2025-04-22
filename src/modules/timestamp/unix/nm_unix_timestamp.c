@@ -1,10 +1,10 @@
 #include "nm_unix_timestamp.h"
-#include <platform/np_logging.h>
 #include <platform/interfaces/np_timestamp.h>
+#include <platform/np_logging.h>
 
-#include <time.h>
 #include <errno.h>
 #include <string.h>
+#include <time.h>
 
 #define LOG NABTO_LOG_MODULE_PLATFORM
 
