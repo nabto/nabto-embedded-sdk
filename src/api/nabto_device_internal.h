@@ -1,5 +1,5 @@
-#ifndef _NABTO_DEVICE_INTERNAL_H_
-#define _NABTO_DEVICE_INTERNAL_H_
+#ifndef NABTO_DEVICE_INTERNAL_H_
+#define NABTO_DEVICE_INTERNAL_H_
 
 /**
  * These functions should not be used in production applications they are only meant for testing purposes.

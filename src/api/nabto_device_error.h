@@ -1,5 +1,5 @@
-#ifndef _NABTO_DEVICE_ERROR_H_
-#define _NABTO_DEVICE_ERROR_H_
+#ifndef NABTO_DEVICE_ERROR_H_
+#define NABTO_DEVICE_ERROR_H_
 
 #include <nabto/nabto_device.h>
 #include <platform/np_error_code.h>

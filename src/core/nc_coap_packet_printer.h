@@ -1,5 +1,5 @@
-#ifndef _NC_COAP_PACKET_PRINTER_H_
-#define _NC_COAP_PACKET_PRINTER_H_
+#ifndef NC_COAP_PACKET_PRINTER_H_
+#define NC_COAP_PACKET_PRINTER_H_
 
 #include <string.h>
 #include <stdint.h>

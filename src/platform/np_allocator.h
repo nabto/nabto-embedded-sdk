@@ -1,5 +1,5 @@
-#ifndef _NP_HEAP_H_
-#define _NP_HEAP_H_
+#ifndef NP_HEAP_H_
+#define NP_HEAP_H_
 
 #include <nn/allocator.h>
 

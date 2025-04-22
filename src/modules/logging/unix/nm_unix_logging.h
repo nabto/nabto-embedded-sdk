@@ -1,8 +1,8 @@
-#ifndef _NM_UNIX_LOGGING_H_
-#define _NM_UNIX_LOGGING_H_
+#ifndef NM_UNIX_LOGGING_H_
+#define NM_UNIX_LOGGING_H_
 
-#include <stdarg.h>
 #include <platform/np_logging.h>
+#include <stdarg.h>
 
 void nm_unix_logging_init(void);
 

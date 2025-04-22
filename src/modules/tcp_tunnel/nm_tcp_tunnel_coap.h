@@ -1,5 +1,5 @@
-#ifndef _NM_TCP_TUNNEL_COAP_H_
-#define _NM_TCP_TUNNEL_COAP_H_
+#ifndef NM_TCP_TUNNEL_COAP_H_
+#define NM_TCP_TUNNEL_COAP_H_
 
 struct nm_tcp_tunnels;
 struct nc_coap_server_context;

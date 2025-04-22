@@ -1,5 +1,5 @@
-#ifndef _NM_SELECT_UNIX_MDNS_UDP_BIND_H_
-#define _NM_SELECT_UNIX_MDNS_UDP_BIND_H_
+#ifndef NM_SELECT_UNIX_MDNS_UDP_BIND_H_
+#define NM_SELECT_UNIX_MDNS_UDP_BIND_H_
 
 #include <modules/mdns/nm_mdns_udp_bind.h>
 

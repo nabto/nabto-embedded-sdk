@@ -1,5 +1,5 @@
-#ifndef _NM_TCP_TUNNEL_CONNECTION_H_
-#define _NM_TCP_TUNNEL_CONNECTION_H_
+#ifndef NM_TCP_TUNNEL_CONNECTION_H_
+#define NM_TCP_TUNNEL_CONNECTION_H_
 
 struct nm_tcp_tunnel_connection* nm_tcp_tunnel_connection_new();
 void nm_tcp_tunnel_connection_free(struct nm_tcp_tunnel_connection* connection);

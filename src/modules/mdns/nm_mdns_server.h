@@ -1,12 +1,12 @@
-#ifndef _NM_MDNS_SERVER_H_
-#define _NM_MDNS_SERVER_H_
+#ifndef NM_MDNS_SERVER_H_
+#define NM_MDNS_SERVER_H_
 
 #include "nm_mdns_udp_bind.h"
 
-#include <platform/np_logging.h>
 #include <platform/np_completion_event.h>
-#include <platform/np_udp_wrapper.h>
 #include <platform/np_local_ip_wrapper.h>
+#include <platform/np_logging.h>
+#include <platform/np_udp_wrapper.h>
 
 
 #include <platform/interfaces/np_mdns.h>

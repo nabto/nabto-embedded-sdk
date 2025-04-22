@@ -1,5 +1,5 @@
-#ifndef _NM_UNIX_MDNS_H_
-#define _NM_UNIX_MDNS_H_
+#ifndef NM_UNIX_MDNS_H_
+#define NM_UNIX_MDNS_H_
 
 #include <stdbool.h>
 

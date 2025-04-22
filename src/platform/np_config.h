@@ -1,5 +1,5 @@
-#ifndef _NP_CONFIG_H_
-#define _NP_CONFIG_H_
+#ifndef NP_CONFIG_H_
+#define NP_CONFIG_H_
 
 #if defined(NP_CONFIG_FILE)
 #include NP_CONFIG_FILE

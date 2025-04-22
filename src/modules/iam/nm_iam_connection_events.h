@@ -1,5 +1,5 @@
-#ifndef _NM_IAM_CONNECTION_EVENTS_H_
-#define _NM_IAM_CONNECTION_EVENTS_H_
+#ifndef NM_IAM_CONNECTION_EVENTS_H_
+#define NM_IAM_CONNECTION_EVENTS_H_
 
 #include <nabto/nabto_device.h>
 

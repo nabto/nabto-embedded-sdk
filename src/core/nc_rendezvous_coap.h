@@ -1,5 +1,5 @@
-#ifndef _NC_RENDEZVOUS_COAP_H_
-#define _NC_RENDEZVOUS_COAP_H_
+#ifndef NC_RENDEZVOUS_COAP_H_
+#define NC_RENDEZVOUS_COAP_H_
 
 #include <platform/np_error_code.h>
 

@@ -1,5 +1,5 @@
-#ifndef _TCP_TUNNEL_STATE_H_
-#define _TCP_TUNNEL_STATE_H_
+#ifndef TCP_TUNNEL_STATE_H_
+#define TCP_TUNNEL_STATE_H_
 
 #include <modules/iam/nm_iam_state.h>
 

@@ -1,6 +1,3 @@
-#ifndef _LOGGING_H_
-#define _LOGGING_H_
-
 #include <nabto/nabto_device.h>
 #include <nn/log.h>
 
@@ -95,5 +92,3 @@ void nn_log_function(void* userData, enum nn_log_severity severity, const char* 
         fflush(stdout);
     }
 }
-
-#endif

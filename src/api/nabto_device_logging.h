@@ -1,5 +1,5 @@
-#ifndef _NABTO_DEVICE_LOGGING_H_
-#define _NABTO_DEVICE_LOGGING_H_
+#ifndef NABTO_DEVICE_LOGGING_H_
+#define NABTO_DEVICE_LOGGING_H_
 
 #include <stdarg.h>
 #include <platform/np_logging.h>

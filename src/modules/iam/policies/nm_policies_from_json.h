@@ -1,5 +1,5 @@
-#ifndef _NM_POLICIES_FROM_JSON_H_
-#define _NM_POLICIES_FROM_JSON_H_
+#ifndef NM_POLICIES_FROM_JSON_H_
+#define NM_POLICIES_FROM_JSON_H_
 
 #include <cjson/cJSON.h>
 #include <nn/log.h>

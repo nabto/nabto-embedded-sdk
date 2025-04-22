@@ -3,11 +3,11 @@
 
 #include <nabto/nabto_device_config.h>
 
-#include <platform/np_platform.h>
 #include <core/nc_coap_server.h>
+#include <platform/np_platform.h>
 
-#include <core/nc_spake2.h>
 #include <core/nc_connection_event.h>
+#include <core/nc_spake2.h>
 
 #ifdef __cplusplus
 extern "C" {

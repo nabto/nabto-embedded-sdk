@@ -1,10 +1,10 @@
-#ifndef _NP_LOGGING_H_
-#define _NP_LOGGING_H_
+#ifndef NP_LOGGING_H_
+#define NP_LOGGING_H_
 
+#include <inttypes.h>
 #include <platform/np_logging_defines.h>
 #include <platform/np_types.h>
 #include <stdarg.h>
-#include <inttypes.h>
 
 #ifdef __cplusplus
 extern "C" {

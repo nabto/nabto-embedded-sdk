@@ -1,5 +1,5 @@
-#ifndef _NM_WOLFSSL_COMMON_H_
-#define _NM_WOLFSSL_COMMON_H_
+#ifndef NM_WOLFSSL_COMMON_H_
+#define NM_WOLFSSL_COMMON_H_
 
 enum sslState {
     CONNECTING,

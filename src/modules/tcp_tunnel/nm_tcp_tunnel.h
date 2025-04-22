@@ -1,11 +1,11 @@
-#ifndef _NM_TCP_TUNNEL_H_
-#define _NM_TCP_TUNNEL_H_
+#ifndef NM_TCP_TUNNEL_H_
+#define NM_TCP_TUNNEL_H_
 
-#include <platform/np_platform.h>
 #include <platform/interfaces/np_tcp.h>
+#include <platform/np_platform.h>
 
-#include <core/nc_stream_manager.h>
 #include <core/nc_device.h>
+#include <core/nc_stream_manager.h>
 
 #include <nn/llist.h>
 #include <nn/string_int_map.h>

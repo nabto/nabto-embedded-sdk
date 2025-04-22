@@ -1,5 +1,5 @@
-#ifndef _JSON_CONFIG_H_
-#define _JSON_CONFIG_H_
+#ifndef JSON_CONFIG_H_
+#define JSON_CONFIG_H_
 
 #include <stdbool.h>
 #include <cjson/cJSON.h>

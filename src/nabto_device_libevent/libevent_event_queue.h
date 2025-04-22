@@ -1,5 +1,5 @@
-#ifndef _NABTO_DEVICE_EVENT_QUEUE_H_
-#define _NABTO_DEVICE_EVENT_QUEUE_H_
+#ifndef NABTO_DEVICE_EVENT_QUEUE_H_
+#define NABTO_DEVICE_EVENT_QUEUE_H_
 
 #include <platform/np_platform.h>
 

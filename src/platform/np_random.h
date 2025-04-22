@@ -1,9 +1,11 @@
-#ifndef _NP_RANDOM_H_
-#define _NP_RANDOM_H_
+#ifndef NP_RANDOM_H_
+#define NP_RANDOM_H_
 
 #ifdef __cplusplus
 extern "C" {
 #endif
+
+#include "np_error_code.h"
 
 struct np_random_module {
     /**

@@ -1,5 +1,5 @@
-#ifndef _NABTO_DEVICE_STD_OUT_LOGGER_
-#define _NABTO_DEVICE_STD_OUT_LOGGER_
+#ifndef NABTO_DEVICE_STD_OUT_LOGGER_
+#define NABTO_DEVICE_STD_OUT_LOGGER_
 
 #include <nabto/nabto_device.h>
 

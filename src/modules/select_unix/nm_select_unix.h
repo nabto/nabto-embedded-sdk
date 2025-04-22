@@ -1,9 +1,9 @@
 #ifndef NM_SELECT_UNIX_H
 #define NM_SELECT_UNIX_H
 
-#include <platform/np_types.h>
-#include <platform/np_platform.h>
 #include <api/nabto_device_threads.h>
+#include <platform/np_platform.h>
+#include <platform/np_types.h>
 
 #include <sys/select.h>
 

@@ -1,5 +1,5 @@
-#ifndef _NABTO_DEVICE_PLATFORM_H_
-#define _NABTO_DEVICE_PLATFORM_H_
+#ifndef NABTO_DEVICE_PLATFORM_H_
+#define NABTO_DEVICE_PLATFORM_H_
 
 #include <platform/np_error_code.h>
 

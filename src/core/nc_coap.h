@@ -1,5 +1,5 @@
-#ifndef _NC_COAP_H_
-#define _NC_COAP_H_
+#ifndef NC_COAP_H_
+#define NC_COAP_H_
 
 #include <platform/np_error_code.h>
 #include <nabto_coap/nabto_coap.h>

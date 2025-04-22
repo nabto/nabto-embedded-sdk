@@ -1,5 +1,5 @@
-#ifndef _NP_DNS_H_
-#define _NP_DNS_H_
+#ifndef NP_DNS_H_
+#define NP_DNS_H_
 
 #ifndef NP_DNS_RESOLVED_IPS_MAX
 #define NP_DNS_RESOLVED_IPS_MAX 4

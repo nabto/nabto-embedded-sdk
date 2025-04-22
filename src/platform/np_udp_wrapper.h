@@ -1,5 +1,5 @@
-#ifndef _NP_UDP_WRAPPER_H_
-#define _NP_UDP_WRAPPER_H_
+#ifndef NP_UDP_WRAPPER_H_
+#define NP_UDP_WRAPPER_H_
 
 #include "interfaces/np_udp.h"
 

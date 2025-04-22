@@ -1,5 +1,5 @@
-#ifndef _NABTO_DEVICE_CONFIG_H_
-#define _NABTO_DEVICE_CONFIG_H_
+#ifndef NABTO_DEVICE_CONFIG_H_
+#define NABTO_DEVICE_CONFIG_H_
 
 /**
  * If building using Cmake, configurations should NOT be made through header

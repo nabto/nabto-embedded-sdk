@@ -1,5 +1,5 @@
-#ifndef _NM_IAM_PAKE_HANDLER_H_
-#define _NM_IAM_PAKE_HANDLER_H_
+#ifndef NM_IAM_PAKE_HANDLER_H_
+#define NM_IAM_PAKE_HANDLER_H_
 
 #include <nabto/nabto_device.h>
 #include <nabto/nabto_device_experimental.h>

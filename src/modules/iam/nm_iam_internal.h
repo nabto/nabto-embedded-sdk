@@ -1,5 +1,5 @@
-#ifndef _NM_IAM_INTERNAL_H_
-#define _NM_IAM_INTERNAL_H_
+#ifndef NM_IAM_INTERNAL_H_
+#define NM_IAM_INTERNAL_H_
 
 #include "nm_iam.h"
 

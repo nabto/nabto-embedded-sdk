@@ -1,8 +1,8 @@
 #ifndef NP_MDNS_H
 #define NP_MDNS_H
 
-#include <stdint.h>
 #include <platform/np_error_code.h>
+#include <stdint.h>
 
 /**
  * @intro mDNS interface

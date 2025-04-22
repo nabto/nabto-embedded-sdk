@@ -1,8 +1,8 @@
 #ifndef NC_COAP_SERVER_H
 #define NC_COAP_SERVER_H
 
-#include <platform/np_platform.h>
 #include <platform/np_dtls_cli.h>
+#include <platform/np_platform.h>
 
 #include <core/nc_client_connection.h>
 

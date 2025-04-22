@@ -1,8 +1,8 @@
 #ifndef NP_DTLS_SRV_H
 #define NP_DTLS_SRV_H
 
-#include <platform/np_error_code.h>
 #include <platform/np_dtls.h>
+#include <platform/np_error_code.h>
 
 /**
  * DTLS Server interface

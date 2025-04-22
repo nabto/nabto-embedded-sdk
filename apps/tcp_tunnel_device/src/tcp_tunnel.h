@@ -1,5 +1,5 @@
-#ifndef _TCP_TUNNEL_H_
-#define _TCP_TUNNEL_H_
+#ifndef TCP_TUNNEL_H_
+#define TCP_TUNNEL_H_
 
 #include <nn/vector.h>
 #include <nabto/nabto_device.h>

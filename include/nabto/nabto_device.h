@@ -1,5 +1,5 @@
-#ifndef _NABTO_DEVICE_H_
-#define _NABTO_DEVICE_H_
+#ifndef NABTO_DEVICE_H_
+#define NABTO_DEVICE_H_
 
 /*
  * Nabto Device High Level C Api.
@@ -42,9 +42,9 @@
 #endif
 
 
+#include <stdbool.h>
 #include <stdint.h>
 #include <string.h>
-#include <stdbool.h>
 
 #ifdef __cplusplus
 extern "C" {
