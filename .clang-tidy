@@ -3,7 +3,7 @@ Checks: '
 # readability*,
 -clang-analyzer-optin.core.EnumCastOutOfRange,
 llvm-include-order,
-# misc-no-recursion,
+misc-no-recursion,
 # misc-unused-parameters,
 -readability-identifier-length,
 -readability-magic-numbers,
