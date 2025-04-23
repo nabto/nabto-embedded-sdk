@@ -3,6 +3,7 @@
 #include <platform/np_allocator.h>
 #include <platform/np_logging.h>
 
+#include <errno.h>
 #include <pthread.h>
 
 #include <sys/time.h>
@@ -158,7 +159,7 @@ void nabto_device_threads_cond_timed_wait(struct nabto_device_condition* cond,
     ts.tv_nsec = (long)(future_ms % 1000) * 1000000;
     ts.tv_sec = (long)future_ms / 1000;
     status = pthread_cond_timedwait(&cond->cond, &mut->mut, &ts);
-    if (status != 0) {
+    if (status != 0 && status != ETIMEDOUT) {
         NABTO_LOG_ERROR(LOG, "pthread_cond_wait failed. '%s'", strerror(status));
     }
 }
