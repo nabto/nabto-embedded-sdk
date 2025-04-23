@@ -13,9 +13,9 @@ jobs:
     strategy:
       matrix:
         include:
-          - os: ubuntu-24.05
+          - os: ubuntu-24.04
             workflow: werror
-          - os: ubuntu-24.05
+          - os: ubuntu-24.04
             workflow: clang_tidy
           - os: macos-15
             workflow: werror
