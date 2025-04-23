@@ -1,5 +1,5 @@
-#ifndef _NP_COMPLETION_EVENT_H_
-#define _NP_COMPLETION_EVENT_H_
+#ifndef NP_COMPLETION_EVENT_H_
+#define NP_COMPLETION_EVENT_H_
 
 #include "interfaces/np_event_queue.h"
 #include "np_error_code.h"

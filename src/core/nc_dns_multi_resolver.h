@@ -1,10 +1,10 @@
-#ifndef _NC_DNS_MULTI_RESOLVER_H_
-#define _NC_DNS_MULTI_RESOLVER_H_
+#ifndef NC_DNS_MULTI_RESOLVER_H_
+#define NC_DNS_MULTI_RESOLVER_H_
 
-#include <platform/np_completion_event.h>
-#include <platform/np_ip_address.h>
-#include <platform/np_error_code.h>
 #include <platform/interfaces/np_dns.h>
+#include <platform/np_completion_event.h>
+#include <platform/np_error_code.h>
+#include <platform/np_ip_address.h>
 
 /**
  * Resolves ipv4 and ipv6 addresses and builds an array of the

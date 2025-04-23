@@ -1,8 +1,8 @@
-#ifndef _SELECT_UNIX_EVENT_QUEUE_H_
-#define _SELECT_UNIX_EVENT_QUEUE_H_
+#ifndef SELECT_UNIX_EVENT_QUEUE_H_
+#define SELECT_UNIX_EVENT_QUEUE_H_
 
-#include <modules/event_queue/nm_event_queue.h>
 #include <api/nabto_device_threads.h>
+#include <modules/event_queue/nm_event_queue.h>
 
 /**
  * Since we are running everything from one thread we can directly use

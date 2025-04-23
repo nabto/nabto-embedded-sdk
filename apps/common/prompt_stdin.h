@@ -1,11 +1,11 @@
-#ifndef _PROMPT_STDIN_H_
-#define _PROMPT_STDIN_H_
+#ifndef PROMPT_STDIN_H_
+#define PROMPT_STDIN_H_
 
 #include <stdbool.h>
 #include <stdint.h>
 #include <stdio.h>
-#include <string.h>
 #include <stdlib.h>
+#include <string.h>
 
 #ifdef __cplusplus
 extern "C" {

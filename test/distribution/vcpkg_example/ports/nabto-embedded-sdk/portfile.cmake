@@ -1,0 +1,30 @@
+string(TIMESTAMP CURRENT_TIME UTC)
+configure_file(
+    ${CMAKE_CURRENT_LIST_DIR}/timestamp.txt.in
+    ${CMAKE_CURRENT_LIST_DIR}/timestamp.txt
+    @ONLY)
+
+vcpkg_cmake_configure(
+    SOURCE_PATH "${CMAKE_CURRENT_LIST_DIR}/../../../../.."
+    OPTIONS
+        -DCMAKE_MODULE_PATH=${CMAKE_CURRENT_LIST_DIR}/../../../../../cmake/vcpkg
+        -DDEVICE_BUILD_EXAMPLES=FALSE
+        -DDEVICE_BUILD_TESTS=FALSE
+        -DDEVICE_BUILD_APPS=FALSE
+        -DNABTO_DEVICE_PREFER_SYSTEM_LIBS=ON
+        -DNABTO_DEVICE_USE_SYSTEM_LIBEVENT=ON
+        -DNABTO_DEVICE_USE_SYSTEM_NABTOCOMMON=ON
+        -DNABTO_DEVICE_USE_SYSTEM_MBEDTLS=ON
+        -DNABTO_DEVICE_USE_SYSTEM_NLOHMANNJSON=ON
+        -DNABTO_DEVICE_USE_SYSTEM_TINYCBOR=ON
+        -DNABTO_DEVICE_BUILD_WITH_VCPKG_DEPENDENCIES=TRUE
+)
+
+vcpkg_cmake_install()
+
+vcpkg_copy_pdbs()
+
+vcpkg_cmake_config_fixup(PACKAGE_NAME NabtoEmbeddedSDK CONFIG_PATH lib/cmake/NabtoEmbeddedSDK)
+
+
+#vcpkg_install_copyright(FILE_LIST "${SOURCE_PATH}/LICENSING.md")

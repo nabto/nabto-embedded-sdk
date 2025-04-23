@@ -134,7 +134,8 @@ void post_timed(struct np_event* event, uint32_t milliseconds)
     //struct nabto_device_event_queue* eq = pl->eqData;
     struct timeval tv;
     tv.tv_sec = (milliseconds / 1000);
-    tv.tv_usec = ((milliseconds % 1000) * 1000);
+    // due to %1000 this will always be below 1000000, just cast to long
+    tv.tv_usec = (long)((milliseconds % 1000) * 1000);
     int ec = event_add (&event->event, &tv);
     if (ec != 0) {
         NABTO_LOG_ERROR(LOG, "Cannot add event %d", ec);

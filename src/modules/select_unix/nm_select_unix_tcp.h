@@ -1,5 +1,5 @@
-#ifndef _NM_SELECT_UNIX_TCP_H_
-#define _NM_SELECT_UNIX_TCP_H_
+#ifndef NM_SELECT_UNIX_TCP_H_
+#define NM_SELECT_UNIX_TCP_H_
 
 #include "nm_select_unix.h"
 

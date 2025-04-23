@@ -1,5 +1,5 @@
-#ifndef _NP_TCP_WRAPPER_H_
-#define _NP_TCP_WRAPPER_H_
+#ifndef NP_TCP_WRAPPER_H_
+#define NP_TCP_WRAPPER_H_
 
 #include "interfaces/np_tcp.h"
 

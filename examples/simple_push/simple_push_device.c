@@ -57,7 +57,8 @@ int main(int argc, char* argv[]) {
 
     printf("Nabto Embedded SDK Version %s\n", nabto_device_version());
 
-    if ((device_ = nabto_device_new()) == NULL) {
+    device_ = nabto_device_new();
+    if (device_ == NULL) {
         handle_device_error(NULL, "Failed to allocate device");
         return -1;
     }
@@ -121,7 +122,8 @@ void send_notification_to_category(NabtoDevice* device, struct nm_iam* iam, cons
             if (build_fcm_for_user(device, fcm, user, category, "Act now")) {
                 nabto_device_fcm_send(fcm, fut);
                 nabto_device_future_wait(fut);
-                if ((ec = nabto_device_future_error_code(fut)) != NABTO_DEVICE_EC_OK) {
+                ec = nabto_device_future_error_code(fut);
+                if (ec != NABTO_DEVICE_EC_OK) {
                     printf("Failed to send Push notification to Basestation: %s\n", nabto_device_error_get_string(ec));
                 } else {
                     printf("Push notification successfully sent to Basestation. FCM returned status %u: %s\n", nabto_device_fcm_notification_get_response_status_code(fcm), nabto_device_fcm_notification_get_response_body(fcm));
@@ -171,7 +173,8 @@ bool start_device(NabtoDevice* device, const char* productId, const char* device
     struct nm_fs fsImpl = nm_fs_posix_get_impl();
 
     if (!string_file_exists(&fsImpl, keyFile)) {
-        if ((ec = nabto_device_create_private_key(device, &privateKey)) != NABTO_DEVICE_EC_OK) {
+        ec = nabto_device_create_private_key(device, &privateKey);
+        if (ec != NABTO_DEVICE_EC_OK) {
             printf("Failed to create private key, ec=%s\n", nabto_device_error_get_message(ec));
             return false;
         }
@@ -188,7 +191,8 @@ bool start_device(NabtoDevice* device, const char* productId, const char* device
         return false;
     }
 
-    if ((ec = nabto_device_set_private_key(device, privateKey)) != NABTO_DEVICE_EC_OK) {
+    ec = nabto_device_set_private_key(device, privateKey);
+    if (ec != NABTO_DEVICE_EC_OK) {
         printf("Failed to set private key, ec=%s\n", nabto_device_error_get_message(ec));
         free(privateKey);
         return false;

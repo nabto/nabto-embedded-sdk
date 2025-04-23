@@ -1,8 +1,8 @@
 #ifndef NM_wolfssl_CLI_H
 #define NM_wolfssl_CLI_H
 
-#include <platform/np_platform.h>
 #include <platform/np_dtls_cli.h>
+#include <platform/np_platform.h>
 
 #ifdef __cplusplus
 extern "C" {

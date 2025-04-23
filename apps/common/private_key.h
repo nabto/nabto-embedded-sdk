@@ -1,5 +1,5 @@
-#ifndef _PRIVATE_KEY_H_
-#define _PRIVATE_KEY_H_
+#ifndef PRIVATE_KEY_H_
+#define PRIVATE_KEY_H_
 
 #include <nabto/nabto_device.h>
 

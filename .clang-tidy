@@ -1,12 +1,18 @@
 Checks: '
-# bugprone*,
+bugprone*,
+-bugprone-multi-level-implicit-pointer-conversion,
+-bugprone-branch-clone,
+-clang-analyzer-unix.StdCLibraryFunctions,
+-clang-analyzer-optin.performance.Padding,
 # readability*,
--clang-analyzer-optin.core.EnumCastOutOfRange,
 llvm-include-order,
-# misc-no-recursion,
+misc-no-recursion,
 # misc-unused-parameters,
 -readability-identifier-length,
 -readability-magic-numbers,
 -bugprone-easily-swappable-parameters,
 '
 WarningsAsErrors: '*'
+HeaderFilterRegex: '.*'
+
+

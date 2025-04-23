@@ -1,10 +1,10 @@
 #ifndef NC_VIRTUAL_CONNECTION_H
 #define NC_VIRTUAL_CONNECTION_H
 
-#include <nabto/nabto_device_config.h>
-#include <platform/np_platform.h>
 #include <core/nc_connection_event.h>
 #include <core/nc_device.h>
+#include <nabto/nabto_device_config.h>
+#include <platform/np_platform.h>
 
 #ifdef __cplusplus
 extern "C" {

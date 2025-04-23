@@ -1,11 +1,11 @@
-#ifndef _NM_LIBEVENT_DNS_H_
-#define _NM_LIBEVENT_DNS_H_
+#ifndef NM_LIBEVENT_DNS_H_
+#define NM_LIBEVENT_DNS_H_
 
-#include <stdbool.h>
-#include <nn/llist.h>
-#include <platform/np_error_code.h>
-#include <platform/interfaces/np_event_queue.h>
 #include <api/nabto_device_threads.h>
+#include <nn/llist.h>
+#include <platform/interfaces/np_event_queue.h>
+#include <platform/np_error_code.h>
+#include <stdbool.h>
 
 #ifdef __cplusplus
 extern "C" {

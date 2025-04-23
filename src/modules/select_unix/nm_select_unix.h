@@ -1,9 +1,9 @@
 #ifndef NM_SELECT_UNIX_H
 #define NM_SELECT_UNIX_H
 
-#include <platform/np_types.h>
-#include <platform/np_platform.h>
 #include <api/nabto_device_threads.h>
+#include <platform/np_platform.h>
+#include <platform/np_types.h>
 
 #include <sys/select.h>
 
@@ -15,7 +15,7 @@
 extern "C" {
 #endif
 
-#define NM_SELECT_UNIX_INVALID_SOCKET -1
+#define NM_SELECT_UNIX_INVALID_SOCKET (-1)
 
 struct nm_select_unix_udp_recv_wait_context {
     struct np_completion_event* completionEvent;

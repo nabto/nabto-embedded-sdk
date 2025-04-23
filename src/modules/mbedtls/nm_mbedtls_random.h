@@ -1,8 +1,8 @@
-#ifndef _NM_MBEDTLS_RANDOM_H_
-#define _NM_MBEDTLS_RANDOM_H_
+#ifndef NM_MBEDTLS_RANDOM_H_
+#define NM_MBEDTLS_RANDOM_H_
 
-#include <stdbool.h>
 #include <platform/np_platform.h>
+#include <stdbool.h>
 
 bool nm_mbedtls_random_init(struct np_platform* pl);
 

@@ -60,7 +60,8 @@ void logging_log(uint32_t severity, uint32_t module,
         }
 
         msg.file = file;
-        msg.line = line;
+        // We do not have files with more lines that int
+        msg.line = (int)line;
         msg.message = log;
         logCallback(&msg, userData);
     }

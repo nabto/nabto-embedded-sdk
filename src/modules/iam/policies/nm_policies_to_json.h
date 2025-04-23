@@ -1,5 +1,5 @@
-#ifndef _NM_POLICIES_TO_JSON_H_
-#define _NM_POLICIES_TO_JSON_H_
+#ifndef NM_POLICIES_TO_JSON_H_
+#define NM_POLICIES_TO_JSON_H_
 
 struct nm_iam_policy;
 

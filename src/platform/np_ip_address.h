@@ -1,8 +1,8 @@
 #ifndef NP_IP_ADDRESS_H
 #define NP_IP_ADDRESS_H
 
-#include <platform/np_types.h>
 #include <nn/ip_address.h>
+#include <platform/np_types.h>
 
 #ifdef __cplusplus
 extern "C" {

@@ -1,5 +1,5 @@
-#ifndef _NP_TIMESTAMP_WRAPPER_H_
-#define _NP_TIMESTAMP_WRAPPER_H_
+#ifndef NP_TIMESTAMP_WRAPPER_H_
+#define NP_TIMESTAMP_WRAPPER_H_
 
 #include "interfaces/np_timestamp.h"
 

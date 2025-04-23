@@ -1,5 +1,6 @@
 #include <boost/test/unit_test.hpp>
 
+#include <core/nc_client_connection.h>
 #include <core/nc_coap_server.h>
 #include <core/nc_rendezvous.h>
 #include <core/nc_rendezvous_coap.h>

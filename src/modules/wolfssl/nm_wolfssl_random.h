@@ -1,8 +1,8 @@
-#ifndef _NM_WOLFSSL_RANDOM_H_
-#define _NM_WOLFSSL_RANDOM_H_
+#ifndef NM_WOLFSSL_RANDOM_H_
+#define NM_WOLFSSL_RANDOM_H_
 
-#include <stdbool.h>
 #include <platform/np_platform.h>
+#include <stdbool.h>
 
 bool nm_wolfssl_random_init(struct np_platform* pl);
 

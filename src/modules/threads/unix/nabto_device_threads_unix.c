@@ -153,9 +153,10 @@ void nabto_device_threads_cond_timed_wait(struct nabto_device_condition* cond,
         NABTO_LOG_ERROR(LOG, "gettimeofday failed. '%s'", strerror(status));
         // TODO we cannot really fail.
     }
-    long future_us = tp.tv_usec+ms*1000;
-    ts.tv_nsec = (future_us % 1000000) * 1000;
-    ts.tv_sec = tp.tv_sec + future_us / 1000000;
+    // This will wrap when epoch cannot be contained in 64bit, we ignore that and cast
+    uint64_t future_ms = tp.tv_usec / 1000 + tp.tv_sec * 1000 + ms;
+    ts.tv_nsec = (long)(future_ms % 1000) * 1000000;
+    ts.tv_sec = (long)future_ms / 1000;
     status = pthread_cond_timedwait(&cond->cond, &mut->mut, &ts);
     if (status != 0) {
         NABTO_LOG_ERROR(LOG, "pthread_cond_wait failed. '%s'", strerror(status));

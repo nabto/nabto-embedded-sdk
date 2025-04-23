@@ -1,9 +1,9 @@
 #ifndef NC_UDP_DISPATCH_H
 #define NC_UDP_DISPATCH_H
 
-#include <platform/np_platform.h>
-#include <platform/np_completion_event.h>
 #include <core/nc_device_defines.h>
+#include <platform/np_completion_event.h>
+#include <platform/np_platform.h>
 
 #ifdef __cplusplus
 extern "C" {

@@ -1,8 +1,8 @@
-#ifndef _NM_WOLFSSL_SPAKE2_H_
-#define _NM_WOLFSSL_SPAKE2_H_
+#ifndef NM_WOLFSSL_SPAKE2_H_
+#define NM_WOLFSSL_SPAKE2_H_
 
-#include <stdbool.h>
 #include <platform/np_platform.h>
+#include <stdbool.h>
 #ifdef __cplusplus
 extern "C" {
 #endif

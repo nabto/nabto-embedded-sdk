@@ -7,21 +7,21 @@
  */
 
 #include <nabto/nabto_device_config.h>
-#include <platform/interfaces/np_timestamp.h>
+#include <platform/interfaces/np_dns.h>
 #include <platform/interfaces/np_event_queue.h>
+#include <platform/interfaces/np_timestamp.h>
 #include <platform/interfaces/np_udp.h>
 #include <platform/np_communication_buffer.h>
-#include <platform/interfaces/np_dns.h>
 #include <platform/np_dtls_cli.h>
 #ifndef NABTO_DEVICE_DTLS_CLIENT_ONLY
 #include <platform/np_dtls_srv.h>
 #endif
-#include <platform/interfaces/np_tcp.h>
+#include <platform/interfaces/np_local_ip.h>
 #include <platform/interfaces/np_mdns.h>
+#include <platform/interfaces/np_tcp.h>
 #include <platform/np_authorization.h>
 #include <platform/np_random.h>
 #include <platform/np_spake2.h>
-#include <platform/interfaces/np_local_ip.h>
 
 #ifdef __cplusplus
 extern "C" {

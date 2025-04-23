@@ -1,9 +1,11 @@
-#ifndef _NP_SPAKE2_H_
-#define _NP_SPAKE2_H_
+#ifndef NP_SPAKE2_H_
+#define NP_SPAKE2_H_
 
 #ifdef __cplusplus
 extern "C" {
 #endif
+
+#include "np_error_code.h"
 
 struct np_platform;
 /**

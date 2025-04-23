@@ -1,5 +1,5 @@
-#ifndef _NP_MDNS_WRAPPER_H_
-#define _NP_MDNS_WRAPPER_H_
+#ifndef NP_MDNS_WRAPPER_H_
+#define NP_MDNS_WRAPPER_H_
 
 #include "interfaces/np_mdns.h"
 

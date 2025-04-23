@@ -1,8 +1,8 @@
-#ifndef _JSON_CONFIG_H_
-#define _JSON_CONFIG_H_
+#ifndef JSON_CONFIG_H_
+#define JSON_CONFIG_H_
 
-#include <stdbool.h>
 #include <cjson/cJSON.h>
+#include <stdbool.h>
 
 #include <modules/fs/nm_fs.h>
 

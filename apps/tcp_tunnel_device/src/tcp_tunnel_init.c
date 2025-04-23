@@ -113,6 +113,7 @@ bool create_state_interactive(struct nm_fs* fsImpl, const char* file)
     return create_state_default(fsImpl, file);
 }
 
+// NOLINTNEXTLINE(misc-no-recursion) recursion is ok since it only happens during interactive setup.
 bool create_state_interactive_custom(struct nm_fs* fsImpl, const char* file) {
     const char* roles[] = {"Unpaired", "Guest", "Standard", "Administrator"};
     bool enableLocalInitialPairing = 0;
@@ -391,6 +392,7 @@ bool tcp_tunnel_demo_config(struct tcp_tunnel* tcpTunnel)
                 printf("Added rtsp service on localhost port %i with metadata rtsp-path => %s" NEWLINE, service->port, endpoint);
                 break;
             }
+            default: break;
         }
 
         cJSON_AddItemToArray(root, tcp_tunnel_service_as_json(service));

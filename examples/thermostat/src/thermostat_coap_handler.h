@@ -1,5 +1,5 @@
-#ifndef _THERMOSTAT_COAP_HANDLER_H_
-#define _THERMOSTAT_COAP_HANDLER_H_
+#ifndef THERMOSTAT_COAP_HANDLER_H_
+#define THERMOSTAT_COAP_HANDLER_H_
 
 #include <nabto/nabto_device.h>
 

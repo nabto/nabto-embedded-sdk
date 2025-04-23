@@ -61,6 +61,7 @@ static const char* coapCodeToString(nabto_coap_code code)
             case NABTO_COAP_CODE_POST: return "POST";
             case NABTO_COAP_CODE_PUT: return "PUT";
             case NABTO_COAP_CODE_DELETE: return "DELETE";
+            default: break;// handled below
         }
     }
     if (codeClass > 1 && codeClass <= 5) {
@@ -93,6 +94,7 @@ const char* coapOptionToString(uint16_t option)
         case NABTO_COAP_OPTION_PROXY_URI: return "PROXY_URI";
         case NABTO_COAP_OPTION_PROXY_SCHEME: return "PROXY_SCHEME";
         case NABTO_COAP_OPTION_SIZE1: return "OPTION_SIZE1";
+        default: break;// handled below
     }
     sprintf(buffer, "UNKNOWN(%" PRIu16 ")", option);
     return buffer;

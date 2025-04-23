@@ -1,11 +1,11 @@
-#ifndef _NP_UNIX_DNS_H_
-#define _NP_UNIX_DNS_H_
+#ifndef NP_UNIX_DNS_H_
+#define NP_UNIX_DNS_H_
 
 #include <platform/interfaces/np_dns.h>
 #include <platform/np_types.h>
 
-#include <pthread.h>
 #include <nn/llist.h>
+#include <pthread.h>
 
 #ifdef __cplusplus
 extern "C" {

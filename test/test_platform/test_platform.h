@@ -1,5 +1,5 @@
-#ifndef _TEST_PLATFORM_H_
-#define _TEST_PLATFORM_H_
+#ifndef TEST_PLATFORM_H_
+#define TEST_PLATFORM_H_
 
 #include <platform/np_platform.h>
 

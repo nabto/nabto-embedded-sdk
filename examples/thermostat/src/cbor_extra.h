@@ -1,5 +1,5 @@
-#ifndef _CBOR_EXTRA_H_
-#define _CBOR_EXTRA_H_
+#ifndef CBOR_EXTRA_H_
+#define CBOR_EXTRA_H_
 
 #include <tinycbor/cbor.h>
 

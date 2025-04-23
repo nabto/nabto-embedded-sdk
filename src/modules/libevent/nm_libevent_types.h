@@ -1,5 +1,5 @@
-#ifndef _NM_LIBEVENT_TYPES_H_
-#define _NM_LIBEVENT_TYPES_H_
+#ifndef NM_LIBEVENT_TYPES_H_
+#define NM_LIBEVENT_TYPES_H_
 
 
 #include <errno.h>
@@ -41,7 +41,7 @@ typedef void buf_type;
 #ifdef HAVE_WINSOCK2_H
 #define NM_INVALID_SOCKET INVALID_SOCKET
 #else
-#define NM_INVALID_SOCKET -1
+#define NM_INVALID_SOCKET (-1)
 #endif
 
 

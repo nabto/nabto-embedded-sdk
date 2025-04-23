@@ -1,5 +1,5 @@
-#ifndef _NP_EVENT_QUEUE_WRAPPER_H_
-#define _NP_EVENT_QUEUE_WRAPPER_H_
+#ifndef NP_EVENT_QUEUE_WRAPPER_H_
+#define NP_EVENT_QUEUE_WRAPPER_H_
 
 #include "interfaces/np_event_queue.h"
 

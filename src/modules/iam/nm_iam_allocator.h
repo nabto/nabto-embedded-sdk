@@ -1,5 +1,5 @@
-#ifndef _NM_IAM_ALLOCATOR_H_
-#define _NM_IAM_ALLOCATOR_H_
+#ifndef NM_IAM_ALLOCATOR_H_
+#define NM_IAM_ALLOCATOR_H_
 
 #include <stddef.h>
 

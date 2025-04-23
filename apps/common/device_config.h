@@ -1,5 +1,5 @@
-#ifndef _DEVICE_CONFIG_H_
-#define _DEVICE_CONFIG_H_
+#ifndef DEVICE_CONFIG_H_
+#define DEVICE_CONFIG_H_
 
 #include <nn/log.h>
 

@@ -1,6 +1,7 @@
 #ifndef NP_AUTHORIZATION_H
 #define NP_AUTHORIZATION_H
 
+#include "np_error_code.h"
 /**
  * Authorization interface
  *

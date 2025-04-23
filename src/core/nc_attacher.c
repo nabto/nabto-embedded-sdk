@@ -45,6 +45,7 @@ static void reattach(void* data);
 static void resolve_close(void* data);
 
 static void handle_state_change(struct nc_attach_context* ctx);
+static void handle_state_change_deferred(void* data);
 static void handle_dtls_closed(struct nc_attach_context* ctx);
 static void handle_dtls_connected(struct nc_attach_context* ctx);
 static void reset_dtls_connection(struct nc_attach_context* ctx);
@@ -122,6 +123,11 @@ np_error_code nc_attacher_init(struct nc_attach_context* ctx, struct np_platform
         return ec;
     }
 
+    ec = np_event_queue_create_event(eq, &handle_state_change_deferred, ctx, &ctx->deferredHandleStateChange);
+    if (ec != NABTO_EC_OK) {
+        return ec;
+    }
+
     sct_init(ctx);
 
     ec = pl->dtlsC.set_root_certs(pl, defaultRoots);
@@ -177,6 +183,7 @@ void nc_attacher_deinit(struct nc_attach_context* ctx)
         sct_deinit(ctx);
 
         struct np_event_queue* eq = &ctx->pl->eq;
+        np_event_queue_destroy_event(eq, ctx->deferredHandleStateChange);
         np_event_queue_destroy_event(eq, ctx->reattachTimer);
         np_event_queue_destroy_event(eq, ctx->closeEv);
 
@@ -407,6 +414,10 @@ char* state_to_text(enum nc_attacher_attach_state state) {
     return "UNKNOWN STATE - ERROR";
 }
 
+void handle_state_change_deferred(void* data) {
+    struct nc_attach_context* ctx = (struct nc_attach_context*)data;
+    np_event_queue_post_maybe_double(&(ctx->pl->eq), ctx->deferredHandleStateChange);
+}
 
 void handle_state_change(struct nc_attach_context* ctx)
 {
@@ -434,7 +445,7 @@ void handle_state_change(struct nc_attach_context* ctx)
                 if (ec != NABTO_EC_OK) {
                     NABTO_LOG_ERROR(LOG, "Dtls connection creation failed");
                     ctx->state = NC_ATTACHER_STATE_RETRY_WAIT;
-                    handle_state_change(ctx);
+                    handle_state_change_deferred(ctx);
                     return;
                 }
             ctx->pl->dtlsC.connect(ctx->dtls);

@@ -84,7 +84,7 @@ int main_with_ctx(int argc, char* argv[], struct context* ctx)
     char* productId = argv[1];
     char* deviceId = argv[2];
 
-    memcpy(helloWorld, defaultString, strlen(defaultString));
+    memcpy(helloWorld, defaultString, strlen(defaultString)+1);
 
     printf("Nabto Embedded SDK Version %s\n", nabto_device_version());
 
@@ -200,7 +200,8 @@ bool start_device(struct context* ctx, const char* productId, const char* device
 
 
     if (!string_file_exists(&fsImpl, keyFile)) {
-        if ((ec = nabto_device_create_private_key(ctx->device, &privateKey)) != NABTO_DEVICE_EC_OK) {
+        ec = nabto_device_create_private_key(ctx->device, &privateKey);
+        if (ec != NABTO_DEVICE_EC_OK) {
             printf("Failed to create private key, ec=%s\n", nabto_device_error_get_message(ec));
             return false;
         }
@@ -217,7 +218,8 @@ bool start_device(struct context* ctx, const char* productId, const char* device
         return false;
     }
 
-    if ((ec = nabto_device_set_private_key(ctx->device, privateKey)) != NABTO_DEVICE_EC_OK) {
+    ec = nabto_device_set_private_key(ctx->device, privateKey);
+    if (ec != NABTO_DEVICE_EC_OK) {
         printf("Failed to set private key, ec=%s\n", nabto_device_error_get_message(ec));
         return false;
     }

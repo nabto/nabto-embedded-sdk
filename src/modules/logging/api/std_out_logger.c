@@ -31,7 +31,8 @@ static struct datetime getTimestamp() {
 #if defined(HAVE_SYS_TIME_H)
     struct timeval tv;
     gettimeofday(&tv, NULL);
-    ts.milliseconds = tv.tv_usec/1000;
+    // tv_usec must be smaller than 1sec so we just cast
+    ts.milliseconds = (int)tv.tv_usec/1000;
     time_t now = time(NULL);
     struct tm currentTime;
     localtime_r(&now, &currentTime);

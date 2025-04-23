@@ -54,9 +54,13 @@ bool np_hex_to_data_length(const char* hex, size_t hexLength, uint8_t* data, siz
 static char encodeChar(uint8_t val)
 {
     if (val <= 9) {
-        return '0' + val;
+        return (char)('0' + (char)val);
     }
-    return 'a' + (val - 10);
+    if (val <= 15) {
+        return (char)('a' + ((char)val - 10));
+    }
+    // This should not happen, if it does the hex will be wrong but we should not crash.
+    return (char)'0';
 }
 
 void np_data_to_hex(uint8_t* data, size_t dataLength, char* output)
