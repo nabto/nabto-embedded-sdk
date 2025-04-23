@@ -6,14 +6,16 @@ static void start_listen(struct device_event_handler* handler);
 static void callback(NabtoDeviceFuture* future, NabtoDeviceError ec, void* userData);
 static void handle_event(struct device_event_handler* handler, NabtoDeviceEvent event);
 
-void device_event_handler_init(struct device_event_handler* handler, NabtoDevice* device)
+bool device_event_handler_init(struct device_event_handler* handler, NabtoDevice* device)
 {
     handler->device = device;
     handler->listener = nabto_device_listener_new(device);
     handler->future = nabto_device_future_new(device);
-    if (handler->listener != NULL) {
-        nabto_device_device_events_init_listener(device, handler->listener);
+    if (handler->listener == NULL || handler->future == NULL) {
+        return false;
     }
+    nabto_device_device_events_init_listener(device, handler->listener);
+    return true;
 }
 
 void device_event_handler_deinit(struct device_event_handler* handler)
@@ -25,17 +27,15 @@ void device_event_handler_deinit(struct device_event_handler* handler)
 
 void device_event_handler_blocking_listener(struct device_event_handler* handler)
 {
-    if (handler->future != NULL) {
-        while(true) {
-            nabto_device_listener_device_event(handler->listener, handler->future, &handler->event);
-            NabtoDeviceError ec = nabto_device_future_wait(handler->future);
-            if (ec != NABTO_DEVICE_EC_OK) {
-                return;
-            }
-            handle_event(handler, handler->event);
-            if (handler->event == NABTO_DEVICE_EVENT_CLOSED) {
-                return;
-            }
+    while(true) {
+        nabto_device_listener_device_event(handler->listener, handler->future, &handler->event);
+        NabtoDeviceError ec = nabto_device_future_wait(handler->future);
+        if (ec != NABTO_DEVICE_EC_OK) {
+            return;
+        }
+        handle_event(handler, handler->event);
+        if (handler->event == NABTO_DEVICE_EVENT_CLOSED) {
+            return;
         }
     }
 }
