@@ -33,7 +33,7 @@ void nm_communication_buffer_init(struct np_platform* pl)
     pl->buf.size     = &buf_size;
 }
 
-struct np_communication_buffer* buf_allocate()
+struct np_communication_buffer* buf_allocate(void)
 {
     struct np_communication_buffer* buf = (struct np_communication_buffer*)np_calloc(1, sizeof(struct np_communication_buffer));
     if (!buf) {

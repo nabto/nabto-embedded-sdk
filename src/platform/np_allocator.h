@@ -24,7 +24,7 @@ void np_allocator_set(struct nn_allocator* allocator);
 /**
  * Get the allocator
  */
-struct nn_allocator* np_allocator_get();
+struct nn_allocator* np_allocator_get(void);
 
 
 #ifdef __cplusplus
