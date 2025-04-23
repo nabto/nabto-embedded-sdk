@@ -49,6 +49,7 @@ np_error_code nm_mbedtls_spake2_init(struct np_platform* pl)
 
 void nm_mbedtls_spake2_deinit(struct np_platform* pl)
 {
+    (void)pl;
 
 }
 

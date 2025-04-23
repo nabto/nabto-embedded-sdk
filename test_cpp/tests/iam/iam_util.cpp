@@ -140,6 +140,7 @@ void IamVirtualConnTester::setCborPayload(nlohmann::json& payload)
 
 void IamVirtualConnTester::setJsonPayload(nlohmann::json& payload)
 {
+    (void)payload;
     // TODO
 }
 

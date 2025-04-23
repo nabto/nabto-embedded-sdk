@@ -15,6 +15,7 @@
 
 static int dummyRandom(void* context, unsigned char* output, size_t outputLen)
 {
+    (void)context;
     for (size_t i = 0; i < outputLen; i++) {
         output[i] = 42;
     }

@@ -186,12 +186,6 @@ class AttachServer : public AttachCoapServer,
  public:
     AttachServer(boost::asio::io_context& io) : AttachCoapServer(io) {}
 
-    AttachServer(boost::asio::io_context& io,
-                 const std::vector<std::string>& certificateChain)
-        : AttachCoapServer(io)
-    {
-    }
-
     AttachServer(boost::asio::io_context& io, std::string ip, uint16_t port)
         : AttachCoapServer(io, ip, port)
     {
@@ -329,6 +323,7 @@ class AttachServer : public AttachCoapServer,
             decodedRequest = nlohmann::json::from_cbor(payload);
         }
         catch (std::exception& e) {
+            (void)e;
             CoapError err = CoapError(400, "Invalid cbor");
             err.createCborError(response);
             return;
@@ -337,6 +332,7 @@ class AttachServer : public AttachCoapServer,
         try {
             identifier = decodedRequest["Identifier"].get<std::string>();
         } catch (std::exception& e) {
+            (void)e;
             CoapError err = CoapError(400, "Missing or invalid Identifier");
             err.createCborError(response);
             return;
@@ -378,6 +374,7 @@ class AttachServer : public AttachCoapServer,
         try {
             decodedRequest = nlohmann::json::from_cbor(payload);
         } catch (std::exception& e) {
+            (void)e;
             CoapError err = CoapError(400, "Invalid cbor");
             err.createCborError(response);
             return;
@@ -387,6 +384,7 @@ class AttachServer : public AttachCoapServer,
         try {
             serviceId = decodedRequest["ServiceId"].get<std::string>();
         } catch (std::exception& e) {
+            (void)e;
             CoapError err = CoapError(400, "Missing or invalid ServiceId");
             err.createCborError(response);
             return;
@@ -395,6 +393,7 @@ class AttachServer : public AttachCoapServer,
         try {
             message = decodedRequest["Message"].get<nlohmann::json::binary_t>();
         } catch (std::exception& e) {
+            (void)e;
             CoapError err = CoapError(400, "Missing or invalid Message");
             err.createCborError(response);
             return;

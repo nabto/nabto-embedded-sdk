@@ -39,6 +39,10 @@ np_error_code nc_client_connection_init(struct np_platform* pl, struct nc_client
                                         uint8_t* buffer, uint16_t bufferSize)
 {
     memset(conn, 0, sizeof(struct nc_client_connection));
+    if (bufferSize < 16) {
+        NABTO_LOG_ERROR(LOG, "Creating a new client connection but the provided buffer is too small");
+        return NABTO_EC_FAILED;
+    }
     memcpy(conn->id.id, buffer, 16);
     conn->currentChannel.sock = sock;
     conn->currentChannel.ep = *ep;

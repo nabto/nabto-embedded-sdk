@@ -32,7 +32,7 @@ public:
         nc_rendezvous_init(&rendezvous, tp->getPlatform());
         ctx.rendezvous = &rendezvous;
 
-        for (size_t i = 0; i < 16; i++) {
+        for (uint8_t i = 0; i < 16; i++) {
             cliConn.id.id[i] = i;
         }
 

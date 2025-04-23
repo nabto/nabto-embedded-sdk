@@ -94,7 +94,7 @@ BOOST_AUTO_TEST_CASE(set_private_key)
 
 BOOST_AUTO_TEST_CASE(get_fingerprint)
 {
-    std::string testKey = R"(
+    std::string testFpKey = R"(
 -----BEGIN EC PRIVATE KEY-----
 MHcCAQEEIIyPSdBk6xTeZ8t94ZUB3K/qDOP574benqgfT3fTE1QKoAoGCCqGSM49
 AwEHoUQDQgAEqHTpqTZ6Ir0HFI1fLGITG9/9eJVHbgtSUCzELy/xGalicZGlBTKT
@@ -106,7 +106,7 @@ AwEHoUQDQgAEqHTpqTZ6Ir0HFI1fLGITG9/9eJVHbgtSUCzELy/xGalicZGlBTKT
 
     NabtoDevice* device = nabto_device_new();
 
-    BOOST_TEST(nabto_device_set_private_key(device, testKey.c_str()) == NABTO_DEVICE_EC_OK);
+    BOOST_TEST(nabto_device_set_private_key(device, testFpKey.c_str()) == NABTO_DEVICE_EC_OK);
 
     char* fp;
     BOOST_TEST(nabto_device_get_device_fingerprint(device, &fp) == NABTO_DEVICE_EC_OK);

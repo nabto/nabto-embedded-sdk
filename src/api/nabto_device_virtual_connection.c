@@ -113,6 +113,8 @@ nabto_device_virtual_connection_free(NabtoDeviceVirtualConnection* connection)
 void NABTO_DEVICE_API
 nabto_device_virtual_connection_close(NabtoDeviceVirtualConnection* connection, NabtoDeviceFuture* future)
 {
+    (void)connection;
+    (void)future;
     // TODO: does this do anything?
 }
 
@@ -371,6 +373,7 @@ nabto_device_virtual_coap_request_get_response_payload(NabtoDeviceVirtualCoapReq
 
 void response_handler(np_error_code ec, struct nc_coap_server_request* request, void* userData)
 {
+    (void)request;
     struct nabto_device_virtual_coap_request* req = (struct nabto_device_virtual_coap_request*)userData;
     if (ec == NABTO_EC_OK) {
         req->responseReady = true;

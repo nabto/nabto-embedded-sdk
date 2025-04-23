@@ -422,6 +422,8 @@ np_error_code get_certificate_expiration(struct np_dtls_cli_connection* conn, ui
 #else
 np_error_code get_certificate_expiration(struct np_dtls_cli_connection* conn, uint64_t* expiration)
 {
+    (void)conn;
+    (void)expiration;
     return NABTO_EC_NOT_IMPLEMENTED;
 }
 #endif

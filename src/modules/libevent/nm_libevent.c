@@ -51,8 +51,10 @@ bool nm_libevent_init(struct nm_libevent_context* ctx, struct event_base* eventB
 
 void nm_libevent_stop(struct nm_libevent_context* ctx)
 {
+    (void)ctx;
 }
 
 void nm_libevent_deinit(struct nm_libevent_context* ctx)
 {
+    (void)ctx;
 }

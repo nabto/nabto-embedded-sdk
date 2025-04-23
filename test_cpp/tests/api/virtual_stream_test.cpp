@@ -82,6 +82,7 @@ public:
 
     static void stream_callback(NabtoDeviceFuture* fut, NabtoDeviceError ec, void* data)
     {
+        (void)fut;
         TestStreamDevice* self = (TestStreamDevice*)data;
         self->onStream_(ec, self->stream_);
         self->stream_ = NULL;

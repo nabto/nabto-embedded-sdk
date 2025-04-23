@@ -31,12 +31,14 @@ void nc_virtual_connection_destroy(struct nc_virtual_connection* conn)
 
 bool nc_virtual_connection_add_coap_request(struct nc_virtual_connection* conn, struct nc_coap_server_request* request)
 {
+    (void)conn;
     nn_llist_append(&conn->coapRequests, &request->virRequest->listElm, request);
     return true;
 }
 
 bool nc_virtual_connection_remove_coap_request(struct nc_virtual_connection* conn, struct nc_coap_server_request* request)
 {
+    (void)conn;
     nn_llist_erase_node(&request->virRequest->listElm);
     return true;
 }
