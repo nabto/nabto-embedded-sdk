@@ -46,6 +46,7 @@ bool nc_virtual_connection_remove_coap_request(struct nc_virtual_connection* con
 
 void nc_virtual_connection_close(struct nc_virtual_connection* conn)
 {
+    (void)conn;
     // TODO: does this do anything?
 }
 
