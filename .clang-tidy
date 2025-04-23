@@ -1,7 +1,6 @@
 Checks: '
 bugprone*,
 -bugprone-multi-level-implicit-pointer-conversion,
--bugprone-branch-clone,
 -clang-analyzer-unix.StdCLibraryFunctions,
 -clang-analyzer-optin.performance.Padding,
 # readability*,
@@ -14,5 +13,3 @@ misc-no-recursion,
 '
 WarningsAsErrors: '*'
 HeaderFilterRegex: '.*'
-
-

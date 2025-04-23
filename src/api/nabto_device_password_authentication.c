@@ -13,32 +13,49 @@
 
 #if defined(NABTO_DEVICE_PASSWORD_AUTHENTICATION)
 
+static void nabto_device_password_authentication_request_free_internal(struct nabto_device_password_authentication_request* r);
+
 /**
  * Handler which is registered in the core to handle new password requests.
  */
 static np_error_code password_request_handler(struct nc_spake2_password_request* req, void* data);
 
-
+/**
+ * Password authentication listener callback.
+ *
+ * This callback is called from the nabto_device_listener which is created to
+ * receive password authentication requests from the core.
+ *
+ * @param ec NABTO_EC_OK if the function should put the password authentication
+ *           request in the eventData into the password authentication request in the
+ *           listenerData.
+ *           NABTO_EC_STOPPED if the listener has been stopped. Password
+ *           authentication requests in eventData should be cleaned up as the
+ *           application will not receive these password authentication
+ *           requests.
+ *           NABTO_EC_ABORTED if the listener is ready to be freed, no more
+ *           callbacks will be received after this call.
+ *
+ * @param eventData An password authentication request from the core.
+ * @param listenerData A datastructure holding the listener. In this case it is
+ * the listener it self.
+ */
 np_error_code nabto_device_password_authentication_listener_resolve_event(const np_error_code ec, struct nabto_device_future* future, void* eventData, void* listenerData)
 {
     (void)future; (void)eventData;
     struct nabto_device_listener* listener = listenerData;
 
-    if (ec == NABTO_EC_OK) {
-        // The item in eventData needs to be converted to data on the future.
-        // eventData is a struct nabto_device_password_authentication_request
-
-        // this uses the generic future resolve data approach.
-    } else if (ec == NABTO_EC_OUT_OF_MEMORY) {
-        // ok dont care, password auth request returns 500.
-    } else if (ec == NABTO_EC_ABORTED) {
+    if (ec == NABTO_EC_ABORTED) {
         struct nabto_device_context* dev = listener->dev;
         nc_spake2_clear_password_request_callback(&dev->core.spake2);
     } else if (ec == NABTO_EC_STOPPED) {
-        //struct nabto_device_context* dev = future->dev;
-        //nc_spake2_clear_password_request_callback(&dev->core.spake2);
-        //nc_spake2_set_password_request_callback(&dev->core.spake2, NULL, NULL);
+        struct nabto_device_password_authentication_request* r = (struct nabto_device_password_authentication_request*)eventData;
+        nabto_device_password_authentication_request_free_internal(r);
     }
+    // In other cases, The item in eventData needs to be converted to data on
+    // the future. this uses the generic future resolve data approach in the
+    // listener and then this function does not need to care about it.
+
     return NABTO_EC_OK;
 }
 
@@ -166,13 +183,17 @@ void NABTO_DEVICE_API nabto_device_password_authentication_request_free(NabtoDev
     struct nabto_device_password_authentication_request* req = (struct nabto_device_password_authentication_request*)request;
     struct nabto_device_context* dev = req->dev;
     nabto_device_threads_mutex_lock(dev->eventMutex);
+    nabto_device_password_authentication_request_free_internal(req);
+    nabto_device_threads_mutex_unlock(dev->eventMutex);
+}
+
+void NABTO_DEVICE_API nabto_device_password_authentication_request_free_internal(struct nabto_device_password_authentication_request* req)
+{
     if (!req->handled) {
         nc_spake2_password_ready(req->passwordRequest, NULL);
     }
-    nabto_device_threads_mutex_unlock(dev->eventMutex);
     np_free(req);
 }
-
 
 void NABTO_DEVICE_API
 nabto_device_listener_new_password_authentication_request(NabtoDeviceListener* passwordAuthenticationListener, NabtoDeviceFuture* future, NabtoDevicePasswordAuthenticationRequest** request)

@@ -124,9 +124,8 @@ bool iam_config_create_default(struct nm_fs* fsImpl, const char* iamConfigFile)
 
     bool status = true;
     char* str = NULL;
-    if (!nm_iam_serializer_configuration_dump_json(iamConfig, &str)) {
-        status = false;
-    } else if(!string_file_save(fsImpl, iamConfigFile, str)) {
+    if (!nm_iam_serializer_configuration_dump_json(iamConfig, &str) ||
+        !string_file_save(fsImpl, iamConfigFile, str)) {
         status = false;
     }
 
