@@ -2,7 +2,7 @@
 
 #include <util/helper.hpp>
 
-#include <api/nabto_device_event_handler.h>
+#include <api/nabto_device_listener.h>
 #include <api/nabto_api_future_queue.h>
 
 #include <platform/np_platform.h>

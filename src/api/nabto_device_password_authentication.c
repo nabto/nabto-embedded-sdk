@@ -1,7 +1,7 @@
 #include "nabto_device_password_authentication.h"
 #include <api/nabto_device_defines.h>
 #include <api/nabto_device_error.h>
-#include <api/nabto_device_event_handler.h>
+#include <api/nabto_device_listener.h>
 #include <api/nabto_device_threads.h>
 #include <nabto/nabto_device_config.h>
 #include <nabto/nabto_device_experimental.h>
@@ -23,6 +23,7 @@ np_error_code nabto_device_password_authentication_listener_resolve_event(const 
 {
     (void)future; (void)eventData;
     struct nabto_device_listener* listener = listenerData;
+
     if (ec == NABTO_EC_OK) {
         // The item in eventData needs to be converted to data on the future.
         // eventData is a struct nabto_device_password_authentication_request
