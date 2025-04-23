@@ -52,7 +52,7 @@ np_error_code nc_spake2_set_password_request_callback(struct nc_spake2_module* m
     return NABTO_EC_OK;
 }
 
-struct nc_spake2_password_request* nc_spake2_password_request_new()
+struct nc_spake2_password_request* nc_spake2_password_request_new(void)
 {
     struct nc_spake2_password_request* passwordRequest = np_calloc(1, sizeof(struct nc_spake2_password_request));
     if (passwordRequest == NULL) {

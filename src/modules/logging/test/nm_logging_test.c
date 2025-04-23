@@ -24,7 +24,7 @@ static int common_strcasecmp(const char* s1, const char* s2)
 #endif
 }
 
-void nm_logging_test_init()
+void nm_logging_test_init(void)
 {
     np_log.log = &nm_test_log;
 

@@ -17,7 +17,7 @@ static struct nn_allocator defaultAllocator = {
     .calloc = nm_iam_calloc
 };
 
-struct nn_allocator* nm_iam_allocator_get()
+struct nn_allocator* nm_iam_allocator_get(void)
 {
     return &defaultAllocator;
 }

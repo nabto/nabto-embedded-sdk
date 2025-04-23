@@ -160,7 +160,7 @@ NABTO_DEVICE_DECL_PREFIX extern const NabtoDeviceError NABTO_DEVICE_EC_FAILED;
  * @return the new device instance, NULL on failure
  */
 NABTO_DEVICE_DECL_PREFIX NabtoDevice* NABTO_DEVICE_API
-nabto_device_new();
+nabto_device_new(void);
 
 /**
  * This function starts the device. It allocates the relevant
@@ -2544,7 +2544,7 @@ nabto_device_limit_tcp_tunnel_connections(NabtoDevice* device, const char* servi
  * @return Zero-terminated string with the device version
  */
 NABTO_DEVICE_DECL_PREFIX const char* NABTO_DEVICE_API
-nabto_device_version();
+nabto_device_version(void);
 
 /**
  * Get message assosiated with an error code. The returned pointer must not be freed.

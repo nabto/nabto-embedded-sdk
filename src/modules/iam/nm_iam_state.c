@@ -5,7 +5,7 @@
 #include <nn/string.h>
 #include <string.h>
 
-struct nm_iam_state* nm_iam_state_new()
+struct nm_iam_state* nm_iam_state_new(void)
 {
     struct nm_iam_state* s = nm_iam_calloc(1, sizeof(struct nm_iam_state));
     if (s == NULL) {

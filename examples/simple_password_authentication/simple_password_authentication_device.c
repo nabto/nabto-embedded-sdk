@@ -37,7 +37,7 @@ void signal_handler(int s);
 
 NabtoDevice* device_;
 
-static bool init_logging();
+static bool init_logging(void);
 
 int main(int argc, char* argv[]) {
 
@@ -102,7 +102,7 @@ int main(int argc, char* argv[]) {
     printf("Device cleaned up and closing\n");
 }
 
-bool init_logging() {
+bool init_logging(void) {
     if (nabto_device_set_log_std_out_callback(NULL) != NABTO_DEVICE_EC_OK) {
         return false;
     }

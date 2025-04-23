@@ -1,7 +1,7 @@
 #include <nabto/nabto_device.h>
 #include <nabto/nabto_device_experimental.h>
 
-int main() {
+int main(void) {
     NabtoDevice* device = nabto_device_new();
     nabto_device_set_log_std_out_callback(device);
 

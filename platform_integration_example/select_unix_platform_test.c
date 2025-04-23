@@ -49,7 +49,7 @@ int main(int argc, const char* argv[]) {
  *
  * The tests passes if logs is written to the console output.
  */
-void logging_test()
+void logging_test(void)
 {
     NabtoDevice* device = nabto_device_new();
     nabto_device_set_log_level(device, "trace");
@@ -66,7 +66,7 @@ void logging_test()
  *
  * The test passes if it does not block forever.
  */
-void future_test()
+void future_test(void)
 {
     NabtoDevice* device = nabto_device_new();
     NabtoDeviceFuture* fut = nabto_device_future_new(device);
@@ -80,7 +80,7 @@ void future_test()
 /**
  * Test the event queue system.
  */
-void event_queue_test()
+void event_queue_test(void)
 {
     NabtoDevice* device = nabto_device_new();
     NabtoDeviceFuture* future = nabto_device_future_new(device);
@@ -98,7 +98,7 @@ void event_queue_test()
 /**
  * Test timestamps
  */
-void timestamp_test()
+void timestamp_test(void)
 {
     NabtoDevice* device = nabto_device_new();
     uint32_t timestamp = 0;
@@ -112,7 +112,7 @@ void timestamp_test()
 /**
  * Test dns resolution
  */
-void dns_test()
+void dns_test(void)
 {
     NabtoDevice* device = nabto_device_new();
     NabtoDeviceFuture* future = nabto_device_future_new(device);
@@ -157,7 +157,7 @@ void tcp_test(const char* ip, uint16_t port)
     nabto_device_free(device);
 }
 
-void local_ip_test()
+void local_ip_test(void)
 {
     NabtoDevice* device = nabto_device_new();
     nabto_device_set_log_callback(device, log_callback, NULL);

@@ -1,7 +1,7 @@
 #ifndef NM_TCP_TUNNEL_CONNECTION_H_
 #define NM_TCP_TUNNEL_CONNECTION_H_
 
-struct nm_tcp_tunnel_connection* nm_tcp_tunnel_connection_new();
+struct nm_tcp_tunnel_connection* nm_tcp_tunnel_connection_new(void);
 void nm_tcp_tunnel_connection_free(struct nm_tcp_tunnel_connection* connection);
 
 np_error_code nm_tcp_tunnel_connection_init(struct nm_tcp_tunnel_service* service, struct nm_tcp_tunnel_connection* connection, struct nc_stream_context* stream);

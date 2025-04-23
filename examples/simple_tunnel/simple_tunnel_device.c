@@ -40,7 +40,7 @@ int serviceConcurrentConnectionsLimit = -1;
 #define NEWLINE "\n"
 
 void signal_handler(int s);
-NabtoDeviceError load_or_create_private_key();
+NabtoDeviceError load_or_create_private_key(void);
 
 NabtoDevice* device = NULL;
 
@@ -205,7 +205,7 @@ void signal_handler(int s)
     nabto_device_stop(device);
 }
 
-NabtoDeviceError load_or_create_private_key()
+NabtoDeviceError load_or_create_private_key(void)
 {
     NabtoDeviceError ec = 0;
     const char* privateKeyFileName = "device.key";

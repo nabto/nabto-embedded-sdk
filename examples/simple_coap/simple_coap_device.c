@@ -55,7 +55,7 @@ static int main_with_ctx(int argc, char* argv[], struct context* ctx);
 
 NabtoDevice* device_;
 
-static bool init_logging();
+static bool init_logging(void);
 
 int main(int argc, char* argv[])
 {
@@ -130,7 +130,7 @@ int main_with_ctx(int argc, char* argv[], struct context* ctx)
     return 0;
 }
 
-bool init_logging() {
+bool init_logging(void) {
     if (nabto_device_set_log_std_out_callback(NULL) != NABTO_DEVICE_EC_OK) {
         return false;
     }

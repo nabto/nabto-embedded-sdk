@@ -14,8 +14,8 @@ struct nm_libevent_context {
     struct event_base* eventBase;
 };
 
-void nm_libevent_global_init();
-void nm_libevent_global_deinit();
+void nm_libevent_global_init(void);
+void nm_libevent_global_deinit(void);
 bool nm_libevent_init(struct nm_libevent_context* ctx, struct event_base* eventBase);
 void nm_libevent_stop(struct nm_libevent_context* ctx);
 void nm_libevent_deinit(struct nm_libevent_context* ctx);

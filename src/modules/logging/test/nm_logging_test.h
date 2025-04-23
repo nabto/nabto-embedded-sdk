@@ -5,7 +5,7 @@
 extern "C" {
 #endif
 
-void nm_logging_test_init();
+void nm_logging_test_init(void);
 
 #ifdef __cplusplus
 } // extern c
