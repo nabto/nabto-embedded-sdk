@@ -8,7 +8,7 @@
 
 #include "nabto_device_authorization.h"
 #include "nabto_device_defines.h"
-#include "nabto_device_event_handler.h"
+#include "nabto_device_listener.h"
 
 #include <nn/string.h>
 
@@ -26,7 +26,6 @@ static void check_access(struct np_authorization_request* authorizationRequest, 
 /**
  * Helper functions
  */
-static void do_verdict(struct nabto_device_authorization_request* authReq, bool verdict);
 static void handle_verdict(void* userData);
 
 struct np_authorization_request* create_request(struct np_platform* pl, uint64_t connectionRef, const char* action)
@@ -92,11 +91,11 @@ void check_access(struct np_authorization_request* authorizationRequest, np_auth
     }
 
     // if we end here the request is not added to the listener.
-    do_verdict(authReq, false);
+    nabto_device_authorization_do_verdict(authReq, false);
 }
 
 
-void do_verdict(struct nabto_device_authorization_request* authReq, bool verdict)
+void nabto_device_authorization_do_verdict(struct nabto_device_authorization_request* authReq, bool verdict)
 {
     if (authReq->verdictDone == false) {
         struct np_platform* pl = authReq->module->pl;
@@ -118,7 +117,7 @@ nabto_device_authorization_request_free(NabtoDeviceAuthorizationRequest* request
 
     // Set the verdict if free is called without having set a verdict first.
     if (authReq->verdictDone == false) {
-        do_verdict(authReq, false);
+        nabto_device_authorization_do_verdict(authReq, false);
     }
 
     // free is called from the user application it has a reference to the authreq
@@ -137,7 +136,7 @@ nabto_device_authorization_request_verdict(NabtoDeviceAuthorizationRequest* requ
     struct nabto_device_context* dev = authReq->module->device;
 
     nabto_device_threads_mutex_lock(dev->eventMutex);
-    do_verdict(authReq, verdict);
+    nabto_device_authorization_do_verdict(authReq, verdict);
     nabto_device_threads_mutex_unlock(dev->eventMutex);
 }
 

@@ -3,8 +3,8 @@
 #include <api/nabto_device_defines.h>
 
 #include <api/nabto_device_error.h>
-#include <api/nabto_device_event_handler.h>
 #include <api/nabto_device_future.h>
+#include <api/nabto_device_listener.h>
 #include <core/nc_coap.h>
 #include <platform/np_allocator.h>
 #include <platform/np_logging.h>

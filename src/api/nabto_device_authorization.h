@@ -73,4 +73,6 @@ void nabto_device_authorization_init_module(struct nabto_device_context* context
 void nabto_device_authorization_request_ref_inc(struct nabto_device_authorization_request* authReq);
 void nabto_device_authorization_request_ref_dec(struct nabto_device_authorization_request* authReq);
 
+void nabto_device_authorization_do_verdict(struct nabto_device_authorization_request* authReq, bool verdict);
+
 #endif

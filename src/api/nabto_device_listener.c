@@ -1,4 +1,4 @@
-#include "nabto_device_event_handler.h"
+#include "nabto_device_listener.h"
 #include "nabto_device_defines.h"
 #include <api/nabto_device_error.h>
 

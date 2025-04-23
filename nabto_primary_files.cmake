@@ -113,7 +113,7 @@ set(ne_api_src
   ${root_dir}/src/api/nabto_device_ice_servers.c
   ${root_dir}/src/api/nabto_device_service_invocation.c
   ${root_dir}/src/api/nabto_device_util.c
-  ${root_dir}/src/api/nabto_device_event_handler.c
+  ${root_dir}/src/api/nabto_device_listener.c
   ${root_dir}/src/api/nabto_device_connection_events.c
   ${root_dir}/src/api/nabto_device_virtual_connection.c
   ${root_dir}/src/api/nabto_device_coap.c
