@@ -11,7 +11,9 @@ void device_event_handler_init(struct device_event_handler* handler, NabtoDevice
     handler->device = device;
     handler->listener = nabto_device_listener_new(device);
     handler->future = nabto_device_future_new(device);
-    nabto_device_device_events_init_listener(device, handler->listener);
+    if (handler->listener != NULL) {
+        nabto_device_device_events_init_listener(device, handler->listener);
+    }
 }
 
 void device_event_handler_deinit(struct device_event_handler* handler)
@@ -23,15 +25,17 @@ void device_event_handler_deinit(struct device_event_handler* handler)
 
 void device_event_handler_blocking_listener(struct device_event_handler* handler)
 {
-    while(true) {
-        nabto_device_listener_device_event(handler->listener, handler->future, &handler->event);
-        NabtoDeviceError ec = nabto_device_future_wait(handler->future);
-        if (ec != NABTO_DEVICE_EC_OK) {
-            return;
-        }
-        handle_event(handler, handler->event);
-        if (handler->event == NABTO_DEVICE_EVENT_CLOSED) {
-            return;
+    if (handler->future != NULL) {
+        while(true) {
+            nabto_device_listener_device_event(handler->listener, handler->future, &handler->event);
+            NabtoDeviceError ec = nabto_device_future_wait(handler->future);
+            if (ec != NABTO_DEVICE_EC_OK) {
+                return;
+            }
+            handle_event(handler, handler->event);
+            if (handler->event == NABTO_DEVICE_EVENT_CLOSED) {
+                return;
+            }
         }
     }
 }
