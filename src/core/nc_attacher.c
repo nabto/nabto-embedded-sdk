@@ -576,18 +576,6 @@ void handle_dtls_closed(struct nc_attach_context* ctx)
     reset_dtls_connection(ctx);
     // dtls_event_handler() only calls this after moduleState has been checked so we dont need to here
     switch(ctx->state) {
-        case NC_ATTACHER_STATE_DTLS_ATTACH_REQUEST:
-            // DTLS connect failed and dtls was closed, wait to retry
-            // Coap request payload could not be set maybe OOM
-            // DTLS was closed while waiting for coap response, most likely closed by peer, wait to retry
-            ctx->state = NC_ATTACHER_STATE_RETRY_WAIT;
-            handle_state_change(ctx);
-            break;
-        case NC_ATTACHER_STATE_ATTACHED:
-            // DTLS was closed while attached, closed by peer or keep alive timeout. Try reattach
-            ctx->state = NC_ATTACHER_STATE_RETRY_WAIT;
-            handle_state_change(ctx);
-            break;
         case NC_ATTACHER_STATE_REDIRECT:
             if (ctx->redirectAttempts >= MAX_REDIRECT_FOLLOW) {
                 ctx->state = NC_ATTACHER_STATE_RETRY_WAIT;
@@ -598,10 +586,13 @@ void handle_dtls_closed(struct nc_attach_context* ctx)
             handle_state_change(ctx);
             break;
         case NC_ATTACHER_STATE_ACCESS_DENIED_WAIT:
-
             // we have reset the dtls context
             break;
         default:
+            // DTLS connect failed and dtls was closed, wait to retry
+            // Coap request payload could not be set maybe OOM
+            // DTLS was closed while waiting for coap response, most likely closed by peer, wait to retry
+            // DTLS was closed while attached, closed by peer or keep alive timeout. Try reattach
             // states DNS, RETRY_WAIT, CLOSED does not have a DTLS connection which can be closed
             // If this impossible error happens, simply try reattach
             ctx->state = NC_ATTACHER_STATE_RETRY_WAIT;

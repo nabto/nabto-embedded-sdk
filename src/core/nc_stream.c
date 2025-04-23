@@ -149,7 +149,7 @@ void nc_stream_event(struct nc_stream_context* ctx)
                 nc_stream_handle_wait(ctx);
                 return;
             case ET_NOTHING:
-                return;
+                // fallthrough
             case ET_CLOSED:
                 return;
         }

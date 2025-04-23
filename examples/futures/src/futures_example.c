@@ -223,10 +223,9 @@ void request_callback(NabtoDeviceFuture* fut, NabtoDeviceError ec, void* data)
     // data is the request pointer we provided as context, let's cast
     // it.
     NabtoDeviceCoapRequest* req = (NabtoDeviceCoapRequest*)data;
-    if (ec == NABTO_DEVICE_EC_STOPPED) {
-        // We expected this as we stopped the listener
-    } else if (ec != NABTO_DEVICE_EC_OK) {
-        // An unexpected error occurred
+    if (ec == NABTO_DEVICE_EC_STOPPED || ec != NABTO_DEVICE_EC_OK) {
+        // We expected this as we stopped the listener or an unexpected error
+        // occurred
     } else {
         // We unexpectedly received a CoAP request before we stopped
         // the listener. We must handle it. When freeing the request
