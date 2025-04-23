@@ -74,15 +74,18 @@ int main(int argc, char** argv)
 
     printf("Nabto Embedded SDK Version %s\n", nabto_device_version());
 
-    if ((device = nabto_device_new()) == NULL ||
+    device = nabto_device_new();
+    if (device == NULL ||
         !start_device(device, productId, deviceId)) {
         handle_device_error(device, NULL, "Failed to start device");
         return -1;
     }
 
-    if ((listener = nabto_device_listener_new(device)) == NULL ||
+    listener = nabto_device_listener_new(device);
+    listenerFuture = nabto_device_future_new(device);
+    if (listener == NULL ||
         nabto_device_stream_init_listener(device, listener, 42) != NABTO_DEVICE_EC_OK ||
-        (listenerFuture = nabto_device_future_new(device)) == NULL)
+        listenerFuture == NULL)
     {
         handle_device_error(device, listener, "Failed to listen for streams");
         return -1;
@@ -213,7 +216,8 @@ bool start_device(NabtoDevice* dev, const char* productId, const char* deviceId)
     struct nm_fs fsImpl = nm_fs_posix_get_impl();
 
     if (!string_file_exists(&fsImpl, keyFile)) {
-        if ((ec = nabto_device_create_private_key(dev, &privateKey)) != NABTO_DEVICE_EC_OK) {
+        ec = nabto_device_create_private_key(dev, &privateKey);
+        if (ec != NABTO_DEVICE_EC_OK) {
             printf("Failed to create private key, ec=%s\n", nabto_device_error_get_message(ec));
             return false;
         }
@@ -230,7 +234,8 @@ bool start_device(NabtoDevice* dev, const char* productId, const char* deviceId)
         return false;
     }
 
-    if ((ec = nabto_device_set_private_key(dev, privateKey)) != NABTO_DEVICE_EC_OK) {
+    ec = nabto_device_set_private_key(dev, privateKey);
+    if (ec != NABTO_DEVICE_EC_OK) {
         printf("Failed to set private key, ec=%s\n", nabto_device_error_get_message(ec));
         return false;
     }

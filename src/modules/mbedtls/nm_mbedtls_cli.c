@@ -188,12 +188,11 @@ void nm_mbedtls_cli_deinit(struct np_platform* pl)
 
 np_error_code init_mbedtls_config(struct nm_mbedtls_cli_context* ctx, mbedtls_ssl_config* conf)
 {
-    int ret = 0;
-    if ((ret = mbedtls_ssl_config_defaults(conf,
-                                           MBEDTLS_SSL_IS_CLIENT,
-                                           MBEDTLS_SSL_TRANSPORT_DATAGRAM,
-                                           MBEDTLS_SSL_PRESET_DEFAULT)) != 0)
-    {
+    int ret = mbedtls_ssl_config_defaults(conf,
+        MBEDTLS_SSL_IS_CLIENT,
+        MBEDTLS_SSL_TRANSPORT_DATAGRAM,
+        MBEDTLS_SSL_PRESET_DEFAULT);
+    if (ret != 0) {
         NABTO_LOG_INFO(LOG,  " failed  ! mbedtls_ssl_config_defaults returned %d", ret );
         return NABTO_EC_UNKNOWN;
     }
@@ -230,24 +229,25 @@ np_error_code initialize_context(struct np_platform* pl)
     mbedtls_pk_init( &ctx->privateKey );
     mbedtls_x509_crt_init(&ctx->rootCerts);
 
-    int ret = 0;
     const char *pers = "dtls_client";
+    int ret = mbedtls_ctr_drbg_seed( &ctx->ctr_drbg, mbedtls_entropy_func, &ctx->entropy,
+        (const unsigned char *) pers,
+        strlen( pers ) );
 
-    if( ( ret = mbedtls_ctr_drbg_seed( &ctx->ctr_drbg, mbedtls_entropy_func, &ctx->entropy,
-                               (const unsigned char *) pers,
-                               strlen( pers ) ) ) != 0 ) {
+    if( ret != 0 ) {
         NABTO_LOG_INFO(LOG,  " failed  ! mbedtls_ctr_drbg_seed returned %d", ret );
         return NABTO_EC_UNKNOWN;
     }
 
-    np_error_code ec = NABTO_EC_OK;
-    if ((ec = init_mbedtls_config(ctx, &ctx->clientsConf)) != NABTO_EC_OK)
+    np_error_code ec = init_mbedtls_config(ctx, &ctx->clientsConf);
+    if (ec != NABTO_EC_OK)
     {
         return ec;
     }
     mbedtls_ssl_conf_authmode( &ctx->clientsConf, MBEDTLS_SSL_VERIFY_OPTIONAL );
 
-    if ((ec = init_mbedtls_config(ctx, &ctx->attachConf)) != NABTO_EC_OK)
+    ec = init_mbedtls_config(ctx, &ctx->attachConf);
+    if (ec != NABTO_EC_OK)
     {
         return ec;
     }
@@ -323,11 +323,11 @@ static np_error_code create_client_connection(
         *connection = NULL;
         return ec;
     }
-    int ret = 0;
 
     struct nm_mbedtls_cli_context* ctx = (struct nm_mbedtls_cli_context*)pl->dtlsCData;
 
-    if( ( ret = mbedtls_ssl_setup( &(*connection)->ssl, &ctx->clientsConf ) ) != 0 )
+    int ret = mbedtls_ssl_setup( &(*connection)->ssl, &ctx->clientsConf );
+    if( ret != 0 )
     {
         NABTO_LOG_INFO(LOG,  " failed  ! mbedtls_ssl_setup returned %d", ret );
         do_free_connection(*connection);
@@ -359,8 +359,8 @@ static np_error_code create_attach_connection(
 
     }
 
-    int ret = 0;
-    if( ( ret = mbedtls_ssl_setup( &(*connection)->ssl, &ctx->attachConf ) ) != 0 )
+    int ret = mbedtls_ssl_setup( &(*connection)->ssl, &ctx->attachConf );
+    if( ret != 0 )
     {
         NABTO_LOG_INFO(LOG,  " failed  ! mbedtls_ssl_setup returned %d", ret );
         do_free_connection(*connection);
@@ -368,7 +368,8 @@ static np_error_code create_attach_connection(
         return NABTO_EC_UNKNOWN;
     }
 
-    if( ( ret = mbedtls_ssl_set_hostname( &(*connection)->ssl, sni ) ) != 0 )
+    ret = mbedtls_ssl_set_hostname( &(*connection)->ssl, sni );
+    if( ret != 0 )
     {
         NABTO_LOG_INFO(LOG,  " failed  ! mbedtls_ssl_set_hostname returned %d", ret );
         do_free_connection(*connection);

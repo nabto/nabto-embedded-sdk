@@ -1,16 +1,10 @@
 Checks: '
-# bugprone*,
-bugprone-switch-missing-default-case,
-bugprone-macro-parentheses,
-bugprone-reserved-identifier,
-bugprone-narrowing-conversions,
-bugprone-implicit-widening-of-multiplication-result,
-# readability*,
-
-# These should possibly be fixed and reincluded
+bugprone*,
+-bugprone-multi-level-implicit-pointer-conversion,
+-bugprone-branch-clone,
 -clang-analyzer-unix.StdCLibraryFunctions,
 -clang-analyzer-optin.performance.Padding,
-
+# readability*,
 llvm-include-order,
 misc-no-recursion,
 # misc-unused-parameters,
@@ -20,3 +14,5 @@ misc-no-recursion,
 '
 WarningsAsErrors: '*'
 HeaderFilterRegex: '.*'
+
+
