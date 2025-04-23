@@ -167,15 +167,16 @@ void nm_tcp_tunnel_service_stream_listener_callback(np_error_code ec, struct nc_
 
     struct np_platform* pl = service->tunnels->device->pl;
     struct np_authorization_request* authReq = pl->authorization.create_request(pl, stream->connectionRef, "TcpTunnel:Connect");
-    if (authReq &&
-        pl->authorization.add_string_attribute(authReq, "TcpTunnel:ServiceId", service->id) == NABTO_EC_OK &&
-        pl->authorization.add_string_attribute(authReq, "TcpTunnel:ServiceType", service->type) == NABTO_EC_OK)
-    {
-        pl->authorization.check_access(authReq, service_stream_iam_callback, service->tunnels, serviceWeakPtr, stream);
-        return;
-    }
+    if (authReq) {
+        if ( pl->authorization.add_string_attribute(authReq, "TcpTunnel:ServiceId", service->id) == NABTO_EC_OK &&
+             pl->authorization.add_string_attribute(authReq, "TcpTunnel:ServiceType", service->type) == NABTO_EC_OK)
+        {
+            pl->authorization.check_access(authReq, service_stream_iam_callback, service->tunnels, serviceWeakPtr, stream);
+            return;
+        }
 
-    pl->authorization.discard_request(authReq);
+        pl->authorization.discard_request(authReq);
+    }
     nc_stream_destroy(stream);
 }
 

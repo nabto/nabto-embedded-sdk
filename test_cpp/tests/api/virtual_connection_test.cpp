@@ -295,6 +295,54 @@ BOOST_AUTO_TEST_CASE(execute_coap)
     nabto_device_virtual_coap_request_free(req);
 }
 
+BOOST_AUTO_TEST_CASE(auth_request)
+{
+    nabto::test::TestDevice td;
+
+    auto dev = td.device_;
+    auto listener = nabto_device_listener_new(dev);
+    auto authFut = nabto_device_future_new(dev);
+    NabtoDeviceAuthorizationRequest* authReq = NULL;
+    nabto_device_authorization_request_init_listener(dev, listener);
+    nabto_device_listener_new_authorization_request(listener, authFut, &authReq);
+
+    NabtoDeviceVirtualConnection* conn = td.makeConnection();
+
+    NabtoDeviceVirtualCoapRequest* req = nabto_device_virtual_coap_request_new(conn, NABTO_DEVICE_COAP_GET, "/tcp-tunnels/services");
+
+    BOOST_TEST((req != NULL));
+
+    NabtoDeviceFuture* fut = nabto_device_future_new(td.device_);
+
+    nabto_device_virtual_coap_request_execute(req, fut);
+
+    NabtoDeviceError ec = nabto_device_future_wait(authFut);
+
+    nabto_device_authorization_request_verdict(authReq, true);
+    nabto_device_authorization_request_free(authReq);
+
+    ec = nabto_device_future_wait(fut);
+
+    uint16_t status;
+    BOOST_TEST(nabto_device_virtual_coap_request_get_response_status_code(req, &status) == NABTO_DEVICE_EC_OK);
+    BOOST_TEST(status == 205);
+
+    uint16_t cf;
+    BOOST_TEST(nabto_device_virtual_coap_request_get_response_content_format(req, &cf) == NABTO_DEVICE_EC_OK);
+    BOOST_TEST(cf == NABTO_COAP_CONTENT_FORMAT_APPLICATION_CBOR);
+
+    BOOST_TEST(ec == NABTO_DEVICE_EC_OK);
+    nabto_device_future_free(fut);
+
+    nabto_device_virtual_coap_request_free(req);
+    nabto_device_listener_new_authorization_request(listener, authFut, &authReq);
+    nabto_device_listener_stop(listener);
+    ec = nabto_device_future_wait(authFut);
+    BOOST_TEST(ec == NABTO_DEVICE_EC_STOPPED);
+    nabto_device_listener_free(listener);
+    nabto_device_future_free(authFut);
+}
+
 BOOST_AUTO_TEST_CASE(execute_coap_no_free)
 {
     std::vector<NabtoDeviceCoapRequest*> cleanUpRequests;

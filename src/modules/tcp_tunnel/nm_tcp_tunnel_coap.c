@@ -86,7 +86,6 @@ void list_services(struct nc_coap_server_request* request, void* data)
     }
 
     // Could not make the iam request
-    pl->authorization.discard_request(authReq);
     nc_coap_server_send_error_response(request, (nabto_coap_code)(NABTO_COAP_CODE(5,00)), "Out of resources");
     nc_coap_server_request_free(request);
 }
@@ -226,16 +225,17 @@ void get_service_action(struct nc_coap_server_request* request, struct nm_tcp_tu
 
     struct np_platform* pl = tunnels->device->pl;
     struct np_authorization_request* authReq = pl->authorization.create_request(pl, nc_coap_server_request_get_connection_ref(request), action);
-    if (authReq &&
-        pl->authorization.add_string_attribute(authReq, "TcpTunnel:ServiceId", service->id) == NABTO_EC_OK &&
-        pl->authorization.add_string_attribute(authReq, "TcpTunnel:ServiceType", service->type) == NABTO_EC_OK)
-    {
-        pl->authorization.check_access(authReq, get_service_iam, tunnels, request, NULL);
-        return;
+    if (authReq) {
+        if ( pl->authorization.add_string_attribute(authReq, "TcpTunnel:ServiceId", service->id) == NABTO_EC_OK &&
+            pl->authorization.add_string_attribute(authReq, "TcpTunnel:ServiceType", service->type) == NABTO_EC_OK)
+        {
+            pl->authorization.check_access(authReq, get_service_iam, tunnels, request, NULL);
+            return;
+        }
+        pl->authorization.discard_request(authReq);
     }
 
     // Could not make the iam request
-    pl->authorization.discard_request(authReq);
     nc_coap_server_send_error_response(request, (nabto_coap_code)(NABTO_COAP_CODE(5,00)), NULL);
     nc_coap_server_request_free(request);
 }
