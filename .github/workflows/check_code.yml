@@ -9,12 +9,17 @@ jobs:
   build-and-test:
     timeout-minutes: 20
     name: Build
-    runs-on: ${{matrix.workflow.os}}
+    runs-on: ${{matrix.os}}
     strategy:
       matrix:
-        workflow:
-          - os: ubuntu-24.04
+        include:
+          - os: ubuntu-24.05
+            workflow: werror
+          - os: ubuntu-24.05
+            workflow: clang_tidy
           - os: macos-15
+            workflow: werror
+
     steps:
       - if: matrix.workflow.os == 'ubuntu-24.04'
         name: Install Ninja
@@ -27,7 +32,5 @@ jobs:
         with:
           submodules: recursive
           fetch-depth: 0
-      - name: Build werror
-        run: cmake --workflow --preset werror
-      - name: Build clang tidy
-        run: cmake --workflow --preset clang_tidy
+      - name: Build
+        run: cmake --workflow --preset ${{matrix.workflow}}
