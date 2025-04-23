@@ -23,10 +23,6 @@ np_error_code nabto_device_password_authentication_listener_resolve_event(const 
 {
     (void)future; (void)eventData;
     struct nabto_device_listener* listener = listenerData;
-    if (ec == NABTO_EC_ABORTED) {
-        struct nabto_device_context* dev = listener->dev;
-        nc_spake2_clear_password_request_callback(&dev->core.spake2);
-    }
 
     if (ec == NABTO_EC_OK) {
         // The item in eventData needs to be converted to data on the future.
