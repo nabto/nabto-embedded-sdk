@@ -9,11 +9,20 @@ jobs:
   build-and-test:
     timeout-minutes: 20
     name: Build
-    runs-on: "ubuntu-24.04"
-
+    runs-on: ${{matrix.workflow.os}}
+    strategy:
+      matrix:
+        workflow:
+          - os: ubuntu-24.04
+          - os: macos-15
     steps:
-      - name: Install compiler
-        run: sudo apt update && sudo apt install -y build-essential cmake git ninja-build
+      - if: matrix.workflow.os == 'ubuntu-24.04'
+        name: Install Ninja
+        run: sudo apt-get update && sudo apt-get install -y ninja-build build-essential cmake git
+
+      - if: matrix.workflow.os == 'macos-15'
+        name: Install Ninja
+        run: brew install ninja
       - uses: actions/checkout@v4
         with:
           submodules: recursive
