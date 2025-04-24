@@ -1,10 +1,15 @@
 # Changelog
 
-## [Unreleased]
+## [5.14.0] 2025-04-24
+
+### Added
+ * Code linting to generally improve code quality.
+
 
 ### Bug fixes
  * Reintroduce the mistakenly removed `Fingerprint` field to user objects in IAM CoAP responses.
  * Add breaking change warning to 5.13.0 changelog
+ * A lot of minor findings from code linting.
 
 ### Changed
  * The reintroduced `Fingerprint` field is deprecated.
@@ -13,6 +18,9 @@
  * * `nabto_device_remove_tcp_tunnel_service_metadata()`
  * * `nabto_device_service_invocation_get_response_message_format()`
  * * `nabto_device_ice_servers_request_*()`
+ * Cmake build has been changed to rely on vcpkg if dependencies are not provided by the system.
+
+
 
 ## [5.13.0] 2024-03-21
 
