@@ -172,6 +172,7 @@ static void start_handle_listener(struct coap_request_handler* handler);
 
 void coap_listener_future_resolved(NabtoDeviceFuture* future, NabtoDeviceError ec, void* userData)
 {
+    (void)future;
     struct coap_request_handler* handler = (struct coap_request_handler*)userData;
     if (ec == NABTO_DEVICE_EC_OK) {
         // Handle coap request.

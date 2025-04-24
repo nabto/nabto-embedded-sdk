@@ -587,11 +587,11 @@ bool handle_main(struct args* args, struct tcp_tunnel* tunnel)
             return false;
         }
 
-        struct nn_string_map_iterator it;
-        NN_STRING_MAP_FOREACH(it, &service->metadata)
+        struct nn_string_map_iterator mapIt;
+        NN_STRING_MAP_FOREACH(mapIt, &service->metadata)
         {
-            const char* key = nn_string_map_key(&it);
-            const char* val = nn_string_map_value(&it);
+            const char* key = nn_string_map_key(&mapIt);
+            const char* val = nn_string_map_value(&mapIt);
             ec = nabto_device_add_tcp_tunnel_service_metadata(tunnel->device, service->id, key, val);
             if (ec != NABTO_DEVICE_EC_OK) {
                 printf("Cannot add tcp tunnel service meta data" NEWLINE);

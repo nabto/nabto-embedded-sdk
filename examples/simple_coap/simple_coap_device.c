@@ -81,6 +81,9 @@ int main(int argc, char* argv[])
 
 int main_with_ctx(int argc, char* argv[], struct context* ctx)
 {
+    if (argc < 3) {
+        return -1;
+    }
     char* productId = argv[1];
     char* deviceId = argv[2];
 

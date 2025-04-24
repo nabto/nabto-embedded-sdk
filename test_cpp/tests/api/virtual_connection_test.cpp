@@ -87,6 +87,7 @@ public:
 
     static void get_request_callback(NabtoDeviceFuture* fut, NabtoDeviceError ec, void* data)
     {
+        (void)fut;
         TestDevice* self = (TestDevice*)data;
         self->onRequest_(ec, self->request_);
         if (ec == NABTO_DEVICE_EC_OK) {
@@ -108,6 +109,7 @@ public:
 
     static void pass_request_callback(NabtoDeviceFuture* fut, NabtoDeviceError ec, void* data)
     {
+        (void)fut;
         // TODO: rearm future if multiple requests are required
         TestDevice* self = (TestDevice*)data;
         self->onPass_(ec, self->passReq_);

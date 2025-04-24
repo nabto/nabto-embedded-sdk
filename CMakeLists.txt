@@ -46,7 +46,6 @@ option(DEVICE_BUILD_TESTS "build device tests" OFF)
 
 option(DEVICE_BUILD_APPS "build applications" ON)
 
-option(DEVICE_STATIC_LINK_VCRUNTIME "Static link visual c runtime" OFF)
 option(DEVICE_MBEDTLS_2 "Set this to true if the device is built against mbedtls version 2" ON)
 
 option(NABTO_DEVICE_PREFER_SYSTEM_LIBS "Prefer system libraries" OFF)
@@ -60,11 +59,6 @@ option(NABTO_DEVICE_USE_SYSTEM_NLOHMANNJSON "use nlohmann_json from the system" 
 option(NABTO_DEVICE_USE_SYSTEM_LIBEVENT "use libevent from the system" ${NABTO_DEVICE_PREFER_SYSTEM_LIBS})
 
 set(NABTO_DEVICE_VERSION "" CACHE STRING "use this version instead of getting the version from the git tag")
-
-if (DEVICE_STATIC_LINK_VCRUNTIME)
-  cmake_policy(SET CMP0091 NEW)
-  set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>")
-endif()
 
 add_subdirectory(3rdparty/gopt)
 
@@ -176,6 +170,7 @@ CHECK_INCLUDE_FILES("winsock2.h" HAVE_WINSOCK2_H)
 CHECK_INCLUDE_FILES("io.h" HAVE_IO_H)
 CHECK_INCLUDE_FILES("pthread.h" HAVE_PTHREAD_H)
 CHECK_INCLUDE_FILES("windows.h" HAVE_WINDOWS_H)
+CHECK_INCLUDE_FILES("direct.h" HAVE_DIRECT_H)
 CHECK_INCLUDE_FILES("ifaddrs.h" HAVE_IFADDRS_H)
 CHECK_INCLUDE_FILES("net/if.h" HAVE_NET_IF_H)
 CHECK_INCLUDE_FILES("arpa/inet.h" HAVE_ARPA_INET_H)
@@ -227,6 +222,10 @@ endif()
 
 if (HAVE_WINDOWS_H)
   add_definitions(-DHAVE_WINDOWS_H)
+endif()
+
+if (HAVE_DIRECT_H)
+  add_definitions(-DHAVE_DIRECT_H)
 endif()
 
 if (HAVE_IFADDRS_H)

@@ -67,6 +67,7 @@ static struct datetime getTimestamp(void) {
 
 void nabto_device_logging_std_out_callback(NabtoDeviceLogMessage* msg, void* data)
 {
+    (void)data;
 
     struct datetime ts = getTimestamp();
 

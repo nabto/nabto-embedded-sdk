@@ -46,6 +46,8 @@ class AttachTest {
 
     static void udpEvent(enum nc_device_event event, void* data)
     {
+        (void)event;
+        (void)data;
         // we do not test udp socket failures here, just ignore event
     }
 
@@ -843,6 +845,7 @@ BOOST_AUTO_TEST_CASE(get_turn, *boost::unit_test::timeout(300))
 
     at.start([identifier](nabto::test::AttachTest& at) {
         at.getTurnServers(identifier, [identifier](nabto::test::AttachTest& at, const np_error_code ec, struct nc_attacher_request_ice_servers_context* ctx){
+            (void)ec;
             void* elm;
             NN_VECTOR_FOREACH_REFERENCE(elm, &ctx->iceServers) {
                 struct nc_attacher_ice_server* ts = (struct nc_attacher_ice_server*)elm;

@@ -12,6 +12,10 @@
 #include <io.h>
 #endif
 
+#ifdef HAVE_DIRECT_H
+#include <direct.h>
+#endif
+
 #include <sys/stat.h>
 #include <sys/types.h>
 
@@ -37,7 +41,8 @@ struct nm_fs nm_fs_posix_get_impl(void)
 
 static enum nm_fs_error create_directory(void* impl, const char* path)
 {
-#if defined(_WIN32)
+    (void)impl;
+#if defined(HAVE_DIRECT_H)
     _mkdir(path);
 #else
     mkdir(path, 0777);
@@ -47,6 +52,7 @@ static enum nm_fs_error create_directory(void* impl, const char* path)
 
 static enum nm_fs_error exists(void* impl, const char* path)
 {
+    (void)impl;
     int ec = 0;
 #if defined(HAVE_IO_H)
     ec = _access( path, 0 );
@@ -61,6 +67,7 @@ static enum nm_fs_error exists(void* impl, const char* path)
 
 static enum nm_fs_error size(void* impl, const char* path, size_t* fileSize)
 {
+    (void)impl;
     FILE* f = fopen(path, "rb");
     enum nm_fs_error status = NM_FS_UNKNOWN;
     if (f == NULL) {
@@ -86,7 +93,8 @@ static enum nm_fs_error size(void* impl, const char* path, size_t* fileSize)
 
 static enum nm_fs_error read_file(void* impl, const char* path, void* buffer, size_t bufferSize, size_t* readLength)
 {
-   FILE* f = fopen(path, "rb");
+    (void)impl;
+    FILE* f = fopen(path, "rb");
     if (f == NULL) {
         if (errno == ENOENT) {
             return NM_FS_NO_ENTRY;
@@ -110,6 +118,7 @@ static enum nm_fs_error read_file(void* impl, const char* path, void* buffer, si
 
 static enum nm_fs_error write_file(void* impl, const char* path, const uint8_t* content, size_t contentSize)
 {
+    (void)impl;
     enum nm_fs_error status = NM_FS_OK;
 
     FILE* f = fopen(path, "wb");

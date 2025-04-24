@@ -259,6 +259,7 @@ void dns_cb(int result, struct evutil_addrinfo *res, void *arg)
 
 void dns_cb_deferred(const np_error_code cbec, void* userData)
 {
+    (void)cbec;
     struct nm_dns_request* ctx = userData;
     struct nm_libevent_dns* moduleContext = ctx->moduleContext;
     np_error_code ec = NABTO_EC_OK;

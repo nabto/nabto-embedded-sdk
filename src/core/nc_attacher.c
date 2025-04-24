@@ -781,6 +781,7 @@ np_error_code dtls_packet_sender(uint8_t ch, uint8_t* buffer, uint16_t bufferSiz
                                  struct np_completion_event* cb,
                                  void* senderData)
 {
+    (void)ch;
     struct nc_attach_context* ctx = (struct nc_attach_context*)senderData;
     if (!ctx->hasActiveEp) {
         // We have yet to find suitable endpoint
@@ -828,6 +829,8 @@ void initial_packet_sent(const np_error_code ec, void* userData)
 
 void dtls_data_handler(uint8_t ch, uint64_t seq, uint8_t* buffer, uint16_t bufferSize, void* data)
 {
+    (void)ch;
+    (void)seq;
     struct nc_attach_context* ctx = (struct nc_attach_context*)data;
 
     if (bufferSize < 1) {

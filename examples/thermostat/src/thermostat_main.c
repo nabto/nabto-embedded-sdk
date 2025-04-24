@@ -375,6 +375,8 @@ bool parse_args(int argc, char** argv, struct args* args)
 
 void close_callback(NabtoDeviceFuture* future, NabtoDeviceError ec, void* data)
 {
+    (void)ec;
+    (void)data;
     nabto_device_future_free(future);
 }
 

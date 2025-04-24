@@ -282,6 +282,8 @@ void nm_mbedtls_util_check_logging(mbedtls_ssl_config* conf)
 #if defined(NABTO_DEVICE_DTLS_LOG)
     mbedtls_debug_set_threshold( 4 ); // Max debug threshold, NABTO_LOG_RAW will handle log levels
     mbedtls_ssl_conf_dbg( conf, my_debug, NULL);
+#else
+    (void)conf;
 #endif
 }
 
