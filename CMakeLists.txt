@@ -46,7 +46,6 @@ option(DEVICE_BUILD_TESTS "build device tests" OFF)
 
 option(DEVICE_BUILD_APPS "build applications" ON)
 
-option(DEVICE_STATIC_LINK_VCRUNTIME "Static link visual c runtime" OFF)
 option(DEVICE_MBEDTLS_2 "Set this to true if the device is built against mbedtls version 2" ON)
 
 option(NABTO_DEVICE_PREFER_SYSTEM_LIBS "Prefer system libraries" OFF)
@@ -60,11 +59,6 @@ option(NABTO_DEVICE_USE_SYSTEM_NLOHMANNJSON "use nlohmann_json from the system" 
 option(NABTO_DEVICE_USE_SYSTEM_LIBEVENT "use libevent from the system" ${NABTO_DEVICE_PREFER_SYSTEM_LIBS})
 
 set(NABTO_DEVICE_VERSION "" CACHE STRING "use this version instead of getting the version from the git tag")
-
-if (DEVICE_STATIC_LINK_VCRUNTIME)
-  cmake_policy(SET CMP0091 NEW)
-  set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>")
-endif()
 
 add_subdirectory(3rdparty/gopt)
 

@@ -78,9 +78,9 @@
             "inherits": [ "base", "vcpkg_base"],
             "cacheVariables": {
                 "VCPKG_TARGET_TRIPLET": "x64-windows-static",
-                "DEVICE_STATIC_LINK_VCRUNTIME": "ON",
                 "CMAKE_BUILD_TYPE": "Release",
-                "DEVICE_BUILD_TESTS": "ON"
+                "DEVICE_BUILD_TESTS": "ON",
+                "CMAKE_MSVC_RUNTIME_LIBRARY": "MultiThreaded"
             }
         },
         {
@@ -150,9 +150,9 @@
             "configurePreset": "mac_fetchcontent_universal",
             "targets": ["install"]
         },
-
         {
             "name": "windows_vcpkg_static",
+            "configuration": "Release",
             "configurePreset": "windows_vcpkg_static",
             "targets": ["install"]
         },
