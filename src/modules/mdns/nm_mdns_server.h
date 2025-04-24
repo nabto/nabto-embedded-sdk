@@ -17,6 +17,13 @@
 #define MDNS_MAX_LOCAL_IPS 2
 #define NM_MDNS_SEND_BUFFER_SIZE 1500
 
+enum nm_mdns_server_state {
+    NEW,
+    RUNNING,
+    CLOSED,
+    STOPPED
+};
+
 // v4 or v6 server
 struct nm_mdns_server_instance {
     struct nm_mdns_server* server;
@@ -32,8 +39,7 @@ struct nm_mdns_server_instance {
 };
 
 struct nm_mdns_server {
-    bool running;
-    bool stopped;
+    enum nm_mdns_server_state state;
     uint16_t port;
     struct nabto_mdns_server_context mdnsServer;
     struct nn_ip_address localIps[MDNS_MAX_LOCAL_IPS];
