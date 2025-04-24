@@ -18,10 +18,10 @@
 #define NM_MDNS_SEND_BUFFER_SIZE 1500
 
 enum nm_mdns_server_state {
-    NEW,
-    RUNNING,
-    CLOSED,
-    STOPPED
+    NM_MDNS_SERVER_NEW,
+    NM_MDNS_SERVER_RUNNING,
+    NM_MDNS_SERVER_CLOSED,
+    NM_MDNS_SERVER_STOPPED
 };
 
 // v4 or v6 server
