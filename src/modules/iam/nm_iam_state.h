@@ -61,7 +61,7 @@ struct nm_iam_state {
  *
  * @return NULL iff the state could not be created
  */
-struct nm_iam_state* nm_iam_state_new();
+struct nm_iam_state* nm_iam_state_new(void);
 
 /**
  * Free IAM state if the ownership was not transfered to an

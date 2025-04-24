@@ -17,7 +17,7 @@ endif()
 if (version_out)
   set(VERSION "#include \"nc_version.h\"\n
 static const char* nc_version_str = \"${version_out}\"\n;
-const char* nc_version() { return nc_version_str; }\n")
+const char* nc_version(void) { return nc_version_str; }\n")
 
   if(EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/nc_version.c)
     file(READ ${CMAKE_CURRENT_SOURCE_DIR}/nc_version.c VERSION_)

@@ -91,8 +91,8 @@ static bool run_thermostat_device(NabtoDevice* device, struct thermostat* thermo
 
 // Functions to print info to stdout
 static void print_missing_device_config_help(const char* filename);
-static void print_help();
-static void print_version();
+static void print_help(void);
+static void print_version(void);
 
 static void thermostat_reinit_state(struct thermostat* thermostat, struct nm_fs* fsImpl, struct thermostat_file* thermostatFile, struct thermostat_state_file_backend* tsfb);
 
@@ -443,7 +443,7 @@ void print_missing_device_config_help(const char* filename)
     printf("Run the Thermostat with --init to create a device configuration" NEWLINE);
 }
 
-void print_help() {
+void print_help(void) {
     printf(" -h,--help      print help" NEWLINE);
     printf("    --version   Show version" NEWLINE);
     printf("    --init      Initialize the Thermostat. Will reset state if run on existing homedir." NEWLINE);
@@ -455,7 +455,7 @@ void print_help() {
     printf(" --random-ports Use random ports such that several devices can be running at the same time. The device can still be discovered locally." NEWLINE);
 }
 
-void print_version() {
+void print_version(void) {
     printf("%s" NEWLINE, thermostatVersion);
 }
 

@@ -3,6 +3,6 @@
 
 #include <modules/fs/nm_fs.h>
 
-struct nm_fs nm_fs_posix_get_impl();
+struct nm_fs nm_fs_posix_get_impl(void);
 
 #endif

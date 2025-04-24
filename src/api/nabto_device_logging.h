@@ -9,7 +9,7 @@
 extern "C" {
 #endif
 
-void nabto_device_logging_init();
+void nabto_device_logging_init(void);
 void nabto_device_logging_set_level(uint32_t level);
 void nabto_device_logging_set_callback(NabtoDeviceLogCallback cb, void* data);
 void nabto_device_logging_std_out_callback(NabtoDeviceLogMessage* msg, void* data);

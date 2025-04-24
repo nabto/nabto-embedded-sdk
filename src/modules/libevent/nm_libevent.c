@@ -16,7 +16,7 @@
 
 static int useCount = 0;
 
-void nm_libevent_global_init()
+void nm_libevent_global_init(void)
 {
     if (useCount == 0) {
 #ifdef _WIN32
@@ -35,7 +35,7 @@ void nm_libevent_global_init()
     useCount++;
 }
 
-void nm_libevent_global_deinit()
+void nm_libevent_global_deinit(void)
 {
     useCount--;
     if (useCount == 0) {

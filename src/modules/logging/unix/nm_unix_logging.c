@@ -11,7 +11,7 @@
 
 static void nm_unix_log (uint32_t severity, uint32_t module, uint32_t line, const char* file, const char* fmt, va_list args);
 
-void nm_logging_unix_init()
+void nm_logging_unix_init(void)
 {
     np_log.log = &nm_unix_log;
 }

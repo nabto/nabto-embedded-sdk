@@ -101,17 +101,17 @@ static void print_iam_state(struct nm_iam_state* state);
 static void iam_user_changed(struct nm_iam* iam, void* userData);
 static bool make_directory(const char* directory);
 
-static struct tcp_tunnel* tcp_tunnel_new();
+static struct tcp_tunnel* tcp_tunnel_new(void);
 static void tcp_tunnel_free(struct tcp_tunnel* tunnel);
 
 static void print_service_info_and_check_reachability(struct tcp_tunnel* tunnel, bool selfTest);
 
-struct nn_allocator* get_default_allocator()
+struct nn_allocator* get_default_allocator(void)
 {
     return &defaultAllocator;
 }
 
-void print_version()
+void print_version(void)
 {
     printf("TCP Tunnel Device Version: %s" NEWLINE, nabto_device_version());
 }
@@ -283,7 +283,7 @@ void args_deinit(struct args* args)
     free(args->homeDir);
 }
 
-struct tcp_tunnel* tcp_tunnel_new()
+struct tcp_tunnel* tcp_tunnel_new(void)
 {
     struct tcp_tunnel* tunnel = calloc(1, sizeof(struct tcp_tunnel));
     if (tunnel == NULL) {

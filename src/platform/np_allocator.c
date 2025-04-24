@@ -26,7 +26,7 @@ void np_free(void* ptr) {
     allocator.free(ptr);
 }
 
-struct nn_allocator* np_allocator_get() {
+struct nn_allocator* np_allocator_get(void) {
     return &allocator;
 }
 

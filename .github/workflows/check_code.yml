@@ -9,16 +9,28 @@ jobs:
   build-and-test:
     timeout-minutes: 20
     name: Build
-    runs-on: "ubuntu-24.04"
+    runs-on: ${{matrix.os}}
+    strategy:
+      matrix:
+        include:
+          - os: ubuntu-24.04
+            workflow: werror
+          - os: ubuntu-24.04
+            workflow: clang_tidy
+          - os: macos-15
+            workflow: werror
 
     steps:
-      - name: Install compiler
-        run: sudo apt update && sudo apt install -y build-essential cmake git ninja-build
+      - if: matrix.workflow.os == 'ubuntu-24.04'
+        name: Install Ninja
+        run: sudo apt-get update && sudo apt-get install -y ninja-build build-essential cmake git
+
+      - if: matrix.workflow.os == 'macos-15'
+        name: Install Ninja
+        run: brew install ninja
       - uses: actions/checkout@v4
         with:
           submodules: recursive
           fetch-depth: 0
-      - name: Build werror
-        run: cmake --workflow --preset werror
-      - name: Build clang tidy
-        run: cmake --workflow --preset clang_tidy
+      - name: Build
+        run: cmake --workflow --preset ${{matrix.workflow}}

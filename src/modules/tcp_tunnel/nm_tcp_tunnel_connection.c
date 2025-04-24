@@ -36,7 +36,7 @@ static void the_end(struct nm_tcp_tunnel_connection* connection);
 /**
  * called from the tunnel manager
  */
-struct nm_tcp_tunnel_connection* nm_tcp_tunnel_connection_new()
+struct nm_tcp_tunnel_connection* nm_tcp_tunnel_connection_new(void)
 {
     struct nm_tcp_tunnel_connection* connection = np_calloc(1,sizeof(struct nm_tcp_tunnel_connection));
     if (connection == NULL) {

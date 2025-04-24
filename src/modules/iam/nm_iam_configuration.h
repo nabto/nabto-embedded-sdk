@@ -123,7 +123,7 @@ struct nm_iam_configuration {
  *
  * @return NULL iff the configuration could not be created
  */
-struct nm_iam_configuration* nm_iam_configuration_new();
+struct nm_iam_configuration* nm_iam_configuration_new(void);
 
 /**
  * Free IAM configuration if the ownership was not transfered to an

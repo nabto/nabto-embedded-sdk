@@ -80,7 +80,7 @@ static void release_blocks(Block *scan, Block *to) {
     }
 }
 
-static void compact() {
+static void compact(void) {
     Block *ptr = heap->free;
     Block *prev;
     Block *scan;
@@ -253,18 +253,18 @@ static size_t count_blocks(Block *ptr) {
     return num;
 }
 
-size_t ta_num_free() {
+size_t ta_num_free(void) {
     return count_blocks(heap->free);
 }
 
-size_t ta_num_used() {
+size_t ta_num_used(void) {
     return count_blocks(heap->used);
 }
 
-size_t ta_num_fresh() {
+size_t ta_num_fresh(void) {
     return count_blocks(heap->fresh);
 }
 
-bool ta_check() {
+bool ta_check(void) {
     return heap_max_blocks == ta_num_free() + ta_num_used() + ta_num_fresh();
 }

@@ -19,7 +19,7 @@ static void logging_log(uint32_t severity, uint32_t module,
                         uint32_t line, const char* file,
                         const char* fmt, va_list args);
 
-void nabto_device_logging_init()
+void nabto_device_logging_init(void)
 {
     np_log.log = &logging_log;
 }

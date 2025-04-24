@@ -55,7 +55,7 @@ void nabto_device_do_stop(struct nabto_device_context* dev);
 
 static void nabto_device_platform_closed_cb(const np_error_code ec, void* userData);
 
-const char* NABTO_DEVICE_API nabto_device_version()
+const char* NABTO_DEVICE_API nabto_device_version(void)
 {
     return nc_version();
 }
@@ -70,7 +70,7 @@ void nabto_device_new_resolve_failure(struct nabto_device_context* dev)
 /**
  * Allocate new device
  */
-NabtoDevice* NABTO_DEVICE_API nabto_device_new()
+NabtoDevice* NABTO_DEVICE_API nabto_device_new(void)
 {
     struct nabto_device_context* dev = np_calloc(1, sizeof(struct nabto_device_context));
     if (dev == NULL) {

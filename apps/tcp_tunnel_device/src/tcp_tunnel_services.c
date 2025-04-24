@@ -10,7 +10,7 @@ static struct tcp_tunnel_service* service_from_json(cJSON* json, struct nn_log* 
 
 static const char* LOGM = "services";
 
-struct tcp_tunnel_service* tcp_tunnel_service_new()
+struct tcp_tunnel_service* tcp_tunnel_service_new(void)
 {
     struct tcp_tunnel_service* service = calloc(1, sizeof(struct tcp_tunnel_service));
     if (service == NULL) {

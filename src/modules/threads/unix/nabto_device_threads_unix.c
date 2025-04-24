@@ -24,7 +24,7 @@ struct nabto_device_condition {
 };
 
 
-struct nabto_device_thread* nabto_device_threads_create_thread()
+struct nabto_device_thread* nabto_device_threads_create_thread(void)
 {
     struct nabto_device_thread* thread = np_calloc(1, sizeof(struct nabto_device_thread));
     if (thread == NULL) {
@@ -33,7 +33,7 @@ struct nabto_device_thread* nabto_device_threads_create_thread()
     return thread;
 }
 
-struct nabto_device_mutex* nabto_device_threads_create_mutex()
+struct nabto_device_mutex* nabto_device_threads_create_mutex(void)
 {
     struct nabto_device_mutex* mut = (struct nabto_device_mutex*)np_calloc(1, sizeof(struct nabto_device_mutex));
     if (mut == NULL) {
@@ -46,7 +46,7 @@ struct nabto_device_mutex* nabto_device_threads_create_mutex()
     return mut;
 }
 
-struct nabto_device_condition* nabto_device_threads_create_condition()
+struct nabto_device_condition* nabto_device_threads_create_condition(void)
 {
     struct nabto_device_condition* cond = (struct nabto_device_condition*)np_calloc(1, sizeof(struct nabto_device_condition));
     if (cond == NULL) {

@@ -9,7 +9,7 @@
 #include <nn/string.h>
 #include <string.h>
 
-struct nm_iam_configuration* nm_iam_configuration_new()
+struct nm_iam_configuration* nm_iam_configuration_new(void)
 {
     struct nm_iam_configuration* c = nm_iam_calloc(1, sizeof(struct nm_iam_configuration));
     if (c == NULL) {

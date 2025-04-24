@@ -15,7 +15,7 @@ static struct np_local_ip_functions module = {
     .get_local_ips = get_local_ips
 };
 
-struct np_local_ip nm_unix_local_ip_get_impl()
+struct np_local_ip nm_unix_local_ip_get_impl(void)
 {
     struct np_local_ip obj;
     obj.mptr = &module;

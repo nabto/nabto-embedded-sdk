@@ -49,7 +49,7 @@ void nc_spake2_password_ready(struct nc_spake2_password_request* req, const char
 
 void nc_spake2_password_request_free(struct nc_spake2_password_request* passwordRequest);
 
-struct nc_spake2_password_request* nc_spake2_password_request_new();
+struct nc_spake2_password_request* nc_spake2_password_request_new(void);
 
 void nc_spake2_spend_token(struct nc_spake2_module* module);
 

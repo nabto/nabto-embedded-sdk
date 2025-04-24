@@ -34,7 +34,7 @@
 
 #define LOG NABTO_LOG_MODULE_TEST
 
-NabtoDevice* NABTO_DEVICE_API nabto_device_test_new()
+NabtoDevice* NABTO_DEVICE_API nabto_device_test_new(void)
 {
 
     struct nabto_device_context* dev = np_calloc(1, sizeof(struct nabto_device_context));

@@ -44,11 +44,11 @@ bool readyToStop = false;
 // Helper functions
 bool start_device(NabtoDevice* device);
 void handle_device_error(NabtoDevice* d, NabtoDeviceListener* l, NabtoDeviceFuture* f, char* msg);
-void do_important_work();
+void do_important_work(void);
 void handle_coap_request(NabtoDeviceCoapRequest* request);
 void request_callback(NabtoDeviceFuture* fut, NabtoDeviceError ec, void* data);
 
-int main()
+int main(void)
 {
     NabtoDeviceError ec = 0;
 
@@ -319,7 +319,7 @@ bool start_device(NabtoDevice* device)
     return true;
 }
 
-void do_important_work()
+void do_important_work(void)
 {
   //sleep:
   #ifdef _WIN32

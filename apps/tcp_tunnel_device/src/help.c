@@ -2,7 +2,7 @@
 #include "help.h"
 #include <stdio.h>
 #define NEWLINE "\n"
-void print_help() {
+void print_help(void) {
     printf("%s" NEWLINE, "TCP Tunnel Device Help.");
     printf("%s" NEWLINE, "");
     printf("%s" NEWLINE, "# Arguments.");

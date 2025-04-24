@@ -23,7 +23,7 @@ static enum nm_fs_error size(void* impl, const char* path, size_t* fileSize);
 static enum nm_fs_error read_file(void* impl, const char* path, void* buffer, size_t bufferSize, size_t* readLength);
 static enum nm_fs_error write_file(void* impl, const char* path, const uint8_t* content, size_t contentSize);
 
-struct nm_fs nm_fs_posix_get_impl()
+struct nm_fs nm_fs_posix_get_impl(void)
 {
     struct nm_fs impl;
     impl.impl = NULL;

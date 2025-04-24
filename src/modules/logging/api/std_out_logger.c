@@ -26,7 +26,7 @@ struct datetime {
 };
 
 
-static struct datetime getTimestamp() {
+static struct datetime getTimestamp(void) {
     struct datetime ts;
 #if defined(HAVE_SYS_TIME_H)
     struct timeval tv;
