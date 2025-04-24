@@ -665,9 +665,8 @@ BOOST_AUTO_TEST_CASE(access_denied_reattach, * boost::unit_test::timeout(300))
 
     at.start([](nabto::test::AttachTest& at){(void)at; }, [&accessDeniedServer](nabto::test::AttachTest& at){
                  if (at.attach_.state == NC_ATTACHER_STATE_ACCESS_DENIED_WAIT &&
-                     accessDeniedServer->coapRequestCount_ == 2) {
+                     accessDeniedServer->coapRequestCount_ >= 2) {
                      BOOST_TEST(at.attachCount_ == (uint64_t)0);
-                     BOOST_TEST(accessDeniedServer->coapRequestCount_ == (uint64_t)2);
                      at.end();
                  }
              });

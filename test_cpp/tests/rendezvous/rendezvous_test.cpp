@@ -42,6 +42,10 @@ public:
 
         payload = nlohmann::json::to_cbor(jsonPay);
     }
+
+    ~RendezvousTestCtx() {
+        nc_rendezvous_deinit(&rendezvous);
+    }
 };
 
 } } // namespaces
@@ -59,7 +63,7 @@ BOOST_AUTO_TEST_CASE(rendezvous_payload_v4, *boost::unit_test::timeout(300))
     jsonPay.push_back(jsonEp);
 
 
-    auto ctx = nabto::test::RendezvousTestCtx(jsonPay);
+    nabto::test::RendezvousTestCtx ctx(jsonPay);
 
     bool ret = handle_rendezvous_payload(&ctx.ctx, &ctx.request, ctx.payload.data(), ctx.payload.size());
     BOOST_TEST(ret);
@@ -76,7 +80,7 @@ BOOST_AUTO_TEST_CASE(rendezvous_payload_v6, *boost::unit_test::timeout(300))
     jsonEp["Port"] = 4444;
     jsonPay.push_back(jsonEp);
 
-    auto ctx = nabto::test::RendezvousTestCtx(jsonPay);
+    nabto::test::RendezvousTestCtx ctx(jsonPay);
 
     bool ret = handle_rendezvous_payload(&ctx.ctx, &ctx.request, ctx.payload.data(), ctx.payload.size());
     BOOST_TEST(ret);
@@ -102,7 +106,7 @@ BOOST_AUTO_TEST_CASE(rendezvous_payload_combi, *boost::unit_test::timeout(300))
         jsonPay.push_back(jsonEp);
     }
 
-    auto ctx = nabto::test::RendezvousTestCtx(jsonPay);
+    nabto::test::RendezvousTestCtx ctx(jsonPay);
 
     bool ret = handle_rendezvous_payload(&ctx.ctx, &ctx.request, ctx.payload.data(), ctx.payload.size());
     BOOST_TEST(ret);
@@ -119,7 +123,7 @@ BOOST_AUTO_TEST_CASE(rendezvous_payload_v4_mapped, *boost::unit_test::timeout(30
     jsonEp["Port"] = 4444;
     jsonPay.push_back(jsonEp);
 
-    auto ctx = nabto::test::RendezvousTestCtx(jsonPay);
+    nabto::test::RendezvousTestCtx ctx(jsonPay);
 
     bool ret = handle_rendezvous_payload(&ctx.ctx, &ctx.request, ctx.payload.data(), ctx.payload.size());
     BOOST_TEST(ret);
@@ -136,7 +140,7 @@ BOOST_AUTO_TEST_CASE(rendezvous_payload_invalid, *boost::unit_test::timeout(300)
     jsonEp["Port"] = 0;
     jsonPay.push_back(jsonEp);
 
-    auto ctx = nabto::test::RendezvousTestCtx(jsonPay);
+    nabto::test::RendezvousTestCtx ctx(jsonPay);
 
     bool ret = handle_rendezvous_payload(&ctx.ctx, &ctx.request, ctx.payload.data(), ctx.payload.size());
     BOOST_TEST(ret);
@@ -156,7 +160,7 @@ BOOST_AUTO_TEST_CASE(rendezvous_payload_invalid2, *boost::unit_test::timeout(300
 
     jsonPay.push_back(jsonArr);
 
-    auto ctx = nabto::test::RendezvousTestCtx(jsonPay);
+    nabto::test::RendezvousTestCtx ctx(jsonPay);
 
     bool ret = handle_rendezvous_payload(&ctx.ctx, &ctx.request, ctx.payload.data(), ctx.payload.size());
     BOOST_TEST(!ret);
@@ -171,7 +175,7 @@ BOOST_AUTO_TEST_CASE(rendezvous_payload_invalid3, *boost::unit_test::timeout(300
 
     jsonPay.push_back(jsonEp);
 
-    auto ctx = nabto::test::RendezvousTestCtx(jsonPay);
+    nabto::test::RendezvousTestCtx ctx(jsonPay);
 
     bool ret = handle_rendezvous_payload(&ctx.ctx, &ctx.request, ctx.payload.data(), ctx.payload.size());
     BOOST_TEST(!ret);
@@ -189,7 +193,7 @@ BOOST_AUTO_TEST_CASE(rendezvous_payload_invalid4, *boost::unit_test::timeout(300
     jsonPay.push_back(jsonEp);
     jsonPay.push_back(jsonEp);
 
-    auto ctx = nabto::test::RendezvousTestCtx(jsonPay);
+    nabto::test::RendezvousTestCtx ctx(jsonPay);
 
     bool ret = handle_rendezvous_payload(&ctx.ctx, &ctx.request, ctx.payload.data(), ctx.payload.size());
     BOOST_TEST(!ret); // Invalid endpoints are ignored so we expect true
@@ -207,7 +211,7 @@ BOOST_AUTO_TEST_CASE(rendezvous_payload_invalid5, *boost::unit_test::timeout(300
     jsonEp["Port"] = 0;
     jsonPay.push_back(jsonEp);
 
-    auto ctx = nabto::test::RendezvousTestCtx(jsonPay);
+    nabto::test::RendezvousTestCtx ctx(jsonPay);
 
     auto pl = ctx.payload;
     auto it = pl.end();

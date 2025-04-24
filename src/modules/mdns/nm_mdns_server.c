@@ -95,8 +95,7 @@ static void instance_deinit(struct nm_mdns_server_instance* instance)
 // initialize the mdns server
 np_error_code nm_mdns_server_init(struct nm_mdns_server* server, struct np_event_queue* eq, struct np_udp* udp, struct nm_mdns_udp_bind* mdnsUdpBind, struct np_local_ip* localIp)
 {
-    server->stopped = false;
-    server->running = false;
+    server->state = NM_MDNS_SERVER_NEW;
     server->eq = *eq;
     server->udp = *udp;
     server->mdnsUdpBind = *mdnsUdpBind;
@@ -126,9 +125,7 @@ void v4_closed(const np_error_code ec, void* userData)
 {
     struct nm_mdns_server* server = userData;
     if (ec != NABTO_EC_OK) {
-        np_completion_event_resolve(server->closedCompletionEvent, ec);
-        server->closedCompletionEvent = NULL;
-        return;
+        NABTO_LOG_INFO(LOG, "v4 closed with error. Trying V6");
     }
     np_completion_event_reinit(&server->instanceCloseCompletionEvent, v6_closed, server);
     nm_mdns_server_close_instance(&server->v6, &server->instanceCloseCompletionEvent);
@@ -147,10 +144,11 @@ void nm_mdns_server_close(struct nm_mdns_server* server, struct np_completion_ev
         np_completion_event_resolve(closedEvent, NABTO_EC_OPERATION_IN_PROGRESS);
         return;
     }
-    if (!server->running) {
+    if (server->state != NM_MDNS_SERVER_RUNNING) {
         np_completion_event_resolve(closedEvent, NABTO_EC_OK);
         return;
     }
+    server->state = NM_MDNS_SERVER_CLOSED;
     server->closedCompletionEvent = closedEvent;
     np_completion_event_reinit(&server->instanceCloseCompletionEvent, v4_closed, server);
     nm_mdns_server_close_instance(&server->v4, &server->instanceCloseCompletionEvent);
@@ -171,6 +169,7 @@ void nm_mnds_server_close_instance_udp_sent_callback(const np_error_code ec, voi
 void nm_mdns_server_close_instance(struct nm_mdns_server_instance* instance, struct np_completion_event* completionEvent)
 {
     if (instance->sendBuffer != NULL) {
+        NABTO_LOG_INFO(LOG, "Tried to send mDNS goodbye but is already sending");
         np_completion_event_resolve(completionEvent, NABTO_EC_OPERATION_IN_PROGRESS);
         return;
     }
@@ -213,7 +212,7 @@ void nm_mdns_server_instance_stop(struct nm_mdns_server* server, struct nm_mdns_
 
 void nm_mdns_server_stop(struct nm_mdns_server* server)
 {
-    server->stopped = true;
+    server->state = NM_MDNS_SERVER_STOPPED;
     nm_mdns_server_instance_stop(server, &server->v4);
     nm_mdns_server_instance_stop(server, &server->v6);
 }
@@ -223,17 +222,19 @@ void publish_service(struct np_mdns* obj, uint16_t port, const char* instanceNam
     struct nm_mdns_server* server = obj->data;
 
 
-    if (!server->running) {
-        server->running = true;
+    if (server->state == NM_MDNS_SERVER_NEW) {
+        server->state = NM_MDNS_SERVER_RUNNING;
         nabto_mdns_server_init(&server->mdnsServer);
 
         nm_mdns_udp_bind_async_ipv4(&server->mdnsUdpBind, server->v4.socket, &server->v4.openedCompletionEvent);
         nm_mdns_udp_bind_async_ipv6(&server->mdnsUdpBind, server->v6.socket, &server->v6.openedCompletionEvent);
     }
 
-    server->port = port;
-    nabto_mdns_server_update_info(&server->mdnsServer, instanceName, subtypes, txtItems);
-
+    if (server->state == NM_MDNS_SERVER_RUNNING) {
+        // Do not publish from closed/stopped states
+        server->port = port;
+        nabto_mdns_server_update_info(&server->mdnsServer, instanceName, subtypes, txtItems);
+    }
 }
 
 void unpublish_service(struct np_mdns* obj)
@@ -264,7 +265,8 @@ void nm_mdns_update_local_ips(struct nm_mdns_server* mdns)
 void nm_mdns_socket_opened(const np_error_code ec, void* userData)
 {
     struct nm_mdns_server_instance* instance = userData;
-    if (instance->server->stopped) {
+    if (instance->server->state == NM_MDNS_SERVER_STOPPED ||
+        instance->server->state == NM_MDNS_SERVER_CLOSED) {
         return;
     }
     if (ec == NABTO_EC_OK) {
@@ -277,19 +279,18 @@ void nm_mdns_socket_opened(const np_error_code ec, void* userData)
 
 void nm_mdns_recv_packet(struct nm_mdns_server_instance* instance)
 {
-    np_udp_async_recv_wait(&instance->server->udp, instance->socket, &instance->recvWaitCompletionEvent);
+    if (instance->server->state == NM_MDNS_SERVER_RUNNING) {
+        np_udp_async_recv_wait(&instance->server->udp, instance->socket, &instance->recvWaitCompletionEvent);
+    }
 }
 
 void nm_mdns_packet_recv_wait_completed(const np_error_code ecIn, void* userData)
 {
     struct nm_mdns_server_instance* instance = userData;
 
-    if (instance->server->stopped) {
-        return;
-    }
-
-    if (ecIn == NABTO_EC_ABORTED) {
-        // Ok, the application has closed the socket.
+    if (instance->server->state == NM_MDNS_SERVER_STOPPED ||
+        instance->server->state == NM_MDNS_SERVER_CLOSED ||
+        ecIn == NABTO_EC_ABORTED) {
         return;
     }
 
@@ -345,16 +346,18 @@ void nm_mdns_packet_recv_wait_completed(const np_error_code ecIn, void* userData
 
 void nm_mdns_send_packet(struct nm_mdns_server_instance* instance, uint16_t id, bool unicastResponse)
 {
-    size_t written = 0;
     uint16_t port = instance->server->port;
-    nm_mdns_update_local_ips(instance->server);
 
-    struct np_udp_endpoint* ep = &instance->sendEp;
-    if (unicastResponse) {
-        ep = &instance->recvEp;
-    }
+    if (instance->server->state == NM_MDNS_SERVER_RUNNING &&
+        instance->sendBuffer == NULL &&
+        port > 0) {
+        size_t written = 0;
+        nm_mdns_update_local_ips(instance->server);
 
-    if (port > 0) {
+        struct np_udp_endpoint* ep = &instance->sendEp;
+        if (unicastResponse) {
+            ep = &instance->recvEp;
+        }
         instance->sendBuffer = np_calloc(1, NM_MDNS_SEND_BUFFER_SIZE);
         if (instance->sendBuffer == NULL) {
             NABTO_LOG_ERROR(LOG, "Cannot allocate buffer for sending mdns packet");
