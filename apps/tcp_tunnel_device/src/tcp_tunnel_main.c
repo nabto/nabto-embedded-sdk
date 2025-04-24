@@ -667,7 +667,10 @@ bool handle_main(struct args* args, struct tcp_tunnel* tunnel)
     } else {
         struct device_event_handler eventHandler;
 
-        device_event_handler_init(&eventHandler, tunnel->device);
+        if (!device_event_handler_init(&eventHandler, tunnel->device)) {
+            printf("Could not initialize the device event handler." NEWLINE);
+            return false;
+        }
 
         nm_iam_set_state_changed_callback(&iam, iam_user_changed, tunnel);
 
