@@ -19,6 +19,8 @@ jobs:
             workflow: clang_tidy
           - os: macos-15
             workflow: werror
+          - os: windows-2022
+            workflow: "windows_werror"
 
     steps:
       - if: matrix.workflow.os == 'ubuntu-24.04'

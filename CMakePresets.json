@@ -117,7 +117,15 @@
                 "CMAKE_C_FLAGS": "-Wall -pedantic",
                 "CMAKE_CXX_FLAGS": "-Wall -pedantic"
             }
+        },
+        {
+            "name": "windows_werror",
+            "inherits": ["windows_vcpkg_static"],
+            "cacheVariables": {
+                "CMAKE_COMPILE_WARNING_AS_ERROR": "ON"
+            }
         }
+
     ],
     "buildPresets": [
         {
@@ -173,6 +181,11 @@
         {
             "name": "werror",
             "configurePreset": "werror"
+        },
+        {
+            "name": "windows_werror",
+            "configuration": "Release",
+            "configurePreset": "windows_werror"
         }
     ],
     "workflowPresets": [
@@ -317,6 +330,19 @@
                 {
                     "type": "build",
                     "name": "werror"
+                }
+            ]
+        },
+        {
+            "name": "windows_werror",
+            "steps": [
+                {
+                    "type": "configure",
+                    "name": "windows_werror"
+                },
+                {
+                    "type": "build",
+                    "name": "windows_werror"
                 }
             ]
         }
