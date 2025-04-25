@@ -4,12 +4,14 @@
 
 ### Added
  * Code linting to generally improve code quality.
+ * Two new device events. A `WATCHDOG_FAILURE` if the core attacher stops unexpectedly. A `PLATFORM_FAILURE` if a platform integration module fails with an unrecoverable error.
 
 
 ### Bug fixes
  * Reintroduce the mistakenly removed `Fingerprint` field to user objects in IAM CoAP responses.
  * Add breaking change warning to 5.13.0 changelog
  * A lot of minor findings from code linting.
+ * Fix bug where bad coap request payloads could break the core.
 
 ### Changed
  * The reintroduced `Fingerprint` field is deprecated.
@@ -19,7 +21,7 @@
  * * `nabto_device_service_invocation_get_response_message_format()`
  * * `nabto_device_ice_servers_request_*()`
  * Cmake build has been changed to rely on vcpkg if dependencies are not provided by the system.
-
+ * Updated mbedtls to latest version
 
 
 ## [5.13.0] 2024-03-21
