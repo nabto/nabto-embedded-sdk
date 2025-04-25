@@ -290,6 +290,10 @@ np_error_code is_connected_ec(struct np_tcp_socket* sock)
         // Wait for next event
         return NABTO_EC_AGAIN;
     }
+    if (err == ECONNREFUSED) {
+        NABTO_LOG_TRACE(LOG, "Cannot connect socket %s", strerror(err));
+        return NABTO_EC_ABORTED;
+    }
     NABTO_LOG_ERROR(LOG, "Cannot connect socket %s", strerror(err));
     return NABTO_EC_UNKNOWN;
 }
