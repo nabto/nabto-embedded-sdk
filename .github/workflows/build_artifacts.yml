@@ -168,7 +168,10 @@ jobs:
       matrix:
         friendly_name: [linux_x86_64, linux_armv6, linux_armhf, linux_aarch64, windows, macos]
         binary: [tcp_tunnel_device, thermostat_device]
-        suffix: [linux_x86_64, linux_armv6, linux_armhf, linux_aarch64, windows.zip, macos]
+        include:
+          - file_suffix: .zip
+            friendly_name: windows
+
     name: Release Assets
     needs: [ build, build-linux-arm ]
     runs-on: ubuntu-22.04
@@ -190,6 +193,6 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           upload_url: ${{ github.event.release.upload_url }}
-          asset_path: ./${{matrix.friendly_name}}/${{matrix.binary}}_${{matrix.suffix}}
-          asset_name: ${{matrix.binary}}_${{matrix.suffix}}
+          asset_path: ./${{matrix.friendly_name}}/${{matrix.binary}}_${{matrix.friendly_name}}${{matrix.file_suffix}}
+          asset_name: ${{matrix.binary}}_${{matrix.friendly_name}}${{matrix.file_suffix}}
           asset_content_type: application/octet-stream
