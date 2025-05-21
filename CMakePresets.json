@@ -84,6 +84,20 @@
             }
         },
         {
+            "name": "windows_nabto_device_dll",
+            "inherits": [ "base", "vcpkg_base"],
+            "cacheVariables": {
+                "VCPKG_TARGET_TRIPLET": "x64-windows-static-md",
+                "BUILD_SHARED_LIBS": "OFF",
+                "CMAKE_BUILD_TYPE": "Release",
+                "DEVICE_BUILD_TESTS": "OFF",
+                "DEVICE_BUILD_APPS": "OFF",
+                "DEVICE_BUILD_EXAMPLES": "OFF",
+                "DEVICE_BUILD_NABTO_DEVICE_DLL": "ON",
+                "CMAKE_MSVC_RUNTIME_LIBRARY": "MultiThreadedDLL"
+            }
+        },
+        {
             "name": "test_ansi_c99",
             "inherits": ["base", "unix_base"],
             "environment": {
@@ -162,6 +176,12 @@
             "name": "windows_vcpkg_static",
             "configuration": "Release",
             "configurePreset": "windows_vcpkg_static",
+            "targets": ["install"]
+        },
+        {
+            "name": "windows_nabto_device_dll",
+            "configuration": "Release",
+            "configurePreset": "windows_nabto_device_dll",
             "targets": ["install"]
         },
         {
@@ -304,6 +324,19 @@
                 {
                     "type": "build",
                     "name": "windows_vcpkg_static"
+                }
+            ]
+        },
+        {
+            "name": "windows_nabto_device_dll",
+            "steps": [
+                {
+                    "type": "configure",
+                    "name": "windows_nabto_device_dll"
+                },
+                {
+                    "type": "build",
+                    "name": "windows_nabto_device_dll"
                 }
             ]
         },
