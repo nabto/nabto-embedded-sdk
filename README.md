@@ -43,22 +43,21 @@ export CC=/opt/hisi-linux-nptl/arm-hisiv100-linux/target/bin/arm-hisiv100-gcc
 
 #### Windows
 
-The easiest way is to just use a cmake workflow:
+The easiest way to build on Windows is to use a CMake workflow:
 
-```
+```bash
 cmake --workflow --preset windows_vcpkg_static
 ```
 
-This builds static linked libraries and static linked applications which static links the vc runtime into the applications and libraries.
+This builds statically linked libraries and applications, including the VC runtime. The resulting executables can be found in the `build\windows_vcpkg_static\install` folder.
 
-Then run the desired executables which is in the
-`build\windows_vcpkg_static\install` folder.
+If you need a dynamic `nabto_device.dll` instead, use the `windows_nabto_device_dll` preset:
 
-Sometimes a dynamic nabto_device.dll file is needed, this can be built with static linked libraries but a dynamic vc runtime using the preset windows_nabto_device_dll. This target only builds the nabto_device.dll and not the iam library nor the example applications.
-```
+```bash
 cmake --workflow --preset windows_nabto_device_dll
 ```
 
+This builds a dynamic `nabto_device.dll` using statically linked dependencies but with a dynamically linked VC runtime. Note that this preset builds **only** the `nabto_device.dll`, it does **not** include the IAM library or any example applications.
 
 ### Building with externally supplied packages
 
