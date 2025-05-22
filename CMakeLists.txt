@@ -49,6 +49,7 @@ option(DEVICE_BUILD_APPS "build applications" ON)
 option(DEVICE_MBEDTLS_2 "Set this to true if the device is built against mbedtls version 2" ON)
 
 option(NABTO_DEVICE_PREFER_SYSTEM_LIBS "Prefer system libraries" OFF)
+option(DEVICE_BUILD_NABTO_DEVICE_DLL "Build a nabto_device.dll even when BUILD_SHARED_LIBS=OFF" OFF)
 
 option(NABTO_DEVICE_USE_SYSTEM_MBEDTLS "use mbedtls from the system" ${NABTO_DEVICE_PREFER_SYSTEM_LIBS})
 option(NABTO_DEVICE_USE_SYSTEM_TINYCBOR "use tinycbor from the system" ${NABTO_DEVICE_PREFER_SYSTEM_LIBS})
