@@ -59,6 +59,26 @@ cmake --workflow --preset windows_nabto_device_dll
 
 This builds a dynamic `nabto_device.dll` using statically linked dependencies but with a dynamically linked VC runtime. Note that this preset builds **only** the `nabto_device.dll`, it does **not** include the IAM library or any example applications.
 
+
+### Override the version number.
+
+The version number is automatically generated from the git tag when building
+from a clean repository which has a specific tag, otherwise the version is made
+up from various information such as the latest git commit etc.
+
+In some build environments it is necessary to provide version information
+manually, this can be done with the CMake variable `NABTO_DEVICE_VERSION` which
+should be set to a semantic version string.
+
+Because of CMake limitations it is not possible to specify a custom CMake
+variable to the a CMake workflow, instead run the configure command separately
+from the build command.
+
+```
+cmake --preset linux_vcpkg -DNABTO_DEVICE_VERSION="<semver>"
+cmake --build --preset linux_vcpkg --target install
+```
+
 ### Building with externally supplied packages
 
 The nabto embedded SDK, apps, examples and tests each relies on a subset of the following libraries/packages
