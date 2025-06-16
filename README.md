@@ -63,20 +63,21 @@ This builds a dynamic `nabto_device.dll` using statically linked dependencies bu
 ### Override the version number.
 
 The version number is automatically generated from the git tag when building
-from a clean repository which has a specific tag. If the repository is unclean
-the version is not related to tags etc, but contains a information such as the
-git commit and if the repository was dirty.
+from a clean repository which has a specific tag, otherwise the version is made
+up from various information such as the latest git commit etc.
 
 In some build environments it is necessary to provide version information
-manually, this can be done with the cmake variable `NABTO_DEVICE_VERSION` which
+manually, this can be done with the CMake variable `NABTO_DEVICE_VERSION` which
 should be set to a semantic version string.
 
-because of cmake limitations it is not possible to specify a custom variable to
-the cmake workflow command, instead run the configure command separately from
-the build command.
+Because of CMake limitations it is not possible to specify a custom CMake
+variable to the a CMake workflow, instead run the configure command separately
+from the build command.
 
+```
 cmake --preset linux_vcpkg -DNABTO_DEVICE_VERSION="<semver>"
 cmake --build --preset linux_vcpkg --target install
+```
 
 ### Building with externally supplied packages
 
