@@ -51,7 +51,7 @@ cmake --workflow --preset windows_vcpkg_static
 
 This builds statically linked libraries and applications, including the VC runtime. The resulting executables can be found in the `build\windows_vcpkg_static\install` folder.
 
-### Building shared libs.
+### Building shared libs
 
 The functionality defined in the `include/nabto/nabto_device*.h` header files
 can be built into a single shared library called `nabto_device.dll`,
@@ -77,7 +77,7 @@ Note that the resulting shared library **only** contains the `nabto_device`
 functionality, it dows **not** include the IAM library or other modules found in
 the `src/modules` folder.
 
-### Override the version number.
+### Overriding the version number
 
 The version number is automatically generated from the git tag when building
 from a clean repository which has a specific tag, otherwise the version is made
