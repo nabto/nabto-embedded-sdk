@@ -84,17 +84,34 @@
             }
         },
         {
-            "name": "windows_nabto_device_dll",
-            "inherits": [ "base", "vcpkg_base"],
+            "name": "shared_library",
             "cacheVariables": {
-                "VCPKG_TARGET_TRIPLET": "x64-windows-static-md",
                 "BUILD_SHARED_LIBS": "OFF",
                 "CMAKE_BUILD_TYPE": "Release",
                 "DEVICE_BUILD_TESTS": "OFF",
                 "DEVICE_BUILD_APPS": "OFF",
                 "DEVICE_BUILD_EXAMPLES": "OFF",
-                "DEVICE_BUILD_NABTO_DEVICE_DLL": "ON",
+                "NABTO_DEVICE_BUILD_SHARED_LIBRARY": "ON"
+            }
+        },
+        {
+            "name": "windows_shared_library",
+            "inherits": [ "base", "vcpkg_base", "shared_library"],
+            "cacheVariables": {
+                "VCPKG_TARGET_TRIPLET": "x64-windows-static-md",
                 "CMAKE_MSVC_RUNTIME_LIBRARY": "MultiThreadedDLL"
+            }
+        },
+        {
+            "name": "linux_shared_library",
+            "inherits": [ "base", "vcpkg_base", "shared_library"]
+        },
+        {
+            "name": "mac_arm64_shared_library",
+            "inherits": [ "base", "vcpkg_base", "shared_library"],
+            "cacheVariables": {
+                "CMAKE_OSX_ARCHITECTURES": "arm64",
+                "VCPKG_TARGET_TRIPLET": "arm64-osx"
             }
         },
         {
@@ -179,9 +196,21 @@
             "targets": ["install"]
         },
         {
-            "name": "windows_nabto_device_dll",
+            "name": "windows_shared_library",
             "configuration": "Release",
-            "configurePreset": "windows_nabto_device_dll",
+            "configurePreset": "windows_shared_library",
+            "targets": ["install"]
+        },
+        {
+            "name": "linux_shared_library",
+            "configuration": "Release",
+            "configurePreset": "linux_shared_library",
+            "targets": ["install"]
+        },
+        {
+            "name": "mac_arm64_shared_library",
+            "configuration": "Release",
+            "configurePreset": "mac_arm64_shared_library",
             "targets": ["install"]
         },
         {
@@ -328,15 +357,41 @@
             ]
         },
         {
-            "name": "windows_nabto_device_dll",
+            "name": "windows_shared_library",
             "steps": [
                 {
                     "type": "configure",
-                    "name": "windows_nabto_device_dll"
+                    "name": "windows_shared_library"
                 },
                 {
                     "type": "build",
-                    "name": "windows_nabto_device_dll"
+                    "name": "windows_shared_library"
+                }
+            ]
+        },
+        {
+            "name": "linux_shared_library",
+            "steps": [
+                {
+                    "type": "configure",
+                    "name": "linux_shared_library"
+                },
+                {
+                    "type": "build",
+                    "name": "linux_shared_library"
+                }
+            ]
+        },
+        {
+            "name": "mac_arm64_shared_library",
+            "steps": [
+                {
+                    "type": "configure",
+                    "name": "mac_arm64_shared_library"
+                },
+                {
+                    "type": "build",
+                    "name": "mac_arm64_shared_library"
                 }
             ]
         },

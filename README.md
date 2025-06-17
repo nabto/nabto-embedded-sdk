@@ -59,6 +59,30 @@ cmake --workflow --preset windows_nabto_device_dll
 
 This builds a dynamic `nabto_device.dll` using statically linked dependencies but with a dynamically linked VC runtime. Note that this preset builds **only** the `nabto_device.dll`, it does **not** include the IAM library or any example applications.
 
+### Building shared libs.
+
+The functionality defined in the `include/nabto/nabto_device*.h` header files
+can be built into a single shared library called `nabto_device.dll`,
+`libnabto_device.dylib` or `libnabto_device.so` depending on the platform.
+
+It is not enough to use the CMake variable `BUILD_SHARED_LIBS` as that builds
+every single component into their own shared library. Instead there is a CMake
+variable called `NABTO_DEVICE_BUILD_SHARED_LIBRARY` which when set to `ON`
+builds the `nabto_device` artifacts as a shared library. Other dependencies from
+this repository and the nabto_common repository is linked in as static
+libraries.
+
+The following CMake targets builds shared libraries on Windows, Linux and Mac
+
+```
+cmake --workflow --preset windows_shared_library
+cmake --workflow --preset linux_shared_library
+cmake --workflow --preset mac_arm64_shared_library
+```
+
+Note that the resulting shared library **only** contains the `nabto_device`
+functionality, it dows **not** include the IAM library or other modules found in
+the `src/modules` folder.
 
 ### Override the version number.
 
