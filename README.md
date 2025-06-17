@@ -51,14 +51,6 @@ cmake --workflow --preset windows_vcpkg_static
 
 This builds statically linked libraries and applications, including the VC runtime. The resulting executables can be found in the `build\windows_vcpkg_static\install` folder.
 
-If you need a dynamic `nabto_device.dll` instead, use the `windows_nabto_device_dll` preset:
-
-```bash
-cmake --workflow --preset windows_nabto_device_dll
-```
-
-This builds a dynamic `nabto_device.dll` using statically linked dependencies but with a dynamically linked VC runtime. Note that this preset builds **only** the `nabto_device.dll`, it does **not** include the IAM library or any example applications.
-
 ### Building shared libs.
 
 The functionality defined in the `include/nabto/nabto_device*.h` header files
@@ -72,7 +64,8 @@ builds the `nabto_device` artifacts as a shared library. Other dependencies from
 this repository and the nabto_common repository is linked in as static
 libraries.
 
-The following CMake targets builds shared libraries on Windows, Linux and Mac
+The following CMake workflow presets sets `NABTO_DEVICE_BUILD_SHARED_LIBRARY=ON`
+and hence builds a shared `nabto_device` library.
 
 ```
 cmake --workflow --preset windows_shared_library
