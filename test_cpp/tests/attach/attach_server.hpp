@@ -310,6 +310,7 @@ class AttachServer : public AttachCoapServer,
         std::shared_ptr<CoapServerRequest> request,
         std::shared_ptr<CoapServerResponse> response)
     {
+        (void)connection;
         (void)request;
         if (request->getContentFormat() !=
             NABTO_COAP_CONTENT_FORMAT_APPLICATION_CBOR) {
@@ -362,6 +363,7 @@ class AttachServer : public AttachCoapServer,
                              std::shared_ptr<CoapServerRequest> request,
                              std::shared_ptr<CoapServerResponse> response)
     {
+        (void)connection;
         (void)request;
         if (request->getContentFormat() !=
             NABTO_COAP_CONTENT_FORMAT_APPLICATION_CBOR) {
