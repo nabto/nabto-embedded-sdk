@@ -44,3 +44,39 @@ jobs:
 
       - name: Build shared library
         run: cmake --build --preset ${{ matrix.preset_name }} --target install
+
+      - name: Verify version in Linux shared library
+        if: matrix.os == 'ubuntu-24.04'
+        run: |
+          echo "Checking for version string in libnabto_device.so..."
+          if strings build/${{ matrix.preset_name }}/install/lib/libnabto_device.so | grep -q "1.2.3-test"; then
+            echo "✓ Version string '1.2.3-test' found in Linux shared library"
+          else
+            echo "✗ Version string '1.2.3-test' NOT found in Linux shared library"
+            exit 1
+          fi
+
+      - name: Verify version in Windows DLL
+        if: matrix.os == 'windows-2022'
+        shell: pwsh
+        run: |
+          Write-Host "Checking for version string in nabto_device.dll..."
+          $dllPath = "build/${{ matrix.preset_name }}/install/bin/nabto_device.dll"
+          $content = Get-Content $dllPath -Raw -Encoding UTF8
+          if ($content -match "1\.2\.3-test") {
+            Write-Host "✓ Version string '1.2.3-test' found in Windows DLL"
+          } else {
+            Write-Host "✗ Version string '1.2.3-test' NOT found in Windows DLL"
+            exit 1
+          }
+
+      - name: Verify version in macOS shared library
+        if: matrix.os == 'macos-15'
+        run: |
+          echo "Checking for version string in libnabto_device.dylib..."
+          if strings build/${{ matrix.preset_name }}/install/lib/libnabto_device.dylib | grep -q "1.2.3-test"; then
+            echo "✓ Version string '1.2.3-test' found in macOS shared library"
+          else
+            echo "✗ Version string '1.2.3-test' NOT found in macOS shared library"
+            exit 1
+          fi
