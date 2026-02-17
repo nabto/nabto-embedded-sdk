@@ -11,7 +11,7 @@
       "nlohmann-json",
       "nabto-common"
     ],
-    "builtin-baseline": "b02e341c927f16d991edbd915d8ea43eac52096c",
+    "builtin-baseline": "66c0373dc7fca549e5803087b9487edfe3aca0a1",
     "overrides": [
     {
         "name": "tinycbor",
