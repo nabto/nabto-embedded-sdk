@@ -172,6 +172,36 @@ NabtoDeviceError NABTO_DEVICE_API nabto_device_stream_stats_get_bytes_received(N
     return NABTO_DEVICE_EC_OK;
 }
 
+NabtoDeviceError NABTO_DEVICE_API nabto_device_stream_stats_get_bytes_sent(NabtoDeviceStream* stream, uint64_t* result)
+{
+    struct nabto_device_stream* str = (struct nabto_device_stream*)stream;
+
+    nabto_device_threads_mutex_lock(str->dev->eventMutex);
+    *result = str->stream->stream.sentBytes;
+    nabto_device_threads_mutex_unlock(str->dev->eventMutex);
+    return NABTO_DEVICE_EC_OK;
+}
+
+NabtoDeviceError NABTO_DEVICE_API nabto_device_stream_stats_get_reordered_or_lost_packets(NabtoDeviceStream* stream, uint32_t* result)
+{
+    struct nabto_device_stream* str = (struct nabto_device_stream*)stream;
+
+    nabto_device_threads_mutex_lock(str->dev->eventMutex);
+    *result = str->stream->stream.reorderedOrLostPackets;
+    nabto_device_threads_mutex_unlock(str->dev->eventMutex);
+    return NABTO_DEVICE_EC_OK;
+}
+
+NabtoDeviceError NABTO_DEVICE_API nabto_device_stream_stats_get_timeouts(NabtoDeviceStream* stream, uint32_t* result)
+{
+    struct nabto_device_stream* str = (struct nabto_device_stream*)stream;
+
+    nabto_device_threads_mutex_lock(str->dev->eventMutex);
+    *result = str->stream->stream.timeouts;
+    nabto_device_threads_mutex_unlock(str->dev->eventMutex);
+    return NABTO_DEVICE_EC_OK;
+}
+
 void nabto_device_stream_read_callback(const np_error_code ec, void* userData)
 {
     // this callback is from the core, the lock is already taken.
