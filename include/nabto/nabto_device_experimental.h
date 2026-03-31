@@ -141,6 +141,16 @@ NABTO_DEVICE_DECL_PREFIX void NABTO_DEVICE_API nabto_device_tcp_probe_check_reac
  */
 NABTO_DEVICE_DECL_PREFIX NabtoDeviceError NABTO_DEVICE_API nabto_device_get_attach_certificate_expiration(NabtoDevice* device, uint64_t* expiration);
 
+
+/**
+ * Get number of bytes received by a specified stream.
+ *
+ * @param stream [in]  The stream to get stats from.
+ * @param result [out] Where to store the result.
+ * @retval NABTO_DEVICE_EC_OK iff the result was written.
+ */
+NABTO_DEVICE_DECL_PREFIX NabtoDeviceError NABTO_DEVICE_API nabto_device_stream_stats_get_bytes_received(NabtoDeviceStream* stream, uint64_t* result);
+
 #ifdef __cplusplus
 } // extern c #endif
 #endif
