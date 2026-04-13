@@ -161,22 +161,19 @@ NABTO_DEVICE_DECL_PREFIX NabtoDeviceError NABTO_DEVICE_API nabto_device_stream_s
 NABTO_DEVICE_DECL_PREFIX NabtoDeviceError NABTO_DEVICE_API nabto_device_stream_stats_get_bytes_sent(NabtoDeviceStream* stream, uint64_t* result);
 
 /**
- * Get number of reordered or lost packets for a specified stream.
+ * Get number of lost packets for a specified stream.
+ *
+ * A packet is considered lost if more than 2 packets with a higher sequence
+ * number has been received or if a timeout has occurred. If a packet is
+ * reordered by more than 2 packets it will also count as lost.
  *
  * @param stream [in]  The stream to get stats from.
  * @param result [out] Where to store the result.
  * @retval NABTO_DEVICE_EC_OK iff the result was written.
  */
-NABTO_DEVICE_DECL_PREFIX NabtoDeviceError NABTO_DEVICE_API nabto_device_stream_stats_get_reordered_or_lost_packets(NabtoDeviceStream* stream, uint32_t* result);
+NABTO_DEVICE_DECL_PREFIX NabtoDeviceError NABTO_DEVICE_API nabto_device_stream_stats_get_lost_packets(NabtoDeviceStream* stream, uint64_t* result);
 
-/**
- * Get number of timeouts for a specified stream.
- *
- * @param stream [in]  The stream to get stats from.
- * @param result [out] Where to store the result.
- * @retval NABTO_DEVICE_EC_OK iff the result was written.
- */
-NABTO_DEVICE_DECL_PREFIX NabtoDeviceError NABTO_DEVICE_API nabto_device_stream_stats_get_timeouts(NabtoDeviceStream* stream, uint32_t* result);
+
 
 #ifdef __cplusplus
 } // extern c #endif

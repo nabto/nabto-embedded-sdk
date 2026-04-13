@@ -219,7 +219,7 @@ BOOST_AUTO_TEST_CASE(sent_bytes_initial_zero)
     nabto_device_virtual_stream_abort(td.virtStream_);
 }
 
-BOOST_AUTO_TEST_CASE(reordered_or_lost_packets_initial_zero)
+BOOST_AUTO_TEST_CASE(lost_packets_initial_zero)
 {
     nabto::test::StatsTestStreamDevice td;
     nabto::test::StatsTestStream ts(&td);
@@ -235,34 +235,10 @@ BOOST_AUTO_TEST_CASE(reordered_or_lost_packets_initial_zero)
 
     ts.futureWait(NABTO_DEVICE_EC_OK); // wait for accept
 
-    uint32_t reorderedOrLost = 42;
-    NabtoDeviceError ec = nabto_device_stream_stats_get_reordered_or_lost_packets(ts.stream_, &reorderedOrLost);
+    uint64_t lostPackets = 42;
+    NabtoDeviceError ec = nabto_device_stream_stats_get_lost_packets(ts.stream_, &lostPackets);
     BOOST_TEST(ec == NABTO_DEVICE_EC_OK);
-    BOOST_TEST(reorderedOrLost == (uint32_t)0);
-
-    nabto_device_virtual_stream_abort(td.virtStream_);
-}
-
-BOOST_AUTO_TEST_CASE(timeouts_initial_zero)
-{
-    nabto::test::StatsTestStreamDevice td;
-    nabto::test::StatsTestStream ts(&td);
-
-    td.streamListen([&](NabtoDeviceError ec, NabtoDeviceStream* stream) {
-        if (ec == NABTO_DEVICE_EC_OK) {
-            ts.acceptStream(stream);
-        }
-    });
-
-    td.makeConnection();
-    td.virtualStreamOpen();
-
-    ts.futureWait(NABTO_DEVICE_EC_OK); // wait for accept
-
-    uint32_t timeouts = 42;
-    NabtoDeviceError ec = nabto_device_stream_stats_get_timeouts(ts.stream_, &timeouts);
-    BOOST_TEST(ec == NABTO_DEVICE_EC_OK);
-    BOOST_TEST(timeouts == (uint32_t)0);
+    BOOST_TEST(lostPackets == (uint64_t)0);
 
     nabto_device_virtual_stream_abort(td.virtStream_);
 }
