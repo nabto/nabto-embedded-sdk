@@ -164,6 +164,9 @@ NabtoDeviceConnectionRef NABTO_DEVICE_API nabto_device_stream_get_connection_ref
 
 NabtoDeviceError NABTO_DEVICE_API nabto_device_stream_stats_get_bytes_received(NabtoDeviceStream* stream, uint64_t* result)
 {
+    if (stream == NULL || result == NULL) {
+        return NABTO_DEVICE_EC_INVALID_ARGUMENT;
+    }
     struct nabto_device_stream* str = (struct nabto_device_stream*)stream;
 
     nabto_device_threads_mutex_lock(str->dev->eventMutex);
@@ -174,6 +177,9 @@ NabtoDeviceError NABTO_DEVICE_API nabto_device_stream_stats_get_bytes_received(N
 
 NabtoDeviceError NABTO_DEVICE_API nabto_device_stream_stats_get_bytes_sent(NabtoDeviceStream* stream, uint64_t* result)
 {
+    if (stream == NULL || result == NULL) {
+        return NABTO_DEVICE_EC_INVALID_ARGUMENT;
+    }
     struct nabto_device_stream* str = (struct nabto_device_stream*)stream;
 
     nabto_device_threads_mutex_lock(str->dev->eventMutex);
@@ -184,6 +190,9 @@ NabtoDeviceError NABTO_DEVICE_API nabto_device_stream_stats_get_bytes_sent(Nabto
 
 NabtoDeviceError NABTO_DEVICE_API nabto_device_stream_stats_get_lost_packets(NabtoDeviceStream* stream, uint64_t* result)
 {
+    if (stream == NULL || result == NULL) {
+        return NABTO_DEVICE_EC_INVALID_ARGUMENT;
+    }
     struct nabto_device_stream* str = (struct nabto_device_stream*)stream;
 
     nabto_device_threads_mutex_lock(str->dev->eventMutex);

@@ -148,6 +148,7 @@ NABTO_DEVICE_DECL_PREFIX NabtoDeviceError NABTO_DEVICE_API nabto_device_get_atta
  * @param stream [in]  The stream to get stats from.
  * @param result [out] Where to store the result.
  * @retval NABTO_DEVICE_EC_OK iff the result was written.
+ * @retval NABTO_DEVICE_EC_INVALID_ARGUMENT if stream or result is NULL.
  */
 NABTO_DEVICE_DECL_PREFIX NabtoDeviceError NABTO_DEVICE_API nabto_device_stream_stats_get_bytes_received(NabtoDeviceStream* stream, uint64_t* result);
 
@@ -157,6 +158,7 @@ NABTO_DEVICE_DECL_PREFIX NabtoDeviceError NABTO_DEVICE_API nabto_device_stream_s
  * @param stream [in]  The stream to get stats from.
  * @param result [out] Where to store the result.
  * @retval NABTO_DEVICE_EC_OK iff the result was written.
+ * @retval NABTO_DEVICE_EC_INVALID_ARGUMENT if stream or result is NULL.
  */
 NABTO_DEVICE_DECL_PREFIX NabtoDeviceError NABTO_DEVICE_API nabto_device_stream_stats_get_bytes_sent(NabtoDeviceStream* stream, uint64_t* result);
 
@@ -170,6 +172,7 @@ NABTO_DEVICE_DECL_PREFIX NabtoDeviceError NABTO_DEVICE_API nabto_device_stream_s
  * @param stream [in]  The stream to get stats from.
  * @param result [out] Where to store the result.
  * @retval NABTO_DEVICE_EC_OK iff the result was written.
+ * @retval NABTO_DEVICE_EC_INVALID_ARGUMENT if stream or result is NULL.
  */
 NABTO_DEVICE_DECL_PREFIX NabtoDeviceError NABTO_DEVICE_API nabto_device_stream_stats_get_lost_packets(NabtoDeviceStream* stream, uint64_t* result);
 
