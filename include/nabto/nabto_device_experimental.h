@@ -163,6 +163,19 @@ NABTO_DEVICE_DECL_PREFIX NabtoDeviceError NABTO_DEVICE_API nabto_device_stream_s
 NABTO_DEVICE_DECL_PREFIX NabtoDeviceError NABTO_DEVICE_API nabto_device_stream_stats_get_bytes_sent(NabtoDeviceStream* stream, uint64_t* result);
 
 /**
+ * Get number of packets received by a specified stream.
+ *
+ * Counts incoming UDP payloads with a valid stream header that were dispatched
+ * to this stream. Packets that fail header parsing are not counted.
+ *
+ * @param stream [in]  The stream to get stats from.
+ * @param result [out] Where to store the result.
+ * @retval NABTO_DEVICE_EC_OK iff the result was written.
+ * @retval NABTO_DEVICE_EC_INVALID_ARGUMENT if stream or result is NULL.
+ */
+NABTO_DEVICE_DECL_PREFIX NabtoDeviceError NABTO_DEVICE_API nabto_device_stream_stats_get_received_packets(NabtoDeviceStream* stream, uint64_t* result);
+
+/**
  * Get number of packets sent by a specified stream.
  *
  * Counts outgoing UDP payloads that carried at least one data or retransmission

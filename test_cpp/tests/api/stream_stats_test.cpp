@@ -219,6 +219,30 @@ BOOST_AUTO_TEST_CASE(sent_bytes_initial_zero)
     nabto_device_virtual_stream_abort(td.virtStream_);
 }
 
+BOOST_AUTO_TEST_CASE(received_packets_initial_zero)
+{
+    nabto::test::StatsTestStreamDevice td;
+    nabto::test::StatsTestStream ts(&td);
+
+    td.streamListen([&](NabtoDeviceError ec, NabtoDeviceStream* stream) {
+        if (ec == NABTO_DEVICE_EC_OK) {
+            ts.acceptStream(stream);
+        }
+    });
+
+    td.makeConnection();
+    td.virtualStreamOpen();
+
+    ts.futureWait(NABTO_DEVICE_EC_OK); // wait for accept
+
+    uint64_t receivedPackets = 42;
+    NabtoDeviceError ec = nabto_device_stream_stats_get_received_packets(ts.stream_, &receivedPackets);
+    BOOST_TEST(ec == NABTO_DEVICE_EC_OK);
+    BOOST_TEST(receivedPackets == (uint64_t)0);
+
+    nabto_device_virtual_stream_abort(td.virtStream_);
+}
+
 BOOST_AUTO_TEST_CASE(sent_packets_initial_zero)
 {
     nabto::test::StatsTestStreamDevice td;
