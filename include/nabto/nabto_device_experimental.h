@@ -163,11 +163,40 @@ NABTO_DEVICE_DECL_PREFIX NabtoDeviceError NABTO_DEVICE_API nabto_device_stream_s
 NABTO_DEVICE_DECL_PREFIX NabtoDeviceError NABTO_DEVICE_API nabto_device_stream_stats_get_bytes_sent(NabtoDeviceStream* stream, uint64_t* result);
 
 /**
+ * Get number of packets received by a specified stream.
+ *
+ * Counts incoming UDP payloads with a valid stream header that were dispatched
+ * to this stream. Packets that fail header parsing are not counted.
+ *
+ * @param stream [in]  The stream to get stats from.
+ * @param result [out] Where to store the result.
+ * @retval NABTO_DEVICE_EC_OK iff the result was written.
+ * @retval NABTO_DEVICE_EC_INVALID_ARGUMENT if stream or result is NULL.
+ */
+NABTO_DEVICE_DECL_PREFIX NabtoDeviceError NABTO_DEVICE_API nabto_device_stream_stats_get_received_packets(NabtoDeviceStream* stream, uint64_t* result);
+
+/**
+ * Get number of packets sent by a specified stream.
+ *
+ * Counts outgoing UDP payloads that carried at least one data or retransmission
+ * segment. Combined with nabto_device_stream_stats_get_lost_packets this can
+ * be used to estimate the packet loss probability on the network as
+ * lost / sent.
+ *
+ * @param stream [in]  The stream to get stats from.
+ * @param result [out] Where to store the result.
+ * @retval NABTO_DEVICE_EC_OK iff the result was written.
+ * @retval NABTO_DEVICE_EC_INVALID_ARGUMENT if stream or result is NULL.
+ */
+NABTO_DEVICE_DECL_PREFIX NabtoDeviceError NABTO_DEVICE_API nabto_device_stream_stats_get_sent_packets(NabtoDeviceStream* stream, uint64_t* result);
+
+/**
  * Get number of lost packets for a specified stream.
  *
- * A packet is considered lost if more than 2 packets with a higher sequence
- * number has been received or if a timeout has occurred. If a packet is
- * reordered by more than 2 packets it will also count as lost.
+ * A packet is considered lost if at least one of the segments it carried was
+ * detected lost via triple-ACK, or if a retransmission timeout has occurred.
+ * Segments sent in the same outgoing UDP packet are collapsed to one packet
+ * loss event. Packets reordered by more than 2 packets count as lost.
  *
  * @param stream [in]  The stream to get stats from.
  * @param result [out] Where to store the result.
