@@ -162,22 +162,16 @@ void post_timed_event(struct np_event* event, uint32_t milliseconds)
 
 bool thread_event_queue_do_one(struct thread_event_queue* queue)
 {
-    uint32_t nextEvent = 0;
     uint32_t now = np_timestamp_now_ms(&queue->ts);
     struct nm_event_queue_event* event = NULL;
 
-    // handle one event or return false if no events exists.
+    // Handle one event if one is immediately ready. Do NOT wait for a future
+    // timed event — the only caller is the shutdown drain loop in
+    // nabto_device_platform_stop_blocking, which must not block waiting
+    // for a timer (e.g. keep-alive retry ~2s) to fire.
     nabto_device_threads_mutex_lock(queue->queueMutex);
-    if (nm_event_queue_take_event(&queue->eventQueue, &event) ||
-        nm_event_queue_take_timed_event(&queue->eventQueue, now, &event)) {
-        // ok execute the event later.
-    } else if (nm_event_queue_next_timed_event(&queue->eventQueue,
-                                               &nextEvent)) {
-        int32_t diff = np_timestamp_difference(nextEvent, now);
-        // ok wait for event to become ready
-        nabto_device_threads_cond_timed_wait(queue->condition,
-                                             queue->queueMutex, diff);
-    }
+    (void)(nm_event_queue_take_event(&queue->eventQueue, &event) ||
+           nm_event_queue_take_timed_event(&queue->eventQueue, now, &event));
     nabto_device_threads_mutex_unlock(queue->queueMutex);
 
     if (event != NULL) {
@@ -201,13 +195,18 @@ void* queue_thread(void* data)
         if (nm_event_queue_take_event(&queue->eventQueue, &event) ||
             nm_event_queue_take_timed_event(&queue->eventQueue, now, &event)) {
             // ok execute the event later.
+        } else if (queue->stopped) {
+            // Stop requested and no event is immediately ready. Exit without
+            // waiting out any pending timed event — otherwise shutdown
+            // blocks until the next scheduled timer fires (e.g. ~2s for DTLS
+            // keep-alive retry or CoAP retransmit), which dominates teardown
+            // cost in any test that has exchanged data with a peer.
+            nabto_device_threads_mutex_unlock(queue->queueMutex);
+            return NULL;
         } else if (nm_event_queue_next_timed_event(&queue->eventQueue, &nextEvent)) {
             int32_t diff = np_timestamp_difference(nextEvent, now);
             // ok wait for event to become ready
             nabto_device_threads_cond_timed_wait(queue->condition, queue->queueMutex, diff);
-        } else if (queue->stopped) {
-            nabto_device_threads_mutex_unlock(queue->queueMutex);
-            return NULL;
         } else {
             nabto_device_threads_cond_wait(queue->condition, queue->queueMutex);
         }
