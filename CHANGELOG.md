@@ -1,5 +1,16 @@
 # Changelog
 
+## [5.15.0] 2026-05-12
+
+### Added
+ * new experimental functions to get statistics from a stream.
+
+### Changed
+ * upgraded dependencies.
+
+### Bug fixes
+ * Fixed a few minor shutdown issues.
+
 ## [5.14.0] 2025-04-25
 
 ### Added
