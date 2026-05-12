@@ -669,6 +669,8 @@ bool handle_main(struct args* args, struct tcp_tunnel* tunnel)
 
         if (!device_event_handler_init(&eventHandler, tunnel->device)) {
             printf("Could not initialize the device event handler." NEWLINE);
+            nabto_device_stop(tunnel->device);
+            nm_iam_deinit(&iam);
             return false;
         }
 

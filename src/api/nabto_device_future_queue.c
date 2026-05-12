@@ -48,6 +48,7 @@ void nabto_device_future_queue_stop(struct nabto_device_future_queue* queue)
     }
     nabto_device_threads_mutex_lock(queue->mutex);
     if (queue->stopped) {
+        nabto_device_threads_mutex_unlock(queue->mutex);
         return;
     }
     queue->stopped = true;
