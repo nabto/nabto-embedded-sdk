@@ -9,25 +9,16 @@ jobs:
   build:
     strategy:
       matrix:
-        os: [windows-2022, ubuntu-22.04, macos-15]
+        os: [windows-2022, macos-15]
         include:
           - os: windows-2022
             exe_postfix: .zip
             friendly_name: windows
             workflow: windows_vcpkg_static
-            generate_extra_options: -DNABTO_DEVICE_USE_VCPKG=ON -DNABTO_DEVICE_PREFER_SYSTEM_LIBS=ON
-            build_command: cmake --build build-dir --parallel --target install --config Release
-          - os: ubuntu-22.04
-            workflow: linux_vcpkg
-            exe_postfix:
-            friendly_name: linux_x86_64
-            build_command: cmake --build build-dir --parallel --target install
           - os: macos-15
             workflow: mac_fetchcontent_universal
             exe_postfix:
             friendly_name: macos
-            # 2024-01-05: Sometimes mac fails on github actions when doing builds so we use make without parallellism directly, since we hope that fixes the unknown problem.
-            build_command: cd build-dir && make -j 1 install
     name: Build
     runs-on: ${{ matrix.os }}
     timeout-minutes: 20
@@ -50,10 +41,6 @@ jobs:
           script: |
             core.exportVariable('ACTIONS_CACHE_URL', process.env.ACTIONS_CACHE_URL || '');
             core.exportVariable('ACTIONS_RUNTIME_TOKEN', process.env.ACTIONS_RUNTIME_TOKEN || '');
-
-      - if: matrix.os == 'ubuntu-22.04'
-        name: Install Ninja
-        run: sudo apt-get update && sudo apt-get install -y ninja-build
 
       - if: matrix.os == 'macos-15'
         name: Install Ninja
@@ -96,21 +83,28 @@ jobs:
           if-no-files-found: error
           overwrite: true
 
-  build-linux-arm:
-    timeout-minutes: 20
+  # Every released linux binary is built by build-scripts/linux.sh, using the
+  # pinned bootlin glibc 2.34 cross toolchains. This is the same command a
+  # developer runs locally, so the released binaries are reproducible.
+  #
+  # friendly_name preserves the historical release asset names: the arm64 target
+  # is published as linux_aarch64 and the armv7 target as linux_armhf.
+  build-linux:
+    # Cross building the vcpkg dependencies (boost in particular) for four
+    # architectures needs more than the 20 minutes the other jobs use, at least
+    # until the vcpkg binary cache is warm.
+    timeout-minutes: 60
     strategy:
       matrix:
-        arch: [armv6, armhf, aarch64]
         include:
-          - arch: armv6
-            compiler: arm-linux-gnueabihf
-            toolchain: https://nabto-build-assets.s3.eu-west-1.amazonaws.com/toolchains/cross-gcc-9.4.0-pi_0-1.tar.gz
-          - arch: armhf
-            compiler: arm-linux-gnueabihf
-            toolchain: https://nabto-build-assets.s3.eu-west-1.amazonaws.com/toolchains/gcc-linaro-7.5.0-2019.12-x86_64_arm-linux-gnueabihf.tar.xz
-          - arch: aarch64
-            compiler: aarch64-linux-gnu
-            toolchain: https://nabto-build-assets.s3.eu-west-1.amazonaws.com/toolchains/gcc-linaro-7.5.0-2019.12-x86_64_aarch64-linux-gnu.tar.xz
+          - target: linux_x86_64
+            friendly_name: linux_x86_64
+          - target: linux_arm64
+            friendly_name: linux_aarch64
+          - target: linux_armv6
+            friendly_name: linux_armv6
+          - target: linux_armv7
+            friendly_name: linux_armhf
     runs-on: ubuntu-22.04
 
     steps:
@@ -119,45 +113,44 @@ jobs:
         submodules: recursive
         fetch-depth: 0
 
-    - name: Get required packages
-      run: sudo apt-get update && sudo apt install libarchive-tools
+    # Temporarily ping CMake version to 3.31 (see #47)
+    - name: Install cmake
+      uses: jwlawson/actions-setup-cmake@v2
+      with:
+        cmake-version: '3.31.x'
 
-    - name: Create directory
-      run: mkdir toolchain
+    - name: Install Ninja
+      run: sudo apt-get update && sudo apt-get install -y ninja-build
 
-    - name: Get toolchain
-      working-directory: toolchain
-      run: curl -sSL ${{ matrix.toolchain }}  | bsdtar -xf - --strip-components=1
+    - name: Export GitHub Actions cache environment variables
+      uses: actions/github-script@v7
+      with:
+        script: |
+          core.exportVariable('ACTIONS_CACHE_URL', process.env.ACTIONS_CACHE_URL || '');
+          core.exportVariable('ACTIONS_RUNTIME_TOKEN', process.env.ACTIONS_RUNTIME_TOKEN || '');
 
-    - name: Configure CMake
-      env:
-        CC: ${{github.workspace}}/toolchain/bin/${{ matrix.compiler }}-gcc
-        CXX: ${{github.workspace}}/toolchain/bin/${{ matrix.compiler }}-g++
-      run: cmake -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=${{ github.workspace }}/artifacts -B ${{github.workspace}}/build
-
+    # Downloads and relocates the toolchain, configures, builds, installs and
+    # prints the resulting architecture. For linux_x86_64 it also runs the unit
+    # tests, since those binaries run on the build host.
     - name: Build
-      run: cmake --build ${{github.workspace}}/build --parallel
+      env:
+        VCPKG_BINARY_SOURCES: "clear;x-gha,readwrite"
+      run: ./build-scripts/linux.sh ${{ matrix.target }}
 
-    - name: Install
-      run: cmake --build ${{github.workspace}}/build --target install
-
-    - name: Print architecture
-      run: file ${{ github.workspace }}/artifacts/bin/tcp_tunnel_device
-
-    - name: Prepate assets
+    - name: Prepare assets
       run: |
-        mv ${{ github.workspace }}/artifacts/bin/tcp_tunnel_device ${{ github.workspace }}/artifacts/bin/tcp_tunnel_device_linux_${{matrix.arch}}
-        mv ${{ github.workspace }}/artifacts/bin/thermostat_device ${{ github.workspace }}/artifacts/bin/thermostat_device_linux_${{matrix.arch}}
-
+        mkdir -p ${{ github.workspace }}/artifacts/bin
+        mv ${{ github.workspace }}/build/${{ matrix.target }}/install/bin/tcp_tunnel_device ${{ github.workspace }}/artifacts/bin/tcp_tunnel_device_${{ matrix.friendly_name }}
+        mv ${{ github.workspace }}/build/${{ matrix.target }}/install/bin/thermostat_device ${{ github.workspace }}/artifacts/bin/thermostat_device_${{ matrix.friendly_name }}
 
     - name: Upload artifacts
       if: ${{ success() }}
       uses: actions/upload-artifact@v4
       with:
-        name: linux_${{ matrix.arch }}
+        name: ${{ matrix.friendly_name }}
         path: |
-          ${{ github.workspace }}/artifacts/bin/tcp_tunnel_device_linux_${{matrix.arch}}
-          ${{ github.workspace }}/artifacts/bin/thermostat_device_linux_${{matrix.arch}}
+          ${{ github.workspace }}/artifacts/bin/tcp_tunnel_device_${{ matrix.friendly_name }}
+          ${{ github.workspace }}/artifacts/bin/thermostat_device_${{ matrix.friendly_name }}
         if-no-files-found: error
         overwrite: true
 
@@ -173,7 +166,7 @@ jobs:
             friendly_name: windows
 
     name: Release Assets
-    needs: [ build, build-linux-arm ]
+    needs: [ build, build-linux ]
     runs-on: ubuntu-22.04
     permissions:
       # give access to upload an artifacts to gh releases

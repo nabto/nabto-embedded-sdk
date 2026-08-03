@@ -74,7 +74,14 @@
             "name": "linux_armv6",
             "inherits": ["_linux_bootlin"],
             "cacheVariables": {
-                "VCPKG_TARGET_TRIPLET": "arm-linux-bootlin"
+                "VCPKG_TARGET_TRIPLET": "armv6-linux-bootlin"
+            }
+        },
+        {
+            "name": "linux_armv7",
+            "inherits": ["_linux_bootlin"],
+            "cacheVariables": {
+                "VCPKG_TARGET_TRIPLET": "armv7-linux-bootlin"
             }
         },
         {
@@ -220,6 +227,11 @@
         {
             "name": "linux_armv6",
             "configurePreset": "linux_armv6",
+            "targets": ["install"]
+        },
+        {
+            "name": "linux_armv7",
+            "configurePreset": "linux_armv7",
             "targets": ["install"]
         },
         {
@@ -401,6 +413,19 @@
                 {
                     "type": "build",
                     "name": "linux_armv6"
+                }
+            ]
+        },
+        {
+            "name": "linux_armv7",
+            "steps": [
+                {
+                    "type": "configure",
+                    "name": "linux_armv7"
+                },
+                {
+                    "type": "build",
+                    "name": "linux_armv7"
                 }
             ]
         },

@@ -28,6 +28,7 @@ ALL_TARGETS=(
     linux_x86_64
     linux_arm64
     linux_armv6
+    linux_armv7
 )
 
 usage() {
@@ -56,6 +57,9 @@ target_config() {
             SYSPROC="aarch64" ;;
         linux_armv6)
             TARBALL="armv6-eabihf--glibc--stable-2021.11-1.tar.bz2"
+            SYSPROC="arm" ;;
+        linux_armv7)
+            TARBALL="armv7-eabihf--glibc--stable-2021.11-1.tar.bz2"
             SYSPROC="arm" ;;
         *)
             echo "Unknown target '$1'" >&2

@@ -41,6 +41,16 @@ To do a cross build, set the `CC` environment variable to point to the cross com
 export CC=/opt/hisi-linux-nptl/arm-hisiv100-linux/target/bin/arm-hisiv100-gcc
 ```
 
+#### Linux release binaries
+
+The Linux binaries attached to a release are built by `build-scripts/linux.sh`, which is also how you reproduce them locally:
+
+```bash
+./build-scripts/linux.sh linux_x86_64   # or linux_arm64, linux_armv6, linux_armv7, or all
+```
+
+The script downloads a pinned [Bootlin](https://toolchains.bootlin.com/) cross toolchain into `build/toolchains` and builds both the vcpkg dependencies and the SDK with it. The toolchains pin glibc to 2.34, so the resulting binaries run on older systems regardless of the build host. Results are installed into `build/<target>/install`.
+
 #### Windows
 
 The easiest way to build on Windows is to use a CMake workflow:
