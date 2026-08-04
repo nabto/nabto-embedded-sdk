@@ -160,13 +160,14 @@ bool run_thermostat(const struct args* args)
     thermostat_state_file_backend_init(&thermostatStateFileBackend, &thermostatState, &fsImpl, thermostatFile.thermostatStateFile);
     thermostat_iam_init(&thermostatIam, device, &fsImpl, thermostatFile.iamStateFile, &logger);
     thermostat_iam_load_state(&thermostatIam);
-    thermostat_init(&thermostat, device, &thermostatIam.iam, &thermostatState, &logger);
     if (!thermostate_state_file_backend_load_data(&thermostatStateFileBackend, &logger)) {
         return false;
     }
+    thermostat_init(&thermostat, device, &thermostatIam.iam, &thermostatState, &logger);
 
     bool status = run_thermostat_device(device, &thermostat, &fsImpl, &thermostatFile, &thermostatStateFileBackend, args);
 
+    thermostat_stop(&thermostat);
     if (signalCount < 2) {
        nabto_device_stop(device);
     }
@@ -271,7 +272,9 @@ bool run_thermostat_device(NabtoDevice* dev, struct thermostat* thermostat, stru
             while(true) {
                 nabto_device_listener_device_event(listener, future, &event);
                 while(true) {
-                    thermostat_state_file_backend_update(tsfb, (double)(tickInterval) / 1000.0);
+                    double deltaTime = (double)(tickInterval) / 1000.0;
+                    thermostat_state_file_backend_update(tsfb, deltaTime);
+                    thermostat_update(thermostat, deltaTime);
 
                     if (nabto_device_future_timed_wait(future, tickInterval) != NABTO_DEVICE_EC_FUTURE_NOT_RESOLVED) {
                         break;

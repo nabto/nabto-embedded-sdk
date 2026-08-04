@@ -17,6 +17,10 @@ set(src
   src/thermostat_state.c
   src/thermostat_state_file_backend.c
   src/thermostat_state_data.c
+  src/thermostat_history.c
+  src/thermostat_stream.c
+  src/thermostat_coap_history.c
+  src/thermostat_coap_set_schedule.c
   src/cbor_extra.c
   )
 
@@ -31,3 +35,12 @@ target_link_libraries(thermostat_device TinyCBOR::tinycbor)
 install(TARGETS thermostat_device
   RUNTIME DESTINATION bin
   )
+
+option(THERMOSTAT_BUILD_TESTS "Build the thermostat example tests" OFF)
+if (THERMOSTAT_BUILD_TESTS)
+  add_executable(thermostat_history_test test/history_test.c src/thermostat_history.c)
+  target_include_directories(thermostat_history_test PRIVATE src)
+  if (UNIX)
+    target_link_libraries(thermostat_history_test m pthread)
+  endif()
+endif()

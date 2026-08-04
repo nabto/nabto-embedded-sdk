@@ -19,30 +19,6 @@ NabtoDeviceError thermostat_get_legacy_init(struct thermostat_coap_handler* hand
 }
 
 
-static size_t encode(struct thermostat_state* state, void* buffer, size_t bufferSize)
-{
-    CborEncoder encoder;
-    cbor_encoder_init(&encoder, buffer, bufferSize, 0);
-    CborEncoder map;
-    cbor_encoder_create_map(&encoder, &map, CborIndefiniteLength);
-
-    cbor_encode_text_stringz(&map, "Mode");
-    cbor_encode_text_stringz(&map, thermostat_state_mode_as_string(thermostat_state_get_mode(state)));
-
-    cbor_encode_text_stringz(&map, "Target");
-    cbor_encode_double(&map, thermostat_state_get_target(state));
-
-    cbor_encode_text_stringz(&map, "Power");
-    cbor_encode_boolean(&map, thermostat_state_get_power(state));
-
-    cbor_encode_text_stringz(&map, "Temperature");
-    cbor_encode_double(&map, thermostat_state_get_temperature(state));
-
-    cbor_encoder_close_container(&encoder, &map);
-
-    return cbor_encoder_get_extra_bytes_needed(&encoder);
-}
-
 void handle_request(struct thermostat_coap_handler* handler, NabtoDeviceCoapRequest* request)
 {
     struct thermostat* thermostat = handler->thermostat;
@@ -51,13 +27,13 @@ void handle_request(struct thermostat_coap_handler* handler, NabtoDeviceCoapRequ
         return;
     }
 
-    size_t payloadSize = encode(thermostat->state, NULL, 0);
+    size_t payloadSize = thermostat_state_encode(thermostat->state, NULL, 0);
     uint8_t* payload = malloc(payloadSize);
     if (payload == NULL) {
         return;
     }
 
-    encode(thermostat->state, payload, payloadSize);
+    thermostat_state_encode(thermostat->state, payload, payloadSize);
 
     nabto_device_coap_response_set_code(request, 205);
     nabto_device_coap_response_set_content_format(request, NABTO_DEVICE_COAP_CONTENT_FORMAT_APPLICATION_CBOR);

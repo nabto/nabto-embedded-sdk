@@ -3,6 +3,8 @@
 
 #include "thermostat_state_data.h"
 
+#include <pthread.h>
+
 /**
  * File state backend for the thermostat. This uses the thermostat_state_data
  * for encoding and decoding of the data which is persisted in a file.
@@ -12,6 +14,9 @@ struct thermostat_state_file_backend {
     char* filename;
     struct thermostat_state_data stateData;
     struct nm_fs* fsImpl;
+    // protects stateData which is accessed from both the main thread and the
+    // nabto device threads.
+    pthread_mutex_t mutex;
 };
 
 void thermostat_state_file_backend_init(struct thermostat_state_file_backend* fileBackend, struct thermostat_state* thermostatState, struct nm_fs* fsImpl, const char* filename);
