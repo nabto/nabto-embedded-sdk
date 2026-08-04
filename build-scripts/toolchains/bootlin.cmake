@@ -6,6 +6,9 @@
 # building each dependency, and only the environment survives across those
 # sub-processes.
 set(CMAKE_SYSTEM_NAME Linux)
+if("$ENV{BOOTLIN_TOOLCHAIN_ROOT}" STREQUAL "" OR "$ENV{BOOTLIN_TOOLCHAIN_PREFIX}" STREQUAL "" OR "$ENV{BOOTLIN_SYSROOT}" STREQUAL "" OR "$ENV{BOOTLIN_SYSTEM_PROCESSOR}" STREQUAL "")
+  message(FATAL_ERROR "Bootlin toolchain environment not set (BOOTLIN_*). Run build-scripts/linux.sh to configure these variables.")
+endif()
 set(CMAKE_SYSTEM_PROCESSOR $ENV{BOOTLIN_SYSTEM_PROCESSOR})
 
 set(_tc     $ENV{BOOTLIN_TOOLCHAIN_ROOT})
