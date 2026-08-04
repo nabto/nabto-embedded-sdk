@@ -49,7 +49,7 @@ The Linux binaries attached to a release are built by `build-scripts/linux.sh`, 
 ./build-scripts/linux.sh linux_x86_64   # or linux_arm64, linux_armv6, linux_armv7, or all
 ```
 
-The script downloads a pinned [Bootlin](https://toolchains.bootlin.com/) cross toolchain into `build/toolchains` and builds both the vcpkg dependencies and the SDK with it. The toolchains pin glibc to 2.34, so the resulting binaries run on older systems regardless of the build host. Results are installed into `build/<target>/install`.
+The script downloads a pinned [Bootlin](https://toolchains.bootlin.com/) cross toolchain into `build/toolchains` and builds both the vcpkg dependencies and the SDK with it. The toolchains pin glibc to 2.34 (so the resulting binaries require glibc >= 2.34), avoiding dependence on the build host glibc version. Results are installed into `build/<target>/install`.
 
 #### Windows
 
