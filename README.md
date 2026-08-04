@@ -46,10 +46,12 @@ export CC=/opt/hisi-linux-nptl/arm-hisiv100-linux/target/bin/arm-hisiv100-gcc
 The Linux binaries attached to a release are built by `build-scripts/linux.sh`, which is also how you reproduce them locally:
 
 ```bash
-./build-scripts/linux.sh linux_x86_64   # or linux_arm64, linux_armv6, linux_armv7, or all
+./build-scripts/linux.sh linux_x86_64   # or linux_aarch64, linux_armv6_eabihf, linux_armv7_eabihf, or all
 ```
 
-The script downloads a pinned [Bootlin](https://toolchains.bootlin.com/) cross toolchain into `build/toolchains` and builds both the vcpkg dependencies and the SDK with it. The toolchains pin glibc to 2.34 (so the resulting binaries require glibc >= 2.34), avoiding dependence on the build host glibc version. Results are installed into `build/<target>/install`.
+The script downloads a pinned [Bootlin](https://toolchains.bootlin.com/) cross toolchain into `build/toolchains` and builds both the vcpkg dependencies and the SDK with it. The toolchains are musl based (stable-2025.08-1) and the executables are linked fully statically, so the resulting binaries have no libc dependency and run on any system with a matching architecture. Results are installed into `build/<target>/install`.
+
+Since the executables are statically linked, these presets do not build the `platform_integration_example`, which links a shared library. Set `DEVICE_BUILD_PLATFORM_INTEGRATION_EXAMPLE=ON` in a non-static build to get it.
 
 #### Windows
 

@@ -42,6 +42,11 @@ message("c++ compiler was LOADED. ${CMAKE_CXX_COMPILER_ID}")
 
 option(DEVICE_BUILD_EXAMPLES "build device examples" ON)
 
+# The platform integration example builds a shared library and an executable
+# linking it, so it cannot be built in a fully statically linked build such as
+# the musl based linux release builds, see build-scripts/linux.sh.
+option(DEVICE_BUILD_PLATFORM_INTEGRATION_EXAMPLE "build the platform integration example" ON)
+
 option(DEVICE_BUILD_TESTS "build device tests" OFF)
 
 option(DEVICE_BUILD_APPS "build applications" ON)
@@ -331,7 +336,7 @@ endif()
 add_subdirectory(src/modules/event_queue)
 
 if (DEVICE_BUILD_EXAMPLES)
-  if (NOT WIN32)
+  if (NOT WIN32 AND DEVICE_BUILD_PLATFORM_INTEGRATION_EXAMPLE)
 
   add_subdirectory(platform_integration_example)
   endif()

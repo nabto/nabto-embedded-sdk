@@ -4,11 +4,13 @@
 # (generator, build type, triplet, chainload toolchain, install location) lives
 # in CMakePresets.json; this script is just a thin orchestrator.
 #
-# All targets use Bootlin glibc cross toolchains instead of the host distro's
-# toolchains. The bootlin toolchains pin glibc to 2.34 (stable-2021.11-1) so the
-# resulting binaries run on older systems regardless of the build host. They are
-# downloaded from our S3 asset bucket, extracted and relocated on demand, then
-# wired into the build through a vcpkg overlay triplet that chainloads
+# All targets use Bootlin musl cross toolchains instead of the host distro's
+# toolchains, and link the executables fully statically (-static, set in the
+# preset). The resulting binaries therefore carry no libc dependency at all and
+# run on any kernel of the right architecture, regardless of which libc the
+# target system uses. The toolchains are downloaded from our S3 asset bucket,
+# extracted and relocated on demand, then wired into the build through a vcpkg
+# overlay triplet that chainloads
 # build-scripts/toolchains/bootlin.cmake (so both the vcpkg dependencies and the
 # project itself are built with the bootlin compiler). bootlin.cmake reads the
 # BOOTLIN_* environment variables this script exports — env (not -D cache)
@@ -22,13 +24,24 @@ SDK_DIR="$( cd -P "$SCRIPT_DIR/.." && pwd )"
 BUILD_ROOT="${SDK_DIR}/build"
 TOOLCHAIN_CACHE="$BUILD_ROOT/toolchains"
 
+# The tarballs are mirrored from toolchains.bootlin.com into our own asset
+# bucket, so the builds do not depend on bootlin staying reachable. The mirror
+# is flat, unlike bootlin's own per-architecture layout.
 BASE_URL="https://nabto-build-assets.s3.eu-west-1.amazonaws.com/toolchains"
+
+# The bootlin toolchain release all targets are pinned to, and the archive
+# format it is published in (bootlin switched from .tar.bz2 to .tar.xz with the
+# 2024.05 release). Bumping these is the only change needed to move to a newer
+# toolchain, as long as the release provides a musl variant for every
+# architecture in ALL_TARGETS.
+TOOLCHAIN_VERSION="stable-2025.08-1"
+TOOLCHAIN_ARCHIVE_EXT="tar.xz"
 
 ALL_TARGETS=(
     linux_x86_64
-    linux_arm64
-    linux_armv6
-    linux_armv7
+    linux_aarch64
+    linux_armv6_eabihf
+    linux_armv7_eabihf
 )
 
 usage() {
@@ -44,34 +57,36 @@ EOF
     exit "${1:-1}"
 }
 
-# Map a target to its bootlin tarball and CMAKE_SYSTEM_PROCESSOR. Sets the
-# globals TARBALL and SYSPROC. The vcpkg triplet lives in the preset, so it is
-# not set here.
+# Map a target to its bootlin architecture and CMAKE_SYSTEM_PROCESSOR. Sets the
+# globals ARCH, TARBALL and SYSPROC. ARCH is both the bootlin architecture
+# directory and the tarball name prefix. The vcpkg triplet lives in the preset,
+# so it is not set here.
 target_config() {
     case "$1" in
         linux_x86_64)
-            TARBALL="x86-64-core-i7--glibc--stable-2021.11-1.tar.bz2"
+            ARCH="x86-64-core-i7"
             SYSPROC="x86_64" ;;
-        linux_arm64)
-            TARBALL="aarch64--glibc--stable-2021.11-1.tar.bz2"
+        linux_aarch64)
+            ARCH="aarch64"
             SYSPROC="aarch64" ;;
-        linux_armv6)
-            TARBALL="armv6-eabihf--glibc--stable-2021.11-1.tar.bz2"
+        linux_armv6_eabihf)
+            ARCH="armv6-eabihf"
             SYSPROC="arm" ;;
-        linux_armv7)
-            TARBALL="armv7-eabihf--glibc--stable-2021.11-1.tar.bz2"
+        linux_armv7_eabihf)
+            ARCH="armv7-eabihf"
             SYSPROC="arm" ;;
         *)
             echo "Unknown target '$1'" >&2
             usage ;;
     esac
+    TARBALL="${ARCH}--musl--${TOOLCHAIN_VERSION}.${TOOLCHAIN_ARCHIVE_EXT}"
 }
 
-# Download, extract and relocate the bootlin toolchain for $TARBALL. Sets the
+# Download, extract and relocate the bootlin toolchain $tarball. Sets the
 # globals TOOLCHAIN_ROOT, TOOLCHAIN_PREFIX and SYSROOT.
 prepare_toolchain() {
     local tarball=$1
-    local name="${tarball%.tar.bz2}"
+    local name="${tarball%.tar.*}"
     local root="$TOOLCHAIN_CACHE/$name"
 
     mkdir -p "$TOOLCHAIN_CACHE"
@@ -83,7 +98,8 @@ prepare_toolchain() {
 
     if [ ! -d "$root" ]; then
         echo "==> Extracting $tarball"
-        tar xjf "$TOOLCHAIN_CACHE/$tarball" -C "$TOOLCHAIN_CACHE"
+        # No -j/-J: let tar autodetect, so the archive format is not baked in here.
+        tar xf "$TOOLCHAIN_CACHE/$tarball" -C "$TOOLCHAIN_CACHE"
     fi
 
     # Bootlin toolchains embed absolute paths from the build machine; their
@@ -94,7 +110,7 @@ prepare_toolchain() {
         touch "$root/.relocated"
     fi
 
-    # Discover the compiler prefix (e.g. arm-buildroot-linux-gnueabihf-) from
+    # Discover the compiler prefix (e.g. arm-buildroot-linux-musleabihf-) from
     # the bin/<tuple>-gcc wrapper rather than hardcoding per-arch tuples.
     local gcc
     gcc=$(basename "$(find "$root/bin" -maxdepth 1 -name '*-gcc' | sort | head -n 1)")

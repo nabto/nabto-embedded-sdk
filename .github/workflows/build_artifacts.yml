@@ -84,11 +84,11 @@ jobs:
           overwrite: true
 
   # Every released linux binary is built by build-scripts/linux.sh, using the
-  # pinned bootlin glibc 2.34 cross toolchains. This is the same command a
+  # pinned bootlin musl cross toolchains. This is the same command a
   # developer runs locally, so the released binaries are reproducible.
   #
-  # friendly_name preserves the historical release asset names: the arm64 target
-  # is published as linux_aarch64 and the armv7 target as linux_armhf.
+  # The release assets are named after the target, so there is no separate
+  # friendly_name here as there is for the mac/windows jobs above.
   build-linux:
     # Cross building the vcpkg dependencies (boost in particular) for four
     # architectures needs more than the 20 minutes the other jobs use, at least
@@ -96,15 +96,11 @@ jobs:
     timeout-minutes: 60
     strategy:
       matrix:
-        include:
-          - target: linux_x86_64
-            friendly_name: linux_x86_64
-          - target: linux_arm64
-            friendly_name: linux_aarch64
-          - target: linux_armv6
-            friendly_name: linux_armv6
-          - target: linux_armv7
-            friendly_name: linux_armhf
+        target:
+          - linux_x86_64
+          - linux_aarch64
+          - linux_armv6_eabihf
+          - linux_armv7_eabihf
     runs-on: ubuntu-22.04
 
     steps:
@@ -140,17 +136,17 @@ jobs:
     - name: Prepare assets
       run: |
         mkdir -p ${{ github.workspace }}/artifacts/bin
-        mv ${{ github.workspace }}/build/${{ matrix.target }}/install/bin/tcp_tunnel_device ${{ github.workspace }}/artifacts/bin/tcp_tunnel_device_${{ matrix.friendly_name }}
-        mv ${{ github.workspace }}/build/${{ matrix.target }}/install/bin/thermostat_device ${{ github.workspace }}/artifacts/bin/thermostat_device_${{ matrix.friendly_name }}
+        mv ${{ github.workspace }}/build/${{ matrix.target }}/install/bin/tcp_tunnel_device ${{ github.workspace }}/artifacts/bin/tcp_tunnel_device_${{ matrix.target }}
+        mv ${{ github.workspace }}/build/${{ matrix.target }}/install/bin/thermostat_device ${{ github.workspace }}/artifacts/bin/thermostat_device_${{ matrix.target }}
 
     - name: Upload artifacts
       if: ${{ success() }}
       uses: actions/upload-artifact@v4
       with:
-        name: ${{ matrix.friendly_name }}
+        name: ${{ matrix.target }}
         path: |
-          ${{ github.workspace }}/artifacts/bin/tcp_tunnel_device_${{ matrix.friendly_name }}
-          ${{ github.workspace }}/artifacts/bin/thermostat_device_${{ matrix.friendly_name }}
+          ${{ github.workspace }}/artifacts/bin/tcp_tunnel_device_${{ matrix.target }}
+          ${{ github.workspace }}/artifacts/bin/thermostat_device_${{ matrix.target }}
         if-no-files-found: error
         overwrite: true
 
@@ -159,7 +155,7 @@ jobs:
     timeout-minutes: 20
     strategy:
       matrix:
-        friendly_name: [linux_x86_64, linux_armv6, linux_armhf, linux_aarch64, windows, macos]
+        friendly_name: [linux_x86_64, linux_armv6_eabihf, linux_armv7_eabihf, linux_aarch64, windows, macos]
         binary: [tcp_tunnel_device, thermostat_device]
         include:
           - file_suffix: .zip

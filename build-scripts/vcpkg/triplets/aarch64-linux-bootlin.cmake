@@ -1,3 +1,4 @@
+# arm64 is vcpkg's own spelling of aarch64 and is the only value it accepts here.
 set(VCPKG_TARGET_ARCHITECTURE arm64)
 set(VCPKG_CRT_LINKAGE dynamic)
 set(VCPKG_LIBRARY_LINKAGE static)

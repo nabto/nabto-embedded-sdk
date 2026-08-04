@@ -1,4 +1,4 @@
-# Generic CMake cross toolchain for Bootlin glibc toolchains.
+# Generic CMake cross toolchain for Bootlin musl toolchains.
 #
 # Driven entirely by environment variables set by build-scripts/linux.sh.
 # Environment (not -D cache) variables are used on purpose: vcpkg re-invokes
@@ -12,7 +12,7 @@ endif()
 set(CMAKE_SYSTEM_PROCESSOR $ENV{BOOTLIN_SYSTEM_PROCESSOR})
 
 set(_tc     $ENV{BOOTLIN_TOOLCHAIN_ROOT})
-set(_prefix $ENV{BOOTLIN_TOOLCHAIN_PREFIX})   # e.g. arm-buildroot-linux-gnueabihf-
+set(_prefix $ENV{BOOTLIN_TOOLCHAIN_PREFIX})   # e.g. arm-buildroot-linux-musleabihf-
 
 set(CMAKE_C_COMPILER   ${_tc}/bin/${_prefix}gcc)
 set(CMAKE_CXX_COMPILER ${_tc}/bin/${_prefix}g++)
