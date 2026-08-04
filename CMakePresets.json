@@ -45,6 +45,48 @@
             }
         },
         {
+            "name": "_linux_bootlin",
+            "hidden": true,
+            "inherits": ["base", "unix_base", "vcpkg_base"],
+            "description": "Portable linux builds using the pinned bootlin musl cross toolchains, see build-scripts/linux.sh",
+            "cacheVariables": {
+                "CMAKE_BUILD_TYPE": "Release",
+                "VCPKG_CHAINLOAD_TOOLCHAIN_FILE": "${sourceDir}/build-scripts/toolchains/bootlin.cmake",
+                "DEVICE_BUILD_TESTS": "OFF",
+                "CMAKE_EXE_LINKER_FLAGS": "-static",
+                "DEVICE_BUILD_PLATFORM_INTEGRATION_EXAMPLE": "OFF"
+            }
+        },
+        {
+            "name": "linux_x86_64",
+            "inherits": ["_linux_bootlin"],
+            "cacheVariables": {
+                "VCPKG_TARGET_TRIPLET": "x64-linux-bootlin",
+                "DEVICE_BUILD_TESTS": "ON"
+            }
+        },
+        {
+            "name": "linux_aarch64",
+            "inherits": ["_linux_bootlin"],
+            "cacheVariables": {
+                "VCPKG_TARGET_TRIPLET": "aarch64-linux-bootlin"
+            }
+        },
+        {
+            "name": "linux_armv6_eabihf",
+            "inherits": ["_linux_bootlin"],
+            "cacheVariables": {
+                "VCPKG_TARGET_TRIPLET": "armv6-linux-bootlin"
+            }
+        },
+        {
+            "name": "linux_armv7_eabihf",
+            "inherits": ["_linux_bootlin"],
+            "cacheVariables": {
+                "VCPKG_TARGET_TRIPLET": "armv7-linux-bootlin"
+            }
+        },
+        {
             "name": "mac_vcpkg_x86_64",
             "inherits": [ "base", "vcpkg_base", "unix_base" ],
             "cacheVariables": {
@@ -172,6 +214,26 @@
         {
             "name": "linux_vcpkg_dtls_client_only",
             "configurePreset": "linux_vcpkg_dtls_client_only",
+            "targets": ["install"]
+        },
+        {
+            "name": "linux_x86_64",
+            "configurePreset": "linux_x86_64",
+            "targets": ["install"]
+        },
+        {
+            "name": "linux_aarch64",
+            "configurePreset": "linux_aarch64",
+            "targets": ["install"]
+        },
+        {
+            "name": "linux_armv6_eabihf",
+            "configurePreset": "linux_armv6_eabihf",
+            "targets": ["install"]
+        },
+        {
+            "name": "linux_armv7_eabihf",
+            "configurePreset": "linux_armv7_eabihf",
             "targets": ["install"]
         },
         {
@@ -314,6 +376,58 @@
                 {
                     "type": "build",
                     "name": "linux_vcpkg"
+                }
+            ]
+        },
+        {
+            "name": "linux_x86_64",
+            "steps": [
+                {
+                    "type": "configure",
+                    "name": "linux_x86_64"
+                },
+                {
+                    "type": "build",
+                    "name": "linux_x86_64"
+                }
+            ]
+        },
+        {
+            "name": "linux_aarch64",
+            "steps": [
+                {
+                    "type": "configure",
+                    "name": "linux_aarch64"
+                },
+                {
+                    "type": "build",
+                    "name": "linux_aarch64"
+                }
+            ]
+        },
+        {
+            "name": "linux_armv6_eabihf",
+            "steps": [
+                {
+                    "type": "configure",
+                    "name": "linux_armv6_eabihf"
+                },
+                {
+                    "type": "build",
+                    "name": "linux_armv6_eabihf"
+                }
+            ]
+        },
+        {
+            "name": "linux_armv7_eabihf",
+            "steps": [
+                {
+                    "type": "configure",
+                    "name": "linux_armv7_eabihf"
+                },
+                {
+                    "type": "build",
+                    "name": "linux_armv7_eabihf"
                 }
             ]
         },
