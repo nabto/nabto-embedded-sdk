@@ -6,6 +6,10 @@
 #include <platform/np_error_code.h>
 #include <platform/np_ip_address.h>
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 /**
  * Resolves ipv4 and ipv6 addresses and builds an array of the
  * resulting addresses with alternating ipv4 and ipv6 addresses.
@@ -39,5 +43,9 @@ np_error_code nc_dns_multi_resolver_init(struct np_platform* pl, struct nc_dns_m
 void nc_dns_multi_resolver_deinit(struct nc_dns_multi_resolver_context* ctx);
 
 void nc_dns_multi_resolver_resolve(struct nc_dns_multi_resolver_context* ctx, const char* host, struct np_ip_address* ips, size_t ipsSize, size_t* ipsResolved, struct np_completion_event* event);
+
+#ifdef __cplusplus
+} // extern c
+#endif
 
 #endif
