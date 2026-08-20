@@ -52,6 +52,9 @@ Targets:
   all             Build every target below in sequence
 $(printf '  %s\n' "${ALL_TARGETS[@]}")
 
+Debug variants (not included in 'all'):
+  linux_x86_64_debug
+
 Each target installs into build/<target>/install.
 EOF
     exit "${1:-1}"
@@ -63,7 +66,7 @@ EOF
 # so it is not set here.
 target_config() {
     case "$1" in
-        linux_x86_64)
+        linux_x86_64|linux_x86_64_debug)
             ARCH="x86-64-core-i7"
             SYSPROC="x86_64" ;;
         linux_aarch64)
@@ -151,7 +154,7 @@ build_slice() {
 
     # Only the x86_64 binaries run on the (x86_64) build host. The ARM targets
     # would need qemu, so they are built but not tested.
-    if [ "$preset" = "linux_x86_64" ]; then
+    if [ "$preset" = "linux_x86_64" ] || [ "$preset" = "linux_x86_64_debug" ]; then
         echo "==> Running tests for $preset"
         "$install_dir/bin/embedded_unit_test" -l test_suite --detect_memory_leaks=0
     fi
