@@ -153,13 +153,14 @@ np_error_code nc_stun_async_analyze_simple(struct nc_stun_context* ctx, struct n
     }
     nn_llist_append(&ctx->cbs, &callback->callbackNode, callback);
 
-    if (ctx->state == NC_STUN_STATE_RUNNING) {
+    if (ctx->state == NC_STUN_STATE_RESOLVING ||
+        ctx->state == NC_STUN_STATE_RUNNING) {
         NABTO_LOG_INFO(LOG, "Stun already running, adding callback");
         return NABTO_EC_OK;
     }
 
     ctx->simple = true;
-    ctx->state = NC_STUN_STATE_RUNNING;
+    ctx->state = NC_STUN_STATE_RESOLVING;
     nc_dns_multi_resolver_resolve(&ctx->dnsMultiResolver, ctx->hostname, ctx->resolvedIps, NC_STUN_MAX_ENDPOINTS, &ctx->resolvedIpsSize, &ctx->dnsCompletionEvent);
 
     return NABTO_EC_OK;
@@ -174,6 +175,12 @@ void nc_stun_handle_packet(struct nc_stun_context* ctx,
     (void)ep;
     if (ctx->state == NC_STUN_STATE_ABORTED) {
         NABTO_LOG_ERROR(LOG, "Stun packet received for deinitialized stun context");
+        return;
+    }
+    if (ctx->state != NC_STUN_STATE_RUNNING) {
+        // e.g. a late response from a previous analysis round. The stun state
+        // machine is not active, so the event it reports would be stale.
+        NABTO_LOG_TRACE(LOG, "Ignoring stun packet since no analysis is running");
         return;
     }
     NABTO_LOG_TRACE(LOG, "Stun handling packet");
@@ -299,6 +306,7 @@ void nc_stun_dns_cb(const np_error_code ec, void* data)
     ctx->numEps = nc_stun_convert_ep_list(ctx->resolvedIps, ctx->resolvedIpsSize, ctx->eps, NC_STUN_MAX_ENDPOINTS, ctx->priPort);
     nabto_stun_init(&ctx->stun, &ctx->stunModule, ctx, ctx->eps, (uint8_t)ctx->numEps);
     nabto_stun_async_analyze(&ctx->stun, ctx->simple);
+    ctx->state = NC_STUN_STATE_RUNNING;
     nc_stun_event(ctx);
 }
 
@@ -306,6 +314,10 @@ void nc_stun_send_to_cb(const np_error_code ec, void* data)
 {
     (void)ec;
     struct nc_stun_context* ctx = (struct nc_stun_context*)data;
+    if (ctx->state != NC_STUN_STATE_RUNNING) {
+        NABTO_LOG_TRACE(LOG, "Ignoring stun send completion since no analysis is running");
+        return;
+    }
     // send errors is ok in stun context
     nc_stun_event(ctx);
 }
@@ -313,6 +325,10 @@ void nc_stun_send_to_cb(const np_error_code ec, void* data)
 void nc_stun_handle_timeout(void* data)
 {
     struct nc_stun_context* ctx = (struct nc_stun_context*)data;
+    if (ctx->state != NC_STUN_STATE_RUNNING) {
+        NABTO_LOG_TRACE(LOG, "Ignoring stun timeout since no analysis is running");
+        return;
+    }
     nabto_stun_handle_wait_event(&ctx->stun);
     nc_stun_event(ctx);
 }
