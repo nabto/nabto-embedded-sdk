@@ -66,6 +66,13 @@
             }
         },
         {
+            "name": "linux_x86_64_debug",
+            "inherits": ["linux_x86_64"],
+            "cacheVariables": {
+                "CMAKE_BUILD_TYPE": "Debug"
+            }
+        },
+        {
             "name": "linux_aarch64",
             "inherits": ["_linux_bootlin"],
             "cacheVariables": {
@@ -219,6 +226,11 @@
         {
             "name": "linux_x86_64",
             "configurePreset": "linux_x86_64",
+            "targets": ["install"]
+        },
+        {
+            "name": "linux_x86_64_debug",
+            "configurePreset": "linux_x86_64_debug",
             "targets": ["install"]
         },
         {
@@ -389,6 +401,19 @@
                 {
                     "type": "build",
                     "name": "linux_x86_64"
+                }
+            ]
+        },
+        {
+            "name": "linux_x86_64_debug",
+            "steps": [
+                {
+                    "type": "configure",
+                    "name": "linux_x86_64_debug"
+                },
+                {
+                    "type": "build",
+                    "name": "linux_x86_64_debug"
                 }
             ]
         },
