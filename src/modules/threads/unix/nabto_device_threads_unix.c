@@ -154,10 +154,16 @@ void nabto_device_threads_cond_timed_wait(struct nabto_device_condition* cond,
         NABTO_LOG_ERROR(LOG, "gettimeofday failed. '%s'", strerror(status));
         // TODO we cannot really fail.
     }
-    // This will wrap when epoch cannot be contained in 64bit, we ignore that and cast
-    uint64_t future_ms = tp.tv_usec / 1000 + tp.tv_sec * 1000 + ms;
+    // Widen to 64 bit BEFORE multiplying and do not narrow before dividing.
+    // On a 32 bit target (armv7, long and time_t are 32 bit) tp.tv_sec * 1000
+    // overflows, and (long)future_ms / 1000 truncates the absolute deadline
+    // down into 1970, so pthread_cond_timedwait returns ETIMEDOUT immediately
+    // on every call and the event queue thread becomes a busy spin.
+    uint64_t future_ms = (uint64_t)tp.tv_usec / 1000
+                       + (uint64_t)tp.tv_sec * 1000
+                       + (uint64_t)ms;
     ts.tv_nsec = (long)(future_ms % 1000) * 1000000;
-    ts.tv_sec = (long)future_ms / 1000;
+    ts.tv_sec = (time_t)(future_ms / 1000);
     status = pthread_cond_timedwait(&cond->cond, &mut->mut, &ts);
     if (status != 0 && status != ETIMEDOUT) {
         NABTO_LOG_ERROR(LOG, "pthread_cond_wait failed. '%s'", strerror(status));
