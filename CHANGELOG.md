@@ -1,5 +1,10 @@
 # Changelog
 
+## [5.14.1] 2026-09-01
+
+### Bug fixes
+ * Fixed a busy spin in the event queue thread on 32 bit platforms. The absolute deadline given to `pthread_cond_timedwait` was narrowed to `long` before being divided, which on a 32 bit target placed it in 1970. Every timed wait then returned `ETIMEDOUT` immediately and an idle device consumed a full CPU core.
+
 ## [5.14.0] 2025-04-25
 
 ### Added
