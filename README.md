@@ -25,6 +25,13 @@ Changes which are not released yet are kept as one file per change in
 made. See [changelog.d/00README.md](changelog.d/00README.md) for how to write an
 entry and how a release assembles them.
 
+## Branches
+
+Integrate against a release branch, not `master`. Which branches are maintained
+and for how long is described in [BRANCHES.md](BRANCHES.md), following the
+[Nabto security and support
+policy](https://www.nabto.com/docs/developer/systems/security-support.html).
+
 ## Building and Testing
 
 The Nabto Edge Embedded SDK can be built using [CMake](https://cmake.org/). The instructions below assume the `cmake` tool is installed and available.
