@@ -22,12 +22,13 @@ the branches where they matter.
 ```
 git checkout 5.15 && git pull
 git checkout -b fix-busy-spin-5.15
-git cherry-pick -x <the commit on master>
+git cherry-pick -x <first commit of the pull request>^..<last commit>
 ```
 
-Cherry-pick the commit which carries the change, not the merge commit of the
-pull request, and use `-x` so the new commit records where it came from. Open a
-pull request from that branch into the release branch.
+Cherry-pick every commit of the pull request, in order, not its merge commit; a
+pull request may carry the fix and its changelog entry in separate commits, and
+the release branch needs both. Use `-x` so each new commit records where it
+came from. Open a pull request from that branch into the release branch.
 
 The cherry-pick brings the `changelog.d/` entry file with it, so the same entry
 is consumed twice: once for the patch release on the release branch, and once
@@ -100,9 +101,14 @@ tagged commit and leaves `v5.15.2` pointing at a commit which is not on the
 release branch.
 
 **7. Finish up.** For a minor release, open a pull request against `master`
-removing the entry files the release consumed - they were released from the new
+removing every entry file the release consumed - they were released from the new
 branch, and if they stay on `master` the next minor lists them a second time.
-The entries of cherry-picked bugfixes are the exception and stay on `master`, as
-described above. Finally update the table in [BRANCHES.md](BRANCHES.md) with the
-new latest release, and for a minor release with the new branch and the date the
-previous minor is patched until.
+This includes the entries of bugfixes which were cherry-picked to an older
+release branch: such an entry is consumed twice, by the patch release and by
+this minor, as described in
+[changelog.d/00README.md](changelog.d/00README.md), and it is done after the
+minor. A patch release removes nothing from `master`; the entry of a
+cherry-picked fix stays there until the next minor consumes it. Finally update
+the table in [BRANCHES.md](BRANCHES.md) with the new latest release, and for a
+minor release with the new branch and the date the previous minor is patched
+until.
