@@ -72,7 +72,7 @@ by an AI agent given this section — as follows:
    version's `## [...]` heading, with a blank line on either side.
 6. `git rm` every entry file read in step 2, and only those.
 7. Commit the changelog and the removals together as `changelog for <version>`,
-   then tag and release as usual.
+   then tag and release as described in [../RELEASING.md](../RELEASING.md).
 
 A bugfix which is cherry-picked from `master` to a release branch brings its
 entry file along, so it is consumed twice: once on the release branch for the

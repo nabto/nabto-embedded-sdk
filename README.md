@@ -32,6 +32,11 @@ and for how long is described in [BRANCHES.md](BRANCHES.md), following the
 [Nabto security and support
 policy](https://www.nabto.com/docs/developer/systems/security-support.html).
 
+## Releasing
+
+How a bugfix reaches the release branches which need it, and how a release is
+made, is described in [RELEASING.md](RELEASING.md).
+
 ## Building and Testing
 
 The Nabto Edge Embedded SDK can be built using [CMake](https://cmake.org/). The instructions below assume the `cmake` tool is installed and available.
