@@ -13,6 +13,3 @@ policy](https://www.nabto.com/docs/developer/systems/security-support.html).
 The current minor release receives security patches; the previous one receives
 them for twelve months after the next minor was published; older ones receive
 nothing.
-
-`5.0` through `5.12` and `beta4.1` are kept for history and receive no updates.
-Any other branch is work in progress — do not integrate against it.
