@@ -1,29 +1,19 @@
-name: build and test ubuntu 20.04
+name: build and test ubuntu 22.04
 on:
   push:
 
 jobs:
-  container-test-job:
+  build-and-test:
     timeout-minutes: 20
     runs-on: ubuntu-22.04
-    container:
-      image: ubuntu:20.04
     steps:
-      - name: update git repo
-        run: apt-get update && apt-get install software-properties-common -y && add-apt-repository ppa:git-core/ppa
-      - name: Install sw
-        run: apt-get update && apt-get install -y git build-essential curl zip pkg-config unzip tar python3
-      - name: Install newer cmake
-        run: curl -sSL "https://github.com/Kitware/CMake/releases/download/v3.30.2/cmake-3.30.2-linux-x86_64.tar.gz" | tar --strip-components=1 -xz -C /usr/local
       - uses: actions/checkout@v4
         with:
           submodules: recursive
           fetch-depth: 0
+
       - name: Configure cmake
         run: mkdir build-dir && cd build-dir && cmake -DCMAKE_INSTALL_PREFIX=${{ github.workspace }}/artifacts -DDEVICE_BUILD_TESTS=ON ..
-
-      - name: Make it possible to write version
-        run: git config --global --add safe.directory '*'
 
       - name: Build
         run: cd build-dir && make -j 4
