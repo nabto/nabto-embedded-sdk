@@ -12,6 +12,7 @@
 #define LOG NABTO_LOG_MODULE_ATTACHER
 
 static void coap_handler(struct nabto_coap_client_request* request, void* data);
+static void free_request(struct nc_attacher_service_invoke_context* serviceInvokeContext);
 
 static CborError encode_request(CborEncoder* encoder, struct nc_attacher_service_invoke_request* request);
 static bool parse_response(const uint8_t* buffer, size_t bufferSize, struct nc_attacher_service_invoke_response* response);
@@ -29,6 +30,9 @@ np_error_code nc_attacher_service_invoke_execute(struct nc_attach_context *attac
                                                               3, serviceInvokePath,
                                                               &coap_handler,
                                                               serviceInvokeContext, attacher->dtls);
+    if (serviceInvokeContext->coapRequest == NULL) {
+        return NABTO_EC_OUT_OF_MEMORY;
+    }
     nabto_coap_client_request_set_content_format(serviceInvokeContext->coapRequest, NABTO_COAP_CONTENT_FORMAT_APPLICATION_CBOR);
 
     size_t bufferSize = 0;
@@ -37,6 +41,7 @@ np_error_code nc_attacher_service_invoke_execute(struct nc_attach_context *attac
         cbor_encoder_init(&encoder, NULL, 0, 0);
         if (encode_request(&encoder, &serviceInvokeContext->serviceInvokeRequest) != CborErrorOutOfMemory) {
             NABTO_LOG_ERROR(LOG, "Cannot determine the required size fot the service invocation request.");
+            free_request(serviceInvokeContext);
             return NABTO_EC_FAILED;
         }
         bufferSize = cbor_encoder_get_extra_bytes_needed(&encoder);
@@ -44,6 +49,7 @@ np_error_code nc_attacher_service_invoke_execute(struct nc_attach_context *attac
 
     uint8_t* buffer = np_calloc(1, bufferSize);
     if (buffer == NULL) {
+        free_request(serviceInvokeContext);
         return NABTO_EC_OUT_OF_MEMORY;
     }
     {
@@ -52,6 +58,7 @@ np_error_code nc_attacher_service_invoke_execute(struct nc_attach_context *attac
         if (encode_request(&encoder, &serviceInvokeContext->serviceInvokeRequest) != CborNoError) {
             np_free(buffer);
             NABTO_LOG_ERROR(LOG, "Cannot encode service invocation request as cbor.");
+            free_request(serviceInvokeContext);
             return NABTO_EC_FAILED;
         }
     }
@@ -59,6 +66,7 @@ np_error_code nc_attacher_service_invoke_execute(struct nc_attach_context *attac
     nabto_coap_error err = nabto_coap_client_request_set_payload(serviceInvokeContext->coapRequest, buffer, bufferSize);
     np_free(buffer);
     if (err != NABTO_COAP_ERROR_OK) {
+        free_request(serviceInvokeContext);
         return nc_coap_error_to_core(err);
     }
 
@@ -113,7 +121,7 @@ static void coap_handler(struct nabto_coap_client_request* request, void* data)
             }
         }
     }
-    nabto_coap_client_request_free(request);
+    free_request(ctx);
 
     ctx->cb(ec, ctx->cbData);
 }
@@ -124,6 +132,23 @@ void nc_attacher_service_invoke_stop(struct nc_attacher_service_invoke_context* 
     if (req != NULL) {
         nabto_coap_client_request_cancel(req);
     }
+}
+
+void nc_attacher_service_invoke_deinit(struct nc_attacher_service_invoke_context* serviceInvokeContext)
+{
+    // A cancelled request still calls the coap handler later, which would
+    // reach the context after it is freed. Free the request instead so no
+    // callback can happen, and complete the invocation here.
+    if (serviceInvokeContext->coapRequest != NULL) {
+        free_request(serviceInvokeContext);
+        serviceInvokeContext->cb(NABTO_EC_STOPPED, serviceInvokeContext->cbData);
+    }
+}
+
+void free_request(struct nc_attacher_service_invoke_context* serviceInvokeContext)
+{
+    nabto_coap_client_request_free(serviceInvokeContext->coapRequest);
+    serviceInvokeContext->coapRequest = NULL;
 }
 
 CborError encode_request(CborEncoder* encoder, struct nc_attacher_service_invoke_request* request)

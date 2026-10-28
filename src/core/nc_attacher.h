@@ -294,9 +294,21 @@ np_error_code nc_attacher_fcm_send(struct nc_attach_context* attacher, struct nc
 
 void nc_attacher_fcm_send_stop(struct nc_attacher_fcm_send_context* fcmSend);
 
+/**
+ * Release an outstanding request. If a send is in progress its callback is
+ * called with NABTO_EC_STOPPED before this function returns.
+ */
+void nc_attacher_fcm_send_deinit(struct nc_attacher_fcm_send_context* fcmSend);
+
 np_error_code nc_attacher_service_invoke_execute(struct nc_attach_context* attacher, struct nc_attacher_service_invoke_context* serviceInvoke, nc_attacher_service_invoke_callback cb, void* userData);
 
 void nc_attacher_service_invoke_stop(struct nc_attacher_service_invoke_context* serviceInvoke);
+
+/**
+ * Release an outstanding request. If an invocation is in progress its
+ * callback is called with NABTO_EC_STOPPED before this function returns.
+ */
+void nc_attacher_service_invoke_deinit(struct nc_attacher_service_invoke_context* serviceInvoke);
 
 
 void nc_attacher_ice_servers_ctx_init(struct nc_attacher_request_ice_servers_context* ctx, struct nc_attach_context* attacher);

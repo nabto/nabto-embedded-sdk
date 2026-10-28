@@ -12,6 +12,7 @@
 #define LOG NABTO_LOG_MODULE_ATTACHER
 
 static void coap_handler(struct nabto_coap_client_request* request, void* data);
+static void free_request(struct nc_attacher_fcm_send_context* fcmSend);
 
 static CborError encode_request(CborEncoder* encoder, struct nc_attacher_fcm_request* request);
 static bool parse_response(const uint8_t* buffer, size_t bufferSize, struct nc_attacher_fcm_response* response);
@@ -29,6 +30,9 @@ np_error_code nc_attacher_fcm_send(struct nc_attach_context *attacher, struct nc
                                                               3, sendPath,
                                                               &coap_handler,
                                                               fcmContext, attacher->dtls);
+    if (fcmContext->coapRequest == NULL) {
+        return NABTO_EC_OUT_OF_MEMORY;
+    }
     nabto_coap_client_request_set_content_format(fcmContext->coapRequest, NABTO_COAP_CONTENT_FORMAT_APPLICATION_CBOR);
 
     size_t bufferSize = 0;
@@ -37,6 +41,7 @@ np_error_code nc_attacher_fcm_send(struct nc_attach_context *attacher, struct nc
         cbor_encoder_init(&encoder, NULL, 0, 0);
         if (encode_request(&encoder, &fcmContext->fcmRequest) != CborErrorOutOfMemory) {
             NABTO_LOG_ERROR(LOG, "Cannot determine buffersize for fcm cbor request");
+            free_request(fcmContext);
             return NABTO_EC_FAILED;
         }
 
@@ -44,6 +49,7 @@ np_error_code nc_attacher_fcm_send(struct nc_attach_context *attacher, struct nc
     }
     uint8_t* buffer = np_calloc(1, bufferSize);
     if (buffer == NULL) {
+        free_request(fcmContext);
         return NABTO_EC_OUT_OF_MEMORY;
     }
     {
@@ -52,6 +58,7 @@ np_error_code nc_attacher_fcm_send(struct nc_attach_context *attacher, struct nc
         if (encode_request(&encoder, &fcmContext->fcmRequest) != CborNoError) {
             NABTO_LOG_ERROR(LOG, "Cannot encode fcm request as cbor");
             np_free(buffer);
+            free_request(fcmContext);
             return NABTO_EC_FAILED;
         }
     }
@@ -59,6 +66,7 @@ np_error_code nc_attacher_fcm_send(struct nc_attach_context *attacher, struct nc
     nabto_coap_error err = nabto_coap_client_request_set_payload(fcmContext->coapRequest, buffer, bufferSize);
     np_free(buffer);
     if (err != NABTO_COAP_ERROR_OK) {
+        free_request(fcmContext);
         return nc_coap_error_to_core(err);
     }
 
@@ -103,7 +111,7 @@ static void coap_handler(struct nabto_coap_client_request* request, void* data)
             ec = NABTO_EC_BAD_RESPONSE;
         }
     }
-    nabto_coap_client_request_free(request);
+    free_request(ctx);
 
     ctx->cb(ec, ctx->cbData);
 }
@@ -114,6 +122,23 @@ void nc_attacher_fcm_send_stop(struct nc_attacher_fcm_send_context* fcmSend)
     if (req != NULL) {
         nabto_coap_client_request_cancel(req);
     }
+}
+
+void nc_attacher_fcm_send_deinit(struct nc_attacher_fcm_send_context* fcmSend)
+{
+    // A cancelled request still calls the coap handler later, which would
+    // reach the context after it is freed. Free the request instead so no
+    // callback can happen, and complete the send here.
+    if (fcmSend->coapRequest != NULL) {
+        free_request(fcmSend);
+        fcmSend->cb(NABTO_EC_STOPPED, fcmSend->cbData);
+    }
+}
+
+void free_request(struct nc_attacher_fcm_send_context* fcmSend)
+{
+    nabto_coap_client_request_free(fcmSend->coapRequest);
+    fcmSend->coapRequest = NULL;
 }
 
 CborError encode_request(CborEncoder* encoder, struct nc_attacher_fcm_request* request)

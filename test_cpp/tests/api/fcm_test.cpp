@@ -164,4 +164,54 @@ BOOST_AUTO_TEST_CASE(notification_send_stop)
     nabto_device_fcm_notification_free(n);
 }
 
+BOOST_AUTO_TEST_CASE(notification_stop_after_send_completed)
+{
+    nabto::test::AttachedTestDevice attachedTestDevice;
+
+    attachedTestDevice.attach(getHostname(), getPort(), getRootCerts());
+
+    NabtoDevice* dev = attachedTestDevice.device();
+
+    NabtoDeviceFcmNotification* n = nabto_device_fcm_notification_new(dev);
+    BOOST_REQUIRE(n != NULL);
+    BOOST_TEST(nabto_device_fcm_notification_set_project_id(n, "foobar") == NABTO_DEVICE_EC_OK);
+    BOOST_TEST(nabto_device_fcm_notification_set_payload(n, testFcmPayload.c_str()) == NABTO_DEVICE_EC_OK);
+
+    NabtoDeviceFuture* f = nabto_device_future_new(dev);
+    nabto_device_fcm_send(n, f);
+    BOOST_TEST(EC(nabto_device_future_wait(f)) == EC(NABTO_DEVICE_EC_OK));
+
+    // The coap request has been freed when the send completed, stop must not
+    // touch it.
+    nabto_device_fcm_stop(n);
+
+    nabto_device_future_free(f);
+    nabto_device_fcm_notification_free(n);
+}
+
+BOOST_AUTO_TEST_CASE(notification_free_while_sending)
+{
+    nabto::test::AttachedTestDevice attachedTestDevice;
+
+    attachedTestDevice.attach(getHostname(), getPort(), getRootCerts());
+
+    NabtoDevice* dev = attachedTestDevice.device();
+
+    NabtoDeviceFcmNotification* n = nabto_device_fcm_notification_new(dev);
+    BOOST_REQUIRE(n != NULL);
+    BOOST_TEST(nabto_device_fcm_notification_set_project_id(n, "foobar") == NABTO_DEVICE_EC_OK);
+    BOOST_TEST(nabto_device_fcm_notification_set_payload(n, testFcmPayload.c_str()) == NABTO_DEVICE_EC_OK);
+
+    NabtoDeviceFuture* f = nabto_device_future_new(dev);
+    nabto_device_fcm_send(n, f);
+    // Freeing with an outstanding request must abort it, a late response
+    // must not reach the freed notification. The response can win the race,
+    // in which case the future is already resolved with OK.
+    nabto_device_fcm_notification_free(n);
+    NabtoDeviceError ec = nabto_device_future_timed_wait(f, 5000);
+    BOOST_TEST((ec == NABTO_DEVICE_EC_STOPPED || ec == NABTO_DEVICE_EC_OK), "ec: " << nabto_device_error_get_string(ec));
+
+    nabto_device_future_free(f);
+}
+
 BOOST_AUTO_TEST_SUITE_END()

@@ -1283,9 +1283,9 @@ NABTO_DEVICE_DECL_PREFIX NabtoDeviceFcmNotification* NABTO_DEVICE_API
 nabto_device_fcm_notification_new(NabtoDevice* device);
 
 /**
- * Free a FCM notification. If called after nabto_device_fcm_send(),
- * the future must be resolved first (by the device finishing handling
- * the notification, or by nabto_device_fcm_stop())
+ * Free a FCM notification. If a send is still in progress it is aborted and
+ * its future is resolved with NABTO_DEVICE_EC_STOPPED before this function
+ * returns.
  *
  * @param notification [in]  The notification to free
  */
@@ -2215,7 +2215,9 @@ NABTO_DEVICE_DECL_PREFIX NabtoDeviceServiceInvocation* NABTO_DEVICE_API
 nabto_device_service_invocation_new(NabtoDevice* device);
 
 /**
- * Free a service invocation object.
+ * Free a service invocation object. If an invocation is still in progress it
+ * is aborted and its future is resolved with NABTO_DEVICE_EC_STOPPED before
+ * this function returns.
  *
  * @param serviceInvocation [in]  The service invocation object
  */

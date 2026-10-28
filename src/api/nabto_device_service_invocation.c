@@ -42,6 +42,7 @@ nabto_device_service_invocation_free(NabtoDeviceServiceInvocation* serviceInvoke
     struct nabto_device_service_invoke* s = (struct nabto_device_service_invoke*)serviceInvoke;
     struct nabto_device_context* dev = s->dev;
     nabto_device_threads_mutex_lock(dev->eventMutex);
+    nc_attacher_service_invoke_deinit(&s->serviceInvoke);
     np_free(s->serviceInvoke.serviceInvokeRequest.serviceId);
     np_free(s->serviceInvoke.serviceInvokeRequest.message);
     np_free(s->serviceInvoke.serviceInvokeResponse.message);
