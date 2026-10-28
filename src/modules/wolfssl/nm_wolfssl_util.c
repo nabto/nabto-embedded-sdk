@@ -299,3 +299,23 @@ void nm_wolfssl_util_check_logging()
     NABTO_LOG_ERROR(LOG, "NO DTLS LOG DEFINED");
 #endif
 }
+
+np_error_code nm_wolfssl_util_set_mtu(struct np_platform* pl, WOLFSSL* ssl)
+{
+#if defined(WOLFSSL_DTLS_MTU)
+    struct np_communication_buffer* buf = pl->buf.allocate();
+    if (buf == NULL) {
+        return NABTO_EC_OUT_OF_MEMORY;
+    }
+    int ret = wolfSSL_dtls_set_mtu(ssl, pl->buf.size(buf));
+    pl->buf.free(buf);
+    if (ret != WOLFSSL_SUCCESS) {
+        NABTO_LOG_ERROR(LOG, "Cannot set the dtls mtu %d", ret);
+        return NABTO_EC_FAILED;
+    }
+#else
+    (void)pl;
+    (void)ssl;
+#endif
+    return NABTO_EC_OK;
+}

@@ -282,6 +282,11 @@ np_error_code nm_mbedtls_srv_create_connection(struct np_dtls_srv* server,
     mbedtls_ssl_set_bio( &ctx->ssl, ctx,
                          &nm_mbedtls_srv_mbedtls_send, &nm_mbedtls_srv_mbedtls_recv, NULL );
 
+    ec = nm_mbedtls_util_set_mtu(ctx->pl, &ctx->ssl);
+    if (ec != NABTO_EC_OK) {
+        return ec;
+    }
+
     *dtls = ctx;
     return NABTO_EC_OK;
 }
@@ -584,7 +589,15 @@ int nm_mbedtls_srv_mbedtls_send(void* data, const unsigned char* buffer, size_t 
             // if we return WANT_WRITE there is no mechanism which ensures a retransmission occurs.
             return (int)bufferSize;
         }
-        memcpy(ctx->pl->buf.start(ctx->sslSendBuffer), buffer, (uint16_t)bufferSize);
+        if (bufferSize > pl->buf.size(ctx->sslSendBuffer)) {
+            // Cannot happen as the mtu is the size of a communication
+            // buffer.
+            NABTO_LOG_ERROR(LOG, "The dtls record (%u bytes) does not fit in a communication buffer, dropping the packet.", (unsigned)bufferSize);
+            pl->buf.free(ctx->sslSendBuffer);
+            ctx->sslSendBuffer = NULL;
+            return (int)bufferSize;
+        }
+        memcpy(pl->buf.start(ctx->sslSendBuffer), buffer, bufferSize);
 
         np_error_code ec = ctx->sender(ctx->channelId, pl->buf.start(ctx->sslSendBuffer), (uint16_t)bufferSize, &ctx->senderEvent, ctx->senderData);
         if (ec != NABTO_EC_OK) {

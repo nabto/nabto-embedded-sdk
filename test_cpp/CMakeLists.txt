@@ -62,6 +62,7 @@ set(test_src
   tests/spake2/spake2_test.cpp
   tests/spake2/spake2_mbedtls_test.cpp
   tests/spake2/spake2_wolfssl_test.cpp
+  tests/dtls/dtls_record_size_test.cpp
   ../src/api_test/nabto_device_test_logging.c
   )
 

@@ -179,7 +179,7 @@ https://github.com/wolfSSL/wolfssl/releases/tag/v5.5.1-stable
 When installing WolfSSL, the following build options can be used:
 
 ```
-./configure --prefix=/usr --enable-ecc --enable-dsa --enable-dtls --enable-aesccm --enable-alpn --enable-debug --enable-certgen --enable-keygen --enable-harden --enable-sni --enable-sp-math-all=small CFLAGS="-DKEEP_PEER_CERT -DWOLFSSL_PUBLIC_MP -DWOLFSSL_PUBLIC_ECC_ADD_DBL"
+./configure --prefix=/usr --enable-ecc --enable-dsa --enable-dtls --enable-dtls-mtu --enable-aesccm --enable-alpn --enable-debug --enable-certgen --enable-keygen --enable-harden --enable-sni --enable-sp-math-all=small CFLAGS="-DKEEP_PEER_CERT -DWOLFSSL_PUBLIC_MP -DWOLFSSL_PUBLIC_ECC_ADD_DBL"
 ```
 
 ## Using Nabto Embedded SDK as a library

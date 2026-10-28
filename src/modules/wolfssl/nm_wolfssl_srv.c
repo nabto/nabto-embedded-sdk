@@ -306,6 +306,11 @@ np_error_code nm_wolfssl_srv_create_connection(
     wolfSSL_SetIOReadCtx(ctx->ssl, ctx);
     wolfSSL_SetIOWriteCtx(ctx->ssl, ctx);
 
+    ec = nm_wolfssl_util_set_mtu(ctx->pl, ctx->ssl);
+    if (ec != NABTO_EC_OK) {
+        return ec;
+    }
+
     *dtls = ctx;
     return NABTO_EC_OK;
 }
@@ -605,8 +610,16 @@ int wolfssl_send(WOLFSSL* ssl, char* buffer, int bufferSize, void* data)
             // retransmission occurs.
             return (int)bufferSize;
         }
-        memcpy(ctx->pl->buf.start(ctx->sslSendBuffer), buffer,
-               (uint16_t)bufferSize);
+        if (bufferSize < 0 || bufferSize > pl->buf.size(ctx->sslSendBuffer)) {
+            NABTO_LOG_ERROR(LOG,
+                            "The dtls record (%d bytes) does not fit in a "
+                            "communication buffer, dropping the packet.",
+                            bufferSize);
+            pl->buf.free(ctx->sslSendBuffer);
+            ctx->sslSendBuffer = NULL;
+            return bufferSize;
+        }
+        memcpy(pl->buf.start(ctx->sslSendBuffer), buffer, bufferSize);
 
         np_error_code ec = ctx->sender(
             ctx->channelId, pl->buf.start(ctx->sslSendBuffer),

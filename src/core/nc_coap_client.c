@@ -108,7 +108,9 @@ np_error_code nc_coap_client_handle_send(struct nc_coap_client_context* ctx)
     struct np_dtls_send_context* sendCtx = &ctx->sendCtx;
     sendCtx->buffer = pl->buf.start(ctx->sendBuffer);
 
-    uint8_t* end = sendCtx->buffer+pl->buf.size(ctx->sendBuffer);
+    // Leave room for the dtls record overhead, the record is sent from a
+    // buffer of the same size.
+    uint8_t* end = sendCtx->buffer + pl->buf.size(ctx->sendBuffer) - NP_DTLS_MAX_RECORD_OVERHEAD;
 
     uint8_t* ptr = nabto_coap_client_create_packet(&ctx->client, ts, sendCtx->buffer, end, &connection);
     if (ptr == NULL || ptr < sendCtx->buffer || connection == NULL) {

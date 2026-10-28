@@ -34,6 +34,12 @@ void nm_mbedtls_util_check_logging(mbedtls_ssl_config* conf);
 int nm_mbedtls_sha256( const unsigned char *input, size_t ilen, unsigned char output[32] );
 
 /**
+ * Limit the size of the records the ssl context sends to the size of a
+ * communication buffer, as each record is written into one before it is sent.
+ */
+np_error_code nm_mbedtls_util_set_mtu(struct np_platform* pl, mbedtls_ssl_context* ssl);
+
+/**
  * Receive available udp application data from the ssl context. If the return
  * value > 0 the data is returned and must be freed after use by the caller. The
  * return value is otherwise identical to mbedtls_ssl_read. If a large enough
