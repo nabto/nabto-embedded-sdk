@@ -284,17 +284,22 @@ void try_send_locked(struct thermostat_stream* ts)
         return;
     }
 
-    size_t cborSize = thermostat_state_encode(state, NULL, 0);
-    uint8_t* buffer = malloc(4 + cborSize);
+    // Encode once: the tick thread can change state between sizing and writing.
+    const size_t capacity = THERMOSTAT_STATE_CBOR_CAPACITY;
+    uint8_t* buffer = malloc(4 + capacity);
     if (buffer == NULL) {
         ts->dirty = false;
+        return;
+    }
+    size_t cborSize = thermostat_state_encode(state, buffer + 4, capacity);
+    if (cborSize == 0) {
+        free(buffer);
         return;
     }
     buffer[0] = (uint8_t)((cborSize >> 24) & 0xff);
     buffer[1] = (uint8_t)((cborSize >> 16) & 0xff);
     buffer[2] = (uint8_t)((cborSize >> 8) & 0xff);
     buffer[3] = (uint8_t)(cborSize & 0xff);
-    thermostat_state_encode(state, buffer + 4, cborSize);
 
     NabtoDeviceFuture* writeFuture = nabto_device_future_new(ts->manager->device);
     if (writeFuture == NULL) {

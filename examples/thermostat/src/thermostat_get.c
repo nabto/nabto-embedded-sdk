@@ -27,13 +27,18 @@ void handle_request(struct thermostat_coap_handler* handler, NabtoDeviceCoapRequ
         return;
     }
 
-    size_t payloadSize = thermostat_state_encode(thermostat->state, NULL, 0);
-    uint8_t* payload = malloc(payloadSize);
+    uint8_t* payload = malloc(THERMOSTAT_STATE_CBOR_CAPACITY);
     if (payload == NULL) {
+        nabto_device_coap_error_response(request, 500, "Insufficient resources");
         return;
     }
 
-    thermostat_state_encode(thermostat->state, payload, payloadSize);
+    size_t payloadSize = thermostat_state_encode(thermostat->state, payload, THERMOSTAT_STATE_CBOR_CAPACITY);
+    if (payloadSize == 0) {
+        free(payload);
+        nabto_device_coap_error_response(request, 500, "Cannot encode state");
+        return;
+    }
 
     nabto_device_coap_response_set_code(request, 205);
     nabto_device_coap_response_set_content_format(request, NABTO_DEVICE_COAP_CONTENT_FORMAT_APPLICATION_CBOR);

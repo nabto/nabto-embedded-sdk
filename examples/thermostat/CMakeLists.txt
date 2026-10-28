@@ -38,6 +38,12 @@ install(TARGETS thermostat_device
 
 option(THERMOSTAT_BUILD_TESTS "Build the thermostat example tests" OFF)
 if (THERMOSTAT_BUILD_TESTS)
+  enable_testing()
+  add_executable(thermostat_state_test test/state_test.c src/thermostat_state.c)
+  target_include_directories(thermostat_state_test PRIVATE src)
+  target_link_libraries(thermostat_state_test nabto_device TinyCBOR::tinycbor NabtoCommon::nn)
+  add_test(NAME thermostat_state COMMAND thermostat_state_test)
+  add_test(NAME thermostat_history COMMAND thermostat_history_test)
   add_executable(thermostat_history_test test/history_test.c src/thermostat_history.c)
   target_include_directories(thermostat_history_test PRIVATE src)
   if (UNIX)

@@ -157,3 +157,22 @@ privileges of the device.
 After the first user has been paired the next users can pair using Password Open
 Pairing or Local Open Pairing or Password Invite Pairing. This all depends on
 how the device is setup by the first user.
+
+## Host regression checks
+
+Enable `THERMOSTAT_BUILD_TESTS` when configuring the SDK, then build the
+`thermostat_device`, `thermostat_history_test` and `thermostat_state_test`
+targets. Run `ctest --test-dir <build>/examples/thermostat --output-on-failure`.
+The state test keeps assertions enabled in Release, validates all mode values,
+checks buffer overflow handling and schedule time validation, and prints a
+CBOR fixture consumed by the matching SwiftUI app's compatibility test.
+
+State encoding uses a bounded single pass so concurrent state updates cannot
+change the payload size between sizing and writing a stream frame or CoAP
+response. Schedule updates reject non-finite targets. The host tests do not
+replace live IAM, pairing, schedule execution and stream lifecycle checks.
+
+On the October 2026 Mac/Xcode environment, the existing build cache needed
+`-DCMAKE_OSX_SYSROOT=macosx` and the existing mbedTLS dependency needed the local
+compiler flag `-DCMAKE_C_FLAGS=-Wno-error=unterminated-string-initialization`.
+No dependency source was changed for this compiler compatibility workaround.

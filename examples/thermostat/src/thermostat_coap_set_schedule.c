@@ -3,6 +3,7 @@
 
 #include "cbor_extra.h"
 #include <string.h>
+#include <math.h>
 #include <tinycbor/cbor.h>
 
 static void handle_request(struct thermostat_coap_handler* handler, NabtoDeviceCoapRequest* request);
@@ -29,7 +30,8 @@ static bool update_entry(CborValue* map, struct thermostat_schedule_entry* entry
 
     if (cbor_value_is_valid(&target)) {
         if (!cbor_value_is_floating_point(&target) ||
-            cbor_value_get_floating_point(&target, &entry->target) != CborNoError)
+            cbor_value_get_floating_point(&target, &entry->target) != CborNoError ||
+            !isfinite(entry->target))
         {
             return false;
         }

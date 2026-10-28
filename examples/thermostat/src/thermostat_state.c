@@ -149,5 +149,11 @@ size_t thermostat_state_encode(struct thermostat_state* state, void* buffer, siz
 
     cbor_encoder_close_container(&encoder, &map);
 
-    return cbor_encoder_get_extra_bytes_needed(&encoder);
+    if (buffer == NULL) {
+        return cbor_encoder_get_extra_bytes_needed(&encoder);
+    }
+    if (cbor_encoder_get_extra_bytes_needed(&encoder) != 0) {
+        return 0;
+    }
+    return cbor_encoder_get_buffer_size(&encoder, buffer);
 }

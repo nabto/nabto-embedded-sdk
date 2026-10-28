@@ -74,11 +74,11 @@ void thermostat_state_set_changed_callback(struct thermostat_state* state, therm
 
 /**
  * Encode the full thermostat state (Mode, Target, Power, Temperature,
- * Schedule) as a CBOR map. Uses the two pass idiom: call with a NULL buffer
- * to get the needed size, then call again with a buffer of that size. The
- * return value is the number of extra bytes needed, 0 when the buffer was
- * large enough.
+ * Schedule) as a CBOR map. NULL buffer returns the needed capacity.
+ * With a buffer, returns bytes written, or zero if capacity is insufficient.
+ * Use THERMOSTAT_STATE_CBOR_CAPACITY to encode changing state in one pass.
  */
+#define THERMOSTAT_STATE_CBOR_CAPACITY 1024
 size_t thermostat_state_encode(struct thermostat_state* state, void* buffer, size_t bufferSize);
 
 #endif

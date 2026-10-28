@@ -50,6 +50,7 @@ void handle_request(struct thermostat_coap_handler* handler, NabtoDeviceCoapRequ
     size_t payloadSize = encode(samples, count, NULL, 0);
     uint8_t* payload = malloc(payloadSize);
     if (payload == NULL) {
+        nabto_device_coap_error_response(request, 500, "Insufficient resources");
         return;
     }
 
