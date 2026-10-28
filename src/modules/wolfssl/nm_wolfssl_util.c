@@ -311,9 +311,18 @@ np_error_code nm_wolfssl_util_get_mtu(struct np_platform* pl, uint16_t* mtu)
     return NABTO_EC_OK;
 }
 
+// MAX_RECORD_SIZE in wolfssl/internal.h, the TLS plaintext limit of 2^14.
+// wolfSSL_dtls_set_mtu() rejects a larger mtu.
+#define NM_WOLFSSL_MAX_RECORD_SIZE 16384
+
 np_error_code nm_wolfssl_util_set_mtu(WOLFSSL* ssl, uint16_t mtu)
 {
 #if defined(WOLFSSL_DTLS_MTU)
+    // Records are then at most this size, which still fit in the larger
+    // communication buffer.
+    if (mtu > NM_WOLFSSL_MAX_RECORD_SIZE) {
+        mtu = NM_WOLFSSL_MAX_RECORD_SIZE;
+    }
     int ret = wolfSSL_dtls_set_mtu(ssl, mtu);
     if (ret != WOLFSSL_SUCCESS) {
         NABTO_LOG_ERROR(LOG, "Cannot set the dtls mtu %d", ret);
