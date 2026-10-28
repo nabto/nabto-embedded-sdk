@@ -2,8 +2,8 @@
 #include "thermostat.h"
 
 #include "cbor_extra.h"
-#include <string.h>
 #include <math.h>
+#include <string.h>
 #include <tinycbor/cbor.h>
 
 static void handle_request(struct thermostat_coap_handler* handler, NabtoDeviceCoapRequest* request);
