@@ -1,34 +1,34 @@
 #include "thermostat_history.h"
 
 #include <math.h>
-#include <string.h>
 #include <stdint.h>
+#include <string.h>
 
 void thermostat_history_init(struct thermostat_history* history)
 {
     memset(history, 0, sizeof(struct thermostat_history));
-    pthread_mutex_init(&history->mutex, NULL);
+    thermostat_mutex_init(&history->mutex);
 }
 
 void thermostat_history_deinit(struct thermostat_history* history)
 {
-    pthread_mutex_destroy(&history->mutex);
+    thermostat_mutex_destroy(&history->mutex);
 }
 
 void thermostat_history_push(struct thermostat_history* history, double sample)
 {
-    pthread_mutex_lock(&history->mutex);
+    thermostat_mutex_lock(&history->mutex);
     history->samples[history->head] = sample;
     history->head = (history->head + 1) % THERMOSTAT_HISTORY_CAPACITY;
     if (history->count < THERMOSTAT_HISTORY_CAPACITY) {
         history->count++;
     }
-    pthread_mutex_unlock(&history->mutex);
+    thermostat_mutex_unlock(&history->mutex);
 }
 
 size_t thermostat_history_snapshot(struct thermostat_history* history, double* buffer, size_t bufferSize)
 {
-    pthread_mutex_lock(&history->mutex);
+    thermostat_mutex_lock(&history->mutex);
     size_t count = history->count;
     if (count > bufferSize) {
         count = bufferSize;
@@ -37,7 +37,7 @@ size_t thermostat_history_snapshot(struct thermostat_history* history, double* b
     for (size_t i = 0; i < count; i++) {
         buffer[i] = history->samples[(start + i) % THERMOSTAT_HISTORY_CAPACITY];
     }
-    pthread_mutex_unlock(&history->mutex);
+    thermostat_mutex_unlock(&history->mutex);
     return count;
 }
 

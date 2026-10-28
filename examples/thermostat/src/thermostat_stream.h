@@ -1,9 +1,10 @@
 #ifndef THERMOSTAT_STREAM_H_
 #define THERMOSTAT_STREAM_H_
 
+#include "thermostat_mutex.h"
+
 #include <nabto/nabto_device.h>
 
-#include <pthread.h>
 #include <stdbool.h>
 
 /**
@@ -27,7 +28,7 @@ struct thermostat_stream_manager {
     struct thermostat_stream* streams;
     // protects the stream list and the per stream send state which is
     // accessed from both the main thread and the nabto device threads.
-    pthread_mutex_t mutex;
+    thermostat_mutex mutex;
 };
 
 NabtoDeviceError thermostat_stream_manager_init(struct thermostat_stream_manager* manager, NabtoDevice* device, struct thermostat* thermostat);

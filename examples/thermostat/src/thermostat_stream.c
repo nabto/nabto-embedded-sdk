@@ -47,9 +47,13 @@ static void try_free_locked(struct thermostat_stream* ts);
 
 static uint64_t monotonic_ms(void)
 {
+#ifdef _WIN32
+    return GetTickCount64();
+#else
     struct timespec ts;
     clock_gettime(CLOCK_MONOTONIC, &ts);
     return ((uint64_t)ts.tv_sec * 1000) + ((uint64_t)ts.tv_nsec / 1000000);
+#endif
 }
 
 NabtoDeviceError thermostat_stream_manager_init(struct thermostat_stream_manager* manager, NabtoDevice* device, struct thermostat* thermostat)
@@ -57,7 +61,7 @@ NabtoDeviceError thermostat_stream_manager_init(struct thermostat_stream_manager
     memset(manager, 0, sizeof(struct thermostat_stream_manager));
     manager->device = device;
     manager->thermostat = thermostat;
-    pthread_mutex_init(&manager->mutex, NULL);
+    thermostat_mutex_init(&manager->mutex);
 
     manager->listenFuture = nabto_device_future_new(device);
     manager->listener = nabto_device_listener_new(device);
@@ -80,13 +84,13 @@ void thermostat_stream_manager_stop(struct thermostat_stream_manager* manager)
     if (manager->listener != NULL) {
         nabto_device_listener_stop(manager->listener);
     }
-    pthread_mutex_lock(&manager->mutex);
+    thermostat_mutex_lock(&manager->mutex);
     struct thermostat_stream* ts = manager->streams;
     while (ts != NULL) {
         nabto_device_stream_abort(ts->stream);
         ts = ts->next;
     }
-    pthread_mutex_unlock(&manager->mutex);
+    thermostat_mutex_unlock(&manager->mutex);
 }
 
 void thermostat_stream_manager_deinit(struct thermostat_stream_manager* manager)
@@ -102,7 +106,7 @@ void thermostat_stream_manager_deinit(struct thermostat_stream_manager* manager)
     if (manager->listener != NULL) {
         nabto_device_listener_free(manager->listener);
     }
-    pthread_mutex_destroy(&manager->mutex);
+    thermostat_mutex_destroy(&manager->mutex);
     manager->device = NULL;
 }
 
@@ -111,14 +115,14 @@ void thermostat_stream_manager_notify_state_changed(struct thermostat_stream_man
     if (manager->device == NULL) {
         return;
     }
-    pthread_mutex_lock(&manager->mutex);
+    thermostat_mutex_lock(&manager->mutex);
     struct thermostat_stream* ts = manager->streams;
     while (ts != NULL) {
         ts->dirty = true;
         try_send_locked(ts);
         ts = ts->next;
     }
-    pthread_mutex_unlock(&manager->mutex);
+    thermostat_mutex_unlock(&manager->mutex);
 }
 
 void thermostat_stream_manager_flush(struct thermostat_stream_manager* manager)
@@ -126,13 +130,13 @@ void thermostat_stream_manager_flush(struct thermostat_stream_manager* manager)
     if (manager->device == NULL) {
         return;
     }
-    pthread_mutex_lock(&manager->mutex);
+    thermostat_mutex_lock(&manager->mutex);
     struct thermostat_stream* ts = manager->streams;
     while (ts != NULL) {
         try_send_locked(ts);
         ts = ts->next;
     }
-    pthread_mutex_unlock(&manager->mutex);
+    thermostat_mutex_unlock(&manager->mutex);
 }
 
 void start_listen(struct thermostat_stream_manager* manager)
@@ -169,11 +173,11 @@ void new_stream_callback(NabtoDeviceFuture* future, NabtoDeviceError ec, void* u
         } else {
             ts->manager = manager;
             ts->stream = stream;
-            pthread_mutex_lock(&manager->mutex);
+            thermostat_mutex_lock(&manager->mutex);
             ts->next = manager->streams;
             manager->streams = ts;
             ts->pendingOps = 1;
-            pthread_mutex_unlock(&manager->mutex);
+            thermostat_mutex_unlock(&manager->mutex);
             nabto_device_stream_accept(stream, acceptFuture);
             nabto_device_future_set_callback(acceptFuture, accepted_callback, ts);
         }
@@ -186,7 +190,7 @@ void accepted_callback(NabtoDeviceFuture* future, NabtoDeviceError ec, void* use
     nabto_device_future_free(future);
     struct thermostat_stream* ts = userData;
     struct thermostat_stream_manager* manager = ts->manager;
-    pthread_mutex_lock(&manager->mutex);
+    thermostat_mutex_lock(&manager->mutex);
     ts->pendingOps--;
     if (ec != NABTO_DEVICE_EC_OK) {
         ts->ended = true;
@@ -200,7 +204,7 @@ void accepted_callback(NabtoDeviceFuture* future, NabtoDeviceError ec, void* use
         // use of ts.
         start_read_locked(ts);
     }
-    pthread_mutex_unlock(&manager->mutex);
+    thermostat_mutex_unlock(&manager->mutex);
 }
 
 void start_read_locked(struct thermostat_stream* ts)
@@ -222,7 +226,7 @@ void read_callback(NabtoDeviceFuture* future, NabtoDeviceError ec, void* userDat
     nabto_device_future_free(future);
     struct thermostat_stream* ts = userData;
     struct thermostat_stream_manager* manager = ts->manager;
-    pthread_mutex_lock(&manager->mutex);
+    thermostat_mutex_lock(&manager->mutex);
     ts->pendingOps--;
     if (ec != NABTO_DEVICE_EC_OK) {
         // EOF or error, the client is gone.
@@ -233,7 +237,7 @@ void read_callback(NabtoDeviceFuture* future, NabtoDeviceError ec, void* userDat
         // discard the read data, read again to detect EOF.
         start_read_locked(ts);
     }
-    pthread_mutex_unlock(&manager->mutex);
+    thermostat_mutex_unlock(&manager->mutex);
 }
 
 static bool schedule_entry_equals(const struct thermostat_schedule_entry* a, const struct thermostat_schedule_entry* b)
@@ -329,7 +333,7 @@ void write_callback(NabtoDeviceFuture* future, NabtoDeviceError ec, void* userDa
     nabto_device_future_free(future);
     struct thermostat_stream* ts = userData;
     struct thermostat_stream_manager* manager = ts->manager;
-    pthread_mutex_lock(&manager->mutex);
+    thermostat_mutex_lock(&manager->mutex);
     ts->pendingOps--;
     ts->writing = false;
     free(ts->writeBuffer);
@@ -344,7 +348,7 @@ void write_callback(NabtoDeviceFuture* future, NabtoDeviceError ec, void* userDa
         // the state may have changed while the write was outstanding.
         try_send_locked(ts);
     }
-    pthread_mutex_unlock(&manager->mutex);
+    thermostat_mutex_unlock(&manager->mutex);
 }
 
 void try_free_locked(struct thermostat_stream* ts)

@@ -24,7 +24,7 @@ void thermostat_state_file_backend_init(struct thermostat_state_file_backend* fi
     set_default_state_data(fileBackend);
 
     fileBackend->fsImpl = fsImpl;
-    pthread_mutex_init(&fileBackend->mutex, NULL);
+    thermostat_mutex_init(&fileBackend->mutex);
 
     memset(thermostatState, 0, sizeof(struct thermostat_state));
     thermostatState->impl = fileBackend;
@@ -41,7 +41,7 @@ void thermostat_state_file_backend_init(struct thermostat_state_file_backend* fi
 
 void thermostat_state_file_backend_deinit(struct thermostat_state_file_backend* fileBackend)
 {
-    pthread_mutex_destroy(&fileBackend->mutex);
+    thermostat_mutex_destroy(&fileBackend->mutex);
     free(fileBackend->filename);
 }
 
@@ -66,76 +66,76 @@ bool thermostate_state_file_backend_load_data(struct thermostat_state_file_backe
 bool get_power(void* impl)
 {
     struct thermostat_state_file_backend* fb = impl;
-    pthread_mutex_lock(&fb->mutex);
+    thermostat_mutex_lock(&fb->mutex);
     bool power = fb->stateData.power;
-    pthread_mutex_unlock(&fb->mutex);
+    thermostat_mutex_unlock(&fb->mutex);
     return power;
 }
 
 void set_power(void* impl, bool power)
 {
     struct thermostat_state_file_backend* fb = impl;
-    pthread_mutex_lock(&fb->mutex);
+    thermostat_mutex_lock(&fb->mutex);
     fb->stateData.power = power;
     save_state(fb);
-    pthread_mutex_unlock(&fb->mutex);
+    thermostat_mutex_unlock(&fb->mutex);
 }
 double get_target(void* impl)
 {
     struct thermostat_state_file_backend* fb = impl;
-    pthread_mutex_lock(&fb->mutex);
+    thermostat_mutex_lock(&fb->mutex);
     double target = fb->stateData.target;
-    pthread_mutex_unlock(&fb->mutex);
+    thermostat_mutex_unlock(&fb->mutex);
     return target;
 }
 void set_target(void* impl, double target)
 {
     struct thermostat_state_file_backend* fb = impl;
-    pthread_mutex_lock(&fb->mutex);
+    thermostat_mutex_lock(&fb->mutex);
     fb->stateData.target = target;
     save_state(fb);
-    pthread_mutex_unlock(&fb->mutex);
+    thermostat_mutex_unlock(&fb->mutex);
 }
 double get_temperature(void* impl)
 {
     struct thermostat_state_file_backend* fb = impl;
-    pthread_mutex_lock(&fb->mutex);
+    thermostat_mutex_lock(&fb->mutex);
     double temperature = fb->stateData.temperature;
-    pthread_mutex_unlock(&fb->mutex);
+    thermostat_mutex_unlock(&fb->mutex);
     return temperature;
 }
 void set_mode(void* impl, enum thermostat_mode mode)
 {
     struct thermostat_state_file_backend* fb = impl;
-    pthread_mutex_lock(&fb->mutex);
+    thermostat_mutex_lock(&fb->mutex);
     fb->stateData.mode = mode;
     save_state(fb);
-    pthread_mutex_unlock(&fb->mutex);
+    thermostat_mutex_unlock(&fb->mutex);
 }
 enum thermostat_mode get_mode(void* impl)
 {
     struct thermostat_state_file_backend* fb = impl;
-    pthread_mutex_lock(&fb->mutex);
+    thermostat_mutex_lock(&fb->mutex);
     enum thermostat_mode mode = fb->stateData.mode;
-    pthread_mutex_unlock(&fb->mutex);
+    thermostat_mutex_unlock(&fb->mutex);
     return mode;
 }
 
 void get_schedule(void* impl, struct thermostat_schedule* schedule)
 {
     struct thermostat_state_file_backend* fb = impl;
-    pthread_mutex_lock(&fb->mutex);
+    thermostat_mutex_lock(&fb->mutex);
     *schedule = fb->stateData.schedule;
-    pthread_mutex_unlock(&fb->mutex);
+    thermostat_mutex_unlock(&fb->mutex);
 }
 
 void set_schedule(void* impl, const struct thermostat_schedule* schedule)
 {
     struct thermostat_state_file_backend* fb = impl;
-    pthread_mutex_lock(&fb->mutex);
+    thermostat_mutex_lock(&fb->mutex);
     fb->stateData.schedule = *schedule;
     save_state(fb);
-    pthread_mutex_unlock(&fb->mutex);
+    thermostat_mutex_unlock(&fb->mutex);
 }
 
 void print_state(struct thermostat_state_data* stateData)
@@ -192,7 +192,7 @@ static double smoothstep(double start, double end, double x)
 }
 
 void thermostat_state_file_backend_update(struct thermostat_state_file_backend* fb, double deltaTime) {
-    pthread_mutex_lock(&fb->mutex);
+    thermostat_mutex_lock(&fb->mutex);
     if (fb->stateData.power) {
         // Move temperature smoothly towards target
         // When temperature is within smoothingDistance units of target
@@ -208,5 +208,5 @@ void thermostat_state_file_backend_update(struct thermostat_state_file_backend* 
 
         fb->stateData.temperature += sign * speed * smoothstep(0, smoothingDistance, distance);
     }
-    pthread_mutex_unlock(&fb->mutex);
+    thermostat_mutex_unlock(&fb->mutex);
 }

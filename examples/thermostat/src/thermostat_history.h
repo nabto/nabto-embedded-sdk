@@ -1,7 +1,8 @@
 #ifndef THERMOSTAT_HISTORY_H_
 #define THERMOSTAT_HISTORY_H_
 
-#include <pthread.h>
+#include "thermostat_mutex.h"
+
 #include <stdbool.h>
 #include <stddef.h>
 
@@ -19,7 +20,7 @@ struct thermostat_history {
     double samples[THERMOSTAT_HISTORY_CAPACITY];
     size_t head;
     size_t count;
-    pthread_mutex_t mutex;
+    thermostat_mutex mutex;
 };
 
 void thermostat_history_init(struct thermostat_history* history);
