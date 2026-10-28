@@ -9,6 +9,10 @@
 
 #include <wolfssl/ssl.h>
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 typedef struct nm_dtls_util_connection_ctx nm_dtls_util_connection_ctx;
 
 np_error_code nm_wolfssl_util_fp_from_crt(const WOLFSSL_X509* crt, uint8_t* fp);
@@ -38,5 +42,9 @@ np_error_code nm_wolfssl_util_get_mtu(struct np_platform* pl, uint16_t* mtu);
  * callbacks drop records which do not fit.
  */
 np_error_code nm_wolfssl_util_set_mtu(WOLFSSL* ssl, uint16_t mtu);
+
+#ifdef __cplusplus
+} // extern "C"
+#endif
 
 #endif //NM_wolfssl_UTIL_H
