@@ -219,5 +219,56 @@ BOOST_AUTO_TEST_CASE(backwards_compatability)
     nabto_device_service_invocation_free(s);
 }
 
+BOOST_AUTO_TEST_CASE(stop_after_execute_completed)
+{
+    nabto::test::AttachedTestDevice attachedTestDevice;
+
+    attachedTestDevice.attach(getHostname(), getPort(), getRootCerts());
+
+    NabtoDevice* dev = attachedTestDevice.device();
+
+    const char* message = "foo";
+
+    NabtoDeviceServiceInvocation* s = nabto_device_service_invocation_new(dev);
+    nabto_device_service_invocation_set_service_id(s, "foobar");
+    nabto_device_service_invocation_set_message(s, (uint8_t*)message, strlen(message));
+
+    NabtoDeviceFuture* f = nabto_device_future_new(dev);
+    nabto_device_service_invocation_execute(s, f);
+    BOOST_TEST(EC(nabto_device_future_wait(f)) == EC(NABTO_DEVICE_EC_OK));
+
+    // The coap request has been freed when the invocation completed, stop
+    // must not touch it.
+    nabto_device_service_invocation_stop(s);
+
+    nabto_device_future_free(f);
+    nabto_device_service_invocation_free(s);
+}
+
+BOOST_AUTO_TEST_CASE(free_while_executing)
+{
+    nabto::test::AttachedTestDevice attachedTestDevice;
+
+    attachedTestDevice.attach(getHostname(), getPort(), getRootCerts());
+
+    NabtoDevice* dev = attachedTestDevice.device();
+
+    const char* message = "foo";
+
+    NabtoDeviceServiceInvocation* s = nabto_device_service_invocation_new(dev);
+    nabto_device_service_invocation_set_service_id(s, "foobar");
+    nabto_device_service_invocation_set_message(s, (uint8_t*)message, strlen(message));
+
+    NabtoDeviceFuture* f = nabto_device_future_new(dev);
+    nabto_device_service_invocation_execute(s, f);
+    // Freeing with an outstanding request must abort it, a late response
+    // must not reach the freed object. The response can win the race, in
+    // which case the future is already resolved with OK.
+    nabto_device_service_invocation_free(s);
+    NabtoDeviceError ec = nabto_device_future_timed_wait(f, 5000);
+    BOOST_TEST((ec == NABTO_DEVICE_EC_STOPPED || ec == NABTO_DEVICE_EC_OK), "ec: " << nabto_device_error_get_string(ec));
+
+    nabto_device_future_free(f);
+}
 
 BOOST_AUTO_TEST_SUITE_END()

@@ -35,6 +35,7 @@ nabto_device_fcm_notification_free(NabtoDeviceFcmNotification* notification)
     struct nabto_device_fcm_notification* n = (struct nabto_device_fcm_notification*)notification;
     struct nabto_device_context* dev = n->dev;
     nabto_device_threads_mutex_lock(dev->eventMutex);
+    nc_attacher_fcm_send_deinit(&n->fcmSend);
     np_free(n->fcmSend.fcmRequest.payload);
     np_free(n->fcmSend.fcmRequest.projectId);
     np_free(n->fcmSend.fcmResponse.body);
