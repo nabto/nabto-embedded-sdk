@@ -30,7 +30,9 @@ target_link_libraries(thermostat_device nabto_device 3rdparty_gopt cjson NabtoCo
 
 target_link_libraries(thermostat_device TinyCBOR::tinycbor)
 
-#target_link_libraries( thermostat_device ${CMAKE_THREAD_LIBS_INIT} )
+if (UNIX)
+  target_link_libraries(thermostat_device m Threads::Threads)
+endif()
 
 install(TARGETS thermostat_device
   RUNTIME DESTINATION bin
