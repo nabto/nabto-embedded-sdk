@@ -46,6 +46,8 @@ struct nm_mbedtls_cli_context {
 
     int timeoutMin;
     int timeoutMax;
+
+    uint16_t mtu;
 };
 
 struct np_dtls_cli_connection {
@@ -221,6 +223,10 @@ np_error_code initialize_context(struct np_platform* pl)
     }
     pl->dtlsCData = ctx;
     ctx->pl = pl;
+    np_error_code ec = nm_mbedtls_util_get_mtu(pl, &ctx->mtu);
+    if (ec != NABTO_EC_OK) {
+        return ec;
+    }
     mbedtls_ssl_config_init( &ctx->clientsConf );
     mbedtls_ssl_config_init( &ctx->attachConf );
     mbedtls_ctr_drbg_init( &ctx->ctr_drbg );
@@ -239,7 +245,7 @@ np_error_code initialize_context(struct np_platform* pl)
         return NABTO_EC_UNKNOWN;
     }
 
-    np_error_code ec = init_mbedtls_config(ctx, &ctx->clientsConf);
+    ec = init_mbedtls_config(ctx, &ctx->clientsConf);
     if (ec != NABTO_EC_OK)
     {
         return ec;
@@ -297,10 +303,7 @@ np_error_code create_connection(struct np_platform* pl, struct np_dtls_cli_conne
     mbedtls_ssl_set_bio( &conn->ssl, conn,
                          nm_dtls_mbedtls_send, nm_dtls_mbedtls_recv, NULL );
 
-    ec = nm_mbedtls_util_set_mtu(pl, &conn->ssl);
-    if (ec != NABTO_EC_OK) {
-        return ec;
-    }
+    mbedtls_ssl_set_mtu(&conn->ssl, ctx->mtu);
 
     mbedtls_ssl_set_timer_cb( &conn->ssl,
                               &conn->timer,

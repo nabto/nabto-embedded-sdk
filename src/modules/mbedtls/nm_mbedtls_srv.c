@@ -66,6 +66,7 @@ struct np_dtls_srv {
     mbedtls_ssl_config conf;
     mbedtls_x509_crt publicKey;
     mbedtls_pk_context privateKey;
+    uint16_t mtu;
 };
 
 static np_error_code nm_mbedtls_srv_create(struct np_platform* pl, struct np_dtls_srv** server);
@@ -178,6 +179,12 @@ np_error_code nm_mbedtls_srv_create(struct np_platform* pl, struct np_dtls_srv**
         return NABTO_EC_OUT_OF_MEMORY;
     }
     (*server)->pl = pl;
+    np_error_code ec = nm_mbedtls_util_get_mtu(pl, &(*server)->mtu);
+    if (ec != NABTO_EC_OK) {
+        np_free(*server);
+        *server = NULL;
+        return ec;
+    }
     mbedtls_ssl_config_init( &(*server)->conf );
     mbedtls_entropy_init( &(*server)->entropy );
     mbedtls_ctr_drbg_init( &(*server)->ctr_drbg );
@@ -282,10 +289,7 @@ np_error_code nm_mbedtls_srv_create_connection(struct np_dtls_srv* server,
     mbedtls_ssl_set_bio( &ctx->ssl, ctx,
                          &nm_mbedtls_srv_mbedtls_send, &nm_mbedtls_srv_mbedtls_recv, NULL );
 
-    ec = nm_mbedtls_util_set_mtu(ctx->pl, &ctx->ssl);
-    if (ec != NABTO_EC_OK) {
-        return ec;
-    }
+    mbedtls_ssl_set_mtu(&ctx->ssl, server->mtu);
 
     *dtls = ctx;
     return NABTO_EC_OK;

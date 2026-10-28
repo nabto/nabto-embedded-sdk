@@ -51,17 +51,30 @@ class DtlsPair {
         np_event_queue_destroy_event(&pl_->eq, deliverEvent_);
     }
 
-    void connect()
+    /**
+     * @param noBuffersForCreate  No communication buffer can be allocated
+     *                            while the connections are created, as when
+     *                            a buffer pool is exhausted.
+     */
+    void connect(bool noBuffersForCreate = false)
     {
         const std::string& cert = localhostMultiNabtoNetCert;
         const std::string& key = privateKey;
         runOnEventThread([&]() {
             BOOST_REQUIRE(pl_->dtlsS.create(pl_, &srv_) == NABTO_EC_OK);
             BOOST_REQUIRE(pl_->dtlsS.set_keys(srv_, (const unsigned char*)cert.c_str(), cert.size(), (const unsigned char*)key.c_str(), key.size()) == NABTO_EC_OK);
-            BOOST_REQUIRE(pl_->dtlsS.create_connection(srv_, &srvConn_, &DtlsPair::serverSender, &DtlsPair::serverData, &DtlsPair::serverEvent, this) == NABTO_EC_OK);
-
             BOOST_REQUIRE(pl_->dtlsC.set_keys(pl_, (const unsigned char*)cert.c_str(), cert.size(), (const unsigned char*)key.c_str(), key.size()) == NABTO_EC_OK);
-            BOOST_REQUIRE(pl_->dtlsC.create_client_connection(pl_, &cli_, &DtlsPair::clientSender, &DtlsPair::clientData, &DtlsPair::clientEvent, this) == NABTO_EC_OK);
+
+            struct np_communication_buffer* (*allocate)(void) = pl_->buf.allocate;
+            if (noBuffersForCreate) {
+                pl_->buf.allocate = []() -> struct np_communication_buffer* { return NULL; };
+            }
+            np_error_code srvEc = pl_->dtlsS.create_connection(srv_, &srvConn_, &DtlsPair::serverSender, &DtlsPair::serverData, &DtlsPair::serverEvent, this);
+            np_error_code cliEc = pl_->dtlsC.create_client_connection(pl_, &cli_, &DtlsPair::clientSender, &DtlsPair::clientData, &DtlsPair::clientEvent, this);
+            pl_->buf.allocate = allocate;
+            BOOST_REQUIRE(srvEc == NABTO_EC_OK);
+            BOOST_REQUIRE(cliEc == NABTO_EC_OK);
+
             BOOST_REQUIRE(pl_->dtlsC.connect(cli_) == NABTO_EC_OK);
         });
         BOOST_REQUIRE(handshake_.get_future().wait_for(std::chrono::seconds(5)) == std::future_status::ready);
@@ -239,6 +252,14 @@ BOOST_AUTO_TEST_CASE(server_send_larger_than_communication_buffer)
     (void)ec;
 #endif
     BOOST_TEST(pair.clientReceived_ == 0u);
+}
+
+BOOST_AUTO_TEST_CASE(create_connection_without_free_communication_buffers)
+{
+    auto tp = nabto::test::TestPlatform::create();
+    nabto::test::DtlsPair pair(*tp);
+    // Setting the mtu must not need a communication buffer.
+    pair.connect(/*noBuffersForCreate*/ true);
 }
 
 BOOST_AUTO_TEST_CASE(max_plaintext_fits_in_a_record)

@@ -25,11 +25,18 @@ np_error_code nm_wolfssl_util_create_private_key(char** privateKey);
 void nm_wolfssl_util_check_logging();
 
 /**
- * Limit the size of the records the ssl object sends to the size of a
- * communication buffer, as each record is written into one before it is sent.
- * Requires wolfSSL built with WOLFSSL_DTLS_MTU, otherwise this does nothing
- * and the send callbacks drop records which do not fit.
+ * Get the dtls mtu, which is the size of a communication buffer as each record
+ * is written into one before it is sent. A buffer is allocated to read the
+ * size, so call this when the module is set up and cache the result rather
+ * than calling it per connection.
  */
-np_error_code nm_wolfssl_util_set_mtu(struct np_platform* pl, WOLFSSL* ssl);
+np_error_code nm_wolfssl_util_get_mtu(struct np_platform* pl, uint16_t* mtu);
+
+/**
+ * Limit the size of the records the ssl object sends to mtu. Requires wolfSSL
+ * built with WOLFSSL_DTLS_MTU, otherwise this does nothing and the send
+ * callbacks drop records which do not fit.
+ */
+np_error_code nm_wolfssl_util_set_mtu(WOLFSSL* ssl, uint16_t mtu);
 
 #endif //NM_wolfssl_UTIL_H

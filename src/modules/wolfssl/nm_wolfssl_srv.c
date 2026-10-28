@@ -66,6 +66,7 @@ struct np_dtls_srv_connection {
 struct np_dtls_srv {
     struct np_platform* pl;
     WOLFSSL_CTX* ctx;
+    uint16_t mtu;
 };
 
 static np_error_code nm_wolfssl_srv_create(struct np_platform* pl,
@@ -212,6 +213,12 @@ np_error_code nm_wolfssl_srv_create(struct np_platform* pl,
         return NABTO_EC_OUT_OF_MEMORY;
     }
     (*server)->pl = pl;
+    np_error_code ec = nm_wolfssl_util_get_mtu(pl, &(*server)->mtu);
+    if (ec != NABTO_EC_OK) {
+        np_free(*server);
+        *server = NULL;
+        return ec;
+    }
     nm_wolfssl_util_check_logging();
     WOLFSSL_METHOD* method = wolfDTLSv1_2_server_method();
     (*server)->ctx = wolfSSL_CTX_new(method);
@@ -306,7 +313,7 @@ np_error_code nm_wolfssl_srv_create_connection(
     wolfSSL_SetIOReadCtx(ctx->ssl, ctx);
     wolfSSL_SetIOWriteCtx(ctx->ssl, ctx);
 
-    ec = nm_wolfssl_util_set_mtu(ctx->pl, ctx->ssl);
+    ec = nm_wolfssl_util_set_mtu(ctx->ssl, server->mtu);
     if (ec != NABTO_EC_OK) {
         return ec;
     }

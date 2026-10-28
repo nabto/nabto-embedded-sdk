@@ -129,9 +129,18 @@ np_error_code nc_coap_server_handle_send(struct nc_coap_server_context* ctx)
         return NABTO_EC_OUT_OF_MEMORY;
     }
     uint8_t* sendBuffer = pl->buf.start(ctx->sendBuffer);
+    size_t sendBufferSize = pl->buf.size(ctx->sendBuffer);
+    if (sendBufferSize <= NP_DTLS_MAX_RECORD_OVERHEAD) {
+        NABTO_LOG_ERROR(LOG, "The communication buffer is too small for a coap packet and the dtls record overhead.");
+        pl->buf.free(ctx->sendBuffer);
+        ctx->sendBuffer = NULL;
+        // discard the packet
+        nabto_coap_server_handle_send(&ctx->requests, NULL, NULL);
+        return NABTO_EC_FAILED;
+    }
     // Leave room for the dtls record overhead, the record is sent from a
     // buffer of the same size.
-    size_t sendBufferSize = pl->buf.size(ctx->sendBuffer) - NP_DTLS_MAX_RECORD_OVERHEAD;
+    sendBufferSize -= NP_DTLS_MAX_RECORD_OVERHEAD;
 
     uint8_t* sendEnd = nabto_coap_server_handle_send(&ctx->requests, sendBuffer, sendBuffer + sendBufferSize);
 

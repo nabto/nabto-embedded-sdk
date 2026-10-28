@@ -34,10 +34,12 @@ void nm_mbedtls_util_check_logging(mbedtls_ssl_config* conf);
 int nm_mbedtls_sha256( const unsigned char *input, size_t ilen, unsigned char output[32] );
 
 /**
- * Limit the size of the records the ssl context sends to the size of a
- * communication buffer, as each record is written into one before it is sent.
+ * Get the dtls mtu, which is the size of a communication buffer as each record
+ * is written into one before it is sent. A buffer is allocated to read the
+ * size, so call this when the module is set up and cache the result rather
+ * than calling it per connection.
  */
-np_error_code nm_mbedtls_util_set_mtu(struct np_platform* pl, mbedtls_ssl_context* ssl);
+np_error_code nm_mbedtls_util_get_mtu(struct np_platform* pl, uint16_t* mtu);
 
 /**
  * Receive available udp application data from the ssl context. If the return

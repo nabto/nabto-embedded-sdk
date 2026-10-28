@@ -337,13 +337,13 @@ int nm_mbedtls_recv_data(mbedtls_ssl_context *ssl, uint8_t** data)
     return (int)totalRecvLength;
 }
 
-np_error_code nm_mbedtls_util_set_mtu(struct np_platform* pl, mbedtls_ssl_context* ssl)
+np_error_code nm_mbedtls_util_get_mtu(struct np_platform* pl, uint16_t* mtu)
 {
     struct np_communication_buffer* buf = pl->buf.allocate();
     if (buf == NULL) {
         return NABTO_EC_OUT_OF_MEMORY;
     }
-    mbedtls_ssl_set_mtu(ssl, pl->buf.size(buf));
+    *mtu = pl->buf.size(buf);
     pl->buf.free(buf);
     return NABTO_EC_OK;
 }
