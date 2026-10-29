@@ -263,6 +263,12 @@ void resource_callback(struct nabto_coap_server_request* request, void* userData
 {
     struct nc_coap_server_resource* res = (struct nc_coap_server_resource*)userData;
     struct nc_coap_server_request* req = np_calloc(1, sizeof(struct nc_coap_server_request));
+    if (req == NULL) {
+        NABTO_LOG_ERROR(LOG, "Out of memory, cannot handle the CoAP request");
+        nabto_coap_server_send_error_response(request, NABTO_COAP_CODE_INTERNAL_SERVER_ERROR, NULL);
+        nabto_coap_server_request_free(request);
+        return;
+    }
     req->request = request;
     req->device = res->device;
     req->isVirtual = false;
@@ -317,7 +323,9 @@ nabto_coap_error nc_coap_server_send_error_response(struct nc_coap_server_reques
         request->virRequest->respStatusCode = status;
         if (description != NULL) {
             request->virRequest->respPayload = nn_strdup(description, np_allocator_get());
-            request->virRequest->respPayloadSize = strlen(description);
+            if (request->virRequest->respPayload != NULL) {
+                request->virRequest->respPayloadSize = strlen(description);
+            }
         }
         request->virRequest->responseReady = true;
         nc_coap_server_resolve_virtual(NABTO_EC_OK, request);

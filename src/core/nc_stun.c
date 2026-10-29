@@ -126,6 +126,9 @@ void nc_stun_set_host(struct nc_stun_context* ctx, const char* hostname, uint16_
             ctx->hostname = NULL;
         }
         ctx->hostname = nn_strdup(hostname, np_allocator_get());
+        if (ctx->hostname == NULL) {
+            NABTO_LOG_ERROR(LOG, "Out of memory, cannot store the STUN host");
+        }
         ctx->priPort = port;
     }
 }
@@ -146,11 +149,11 @@ np_error_code nc_stun_async_analyze_simple(struct nc_stun_context* ctx, struct n
     if (ctx->state == NC_STUN_STATE_ABORTED) {
         return NABTO_EC_ABORTED;
     }
-    NABTO_LOG_TRACE(LOG, "Starting STUN analysis for host: %s", ctx->hostname);
     if (ctx->hostname == NULL) {
         NABTO_LOG_ERROR(LOG, "Stun analysis started before host was configured");
         return NABTO_EC_INVALID_STATE;
     }
+    NABTO_LOG_TRACE(LOG, "Starting STUN analysis for host: %s", ctx->hostname);
     nn_llist_append(&ctx->cbs, &callback->callbackNode, callback);
 
     if (ctx->state == NC_STUN_STATE_RESOLVING ||

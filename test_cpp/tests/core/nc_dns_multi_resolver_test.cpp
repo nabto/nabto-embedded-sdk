@@ -2,6 +2,7 @@
 
 #include <test_platform.hpp>
 #include <test_platform_libevent.hpp>
+#include <util/failing_allocator.hpp>
 
 #include <core/nc_dns_multi_resolver.h>
 #include <platform/np_completion_event.h>
@@ -111,6 +112,37 @@ BOOST_AUTO_TEST_CASE(overlapping_resolve_is_rejected)
         np_completion_event_resolve(mock.v6CompletionEvent, NABTO_EC_UNKNOWN);
         BOOST_TEST(first.wait() == NABTO_EC_OK);
         BOOST_TEST(ipsResolved == (size_t)1);
+        BOOST_TEST(ctx.host == (char*)NULL);
+    }
+    nc_dns_multi_resolver_deinit(&ctx);
+}
+
+BOOST_AUTO_TEST_CASE(host_copy_allocation_failure_fails_the_resolve)
+{
+    auto tp = std::make_unique<nabto::test::TestPlatformLibevent>();
+    struct np_platform* pl = tp->getPlatform();
+
+    MockDns mock;
+    pl->dns.mptr = &mockDnsModule;
+    pl->dns.data = &mock;
+
+    struct nc_dns_multi_resolver_context ctx;
+    BOOST_TEST(nc_dns_multi_resolver_init(pl, &ctx) == NABTO_EC_OK);
+    {
+        CompletionWaiter waiter(pl);
+        struct np_ip_address ips[NC_DNS_MULTI_RESOLVER_MAX_IPS];
+        size_t ipsResolved = 0;
+
+        const char* host = "example.com";
+        {
+            nabto::test::FailingAllocator allocator;
+            allocator.failSize(strlen(host) + 1);
+            nc_dns_multi_resolver_resolve(&ctx, host, ips, NC_DNS_MULTI_RESOLVER_MAX_IPS, &ipsResolved, &waiter.completionEvent_);
+            BOOST_TEST(allocator.failures() == 1u);
+        }
+        BOOST_TEST(waiter.wait() == NABTO_EC_OUT_OF_MEMORY);
+        // No resolve was started.
+        BOOST_TEST(mock.v4CompletionEvent == (struct np_completion_event*)NULL);
         BOOST_TEST(ctx.host == (char*)NULL);
     }
     nc_dns_multi_resolver_deinit(&ctx);
