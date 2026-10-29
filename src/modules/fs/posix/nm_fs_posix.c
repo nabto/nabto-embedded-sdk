@@ -116,6 +116,60 @@ static enum nm_fs_error read_file(void* impl, const char* path, void* buffer, si
     return status;
 }
 
+#if defined(HAVE_UNISTD_H) && !defined(_WIN32)
+// The file is written to a temporary file which is renamed over the target, so
+// a crash or a full disk leaves the previous content intact. mkstemp creates the
+// temporary file with mode 0600, so the file is never readable by other users,
+// it can hold the private key of the device.
+static enum nm_fs_error write_file(void* impl, const char* path, const uint8_t* content, size_t contentSize)
+{
+    (void)impl;
+    static const char suffix[] = ".XXXXXX";
+    size_t pathLength = strlen(path);
+    char* tmpPath = (char*)malloc(pathLength + sizeof(suffix));
+    if (tmpPath == NULL) {
+        return NM_FS_UNKNOWN;
+    }
+    memcpy(tmpPath, path, pathLength);
+    memcpy(tmpPath + pathLength, suffix, sizeof(suffix));
+
+    int fd = mkstemp(tmpPath);
+    if (fd < 0) {
+        free(tmpPath);
+        return NM_FS_UNKNOWN;
+    }
+
+    enum nm_fs_error status = NM_FS_OK;
+    size_t written = 0;
+    while (written < contentSize) {
+        ssize_t n = write(fd, content + written, contentSize - written);
+        if (n < 0) {
+            if (errno == EINTR) {
+                continue;
+            }
+            break;
+        }
+        written += (size_t)n;
+    }
+    if (written != contentSize) {
+        status = NM_FS_TRUNCATED;
+    } else if (fsync(fd) != 0) {
+        status = NM_FS_UNKNOWN;
+    }
+    if (close(fd) != 0 && status == NM_FS_OK) {
+        status = NM_FS_UNKNOWN;
+    }
+
+    if (status == NM_FS_OK && rename(tmpPath, path) != 0) {
+        status = NM_FS_UNKNOWN;
+    }
+    if (status != NM_FS_OK) {
+        unlink(tmpPath);
+    }
+    free(tmpPath);
+    return status;
+}
+#else
 static enum nm_fs_error write_file(void* impl, const char* path, const uint8_t* content, size_t contentSize)
 {
     (void)impl;
@@ -136,3 +190,4 @@ static enum nm_fs_error write_file(void* impl, const char* path, const uint8_t* 
     fclose(f);
     return status;
 }
+#endif
