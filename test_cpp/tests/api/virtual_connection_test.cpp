@@ -186,6 +186,47 @@ BOOST_AUTO_TEST_CASE(new_free_connection)
     nabto_device_listener_free(l);
 }
 
+BOOST_AUTO_TEST_CASE(device_fingerprint_is_nul_terminated)
+{
+    const char* devFp = "abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789";
+    nabto::test::TestDevice td;
+    NabtoDevice* dev = td.device_;
+    NabtoDeviceListener* l = nabto_device_listener_new(dev);
+    nabto_device_connection_events_init_listener(dev, l);
+    NabtoDeviceFuture* fut = nabto_device_future_new(dev);
+    NabtoDeviceConnectionRef ref;
+    NabtoDeviceConnectionEvent ev;
+    nabto_device_listener_connection_event(l, fut, &ref, &ev);
+
+    NabtoDeviceVirtualConnection* conn = nabto_device_virtual_connection_new(dev);
+
+    nabto_device_future_wait(fut);
+    BOOST_TEST(ev == NABTO_DEVICE_CONNECTION_EVENT_OPENED);
+    nabto_device_listener_connection_event(l, fut, &ref, &ev);
+
+    BOOST_TEST(nabto_device_virtual_connection_set_device_fingerprint(conn, devFp) == NABTO_DEVICE_EC_OK);
+
+    char* devFpGet = NULL;
+    BOOST_TEST(nabto_device_connection_get_device_fingerprint(dev, ref, &devFpGet) == NABTO_DEVICE_EC_OK);
+    BOOST_REQUIRE(devFpGet != NULL);
+
+    // The caller owns a string, strlen reads past the allocation under ASan if
+    // it is not NUL terminated.
+    BOOST_TEST(strlen(devFpGet) == 64u);
+    BOOST_TEST(strcmp(devFp, devFpGet) == 0);
+    nabto_device_string_free(devFpGet);
+
+    nabto_device_virtual_connection_free(conn);
+
+    nabto_device_future_wait(fut);
+    BOOST_TEST(ev == NABTO_DEVICE_CONNECTION_EVENT_CLOSED);
+    nabto_device_listener_connection_event(l, fut, &ref, &ev);
+
+    nabto_device_stop(dev);
+    nabto_device_future_free(fut);
+    nabto_device_listener_free(l);
+}
+
 BOOST_AUTO_TEST_CASE(virtual_connections_limit)
 {
     nabto::test::TestDevice td;
