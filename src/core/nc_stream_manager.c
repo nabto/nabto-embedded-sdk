@@ -110,6 +110,10 @@ void nc_stream_manager_handle_packet(struct nc_stream_manager_context* ctx, stru
     }
 
     ptr += streamIdLen; // skip stream ID
+    if (ptr >= start + bufferSize) {
+        // no room for the flags
+        return;
+    }
     flags = *ptr;
 
     stream = nc_stream_manager_find_stream(ctx, streamId, conn->parent);
