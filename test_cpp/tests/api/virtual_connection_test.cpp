@@ -858,6 +858,36 @@ BOOST_AUTO_TEST_CASE(coap_pwd_auth_step1_is_rate_limited)
     BOOST_TEST(tooManyRequests == requests - created);
 }
 
+BOOST_AUTO_TEST_CASE(coap_pwd_auth_step1_malformed_requests_do_not_spend_tokens)
+{
+    const std::string clientFp = "1234567890123456789012345678901212345678901234567890123456789012";
+    const std::string deviceFp = "abcdefabcdefabcdefabcdefabcdefabcdefabcdefabcdefabcdefabcdefabcd";
+    const char* auth1Path = "/p2p/pwd-auth/1";
+
+    nabto::test::TestDevice td;
+    NabtoDeviceVirtualConnection* conn = td.makeConnection(deviceFp, clientFp);
+
+    td.setupPassAuth([&](NabtoDeviceError ec, NabtoDevicePasswordAuthenticationRequest* req) {
+        (void)ec;
+        (void)req;
+    });
+
+    NabtoDeviceFuture* fut = nabto_device_future_new(td.device_);
+    for (size_t i = 0; i < 30; i++) {
+        // No content format, the request is rejected before the key computation.
+        NabtoDeviceVirtualCoapRequest* req = nabto_device_virtual_coap_request_new(conn, NABTO_DEVICE_COAP_POST, auth1Path);
+        BOOST_REQUIRE(req != NULL);
+        nabto_device_virtual_coap_request_execute(req, fut);
+        BOOST_TEST(nabto_device_future_wait(fut) == NABTO_DEVICE_EC_OK);
+        uint16_t status = 0;
+        BOOST_TEST(nabto_device_virtual_coap_request_get_response_status_code(req, &status) == NABTO_DEVICE_EC_OK);
+        // 4.15 Unsupported Content Format, never 4.29 Too Many Requests.
+        BOOST_TEST(status == 415);
+        nabto_device_virtual_coap_request_free(req);
+    }
+    nabto_device_future_free(fut);
+}
+
 BOOST_AUTO_TEST_CASE(coap_get_endpoints)
 {
     const char* coapPath = "/p2p/endpoints";
