@@ -8,6 +8,8 @@
 #include <platform/np_logging.h>
 #include <tinycbor/cbor.h>
 
+#include <inttypes.h>
+
 #include "nc_attacher.h"
 
 #define LOG NABTO_LOG_MODULE_ATTACHER
@@ -203,9 +205,9 @@ enum nc_attacher_status handle_attached(struct nc_attach_context* ctx,
                 NABTO_LOG_ERROR(LOG, "cbor_value_get_uint64 for Interval, RetryInterval, or MaxRetries failed");
             } else {
                 NABTO_LOG_TRACE(
-                    LOG, "starting ka with int: %u, retryInt: %u, maxRetries: %u",
+                    LOG, "starting ka with int: %" PRIu64 ", retryInt: %" PRIu64 ", maxRetries: %" PRIu64,
                     i, ri, mr);
-                nc_keep_alive_set_settings(&ctx->keepAlive, (uint32_t)i, (uint32_t)ri, (uint32_t)mr);
+                nc_keep_alive_set_settings(&ctx->keepAlive, i, ri, mr);
             }
         }
     } else {

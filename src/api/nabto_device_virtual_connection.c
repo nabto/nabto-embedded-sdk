@@ -194,8 +194,14 @@ nabto_device_connection_get_device_fingerprint(NabtoDevice* device, NabtoDeviceC
         if (connection == NULL || !nc_connection_get_device_fingerprint(connection, deviceFingerprint)) {
             ec = NABTO_EC_INVALID_CONNECTION;
         } else {
-            *fingerprint = np_calloc(1,64);
-            np_data_to_hex(deviceFingerprint, 32, *fingerprint);
+            // np_data_to_hex does not NUL terminate, calloc zeroes the extra byte.
+            char* fp = np_calloc(1, 2 * sizeof(deviceFingerprint) + 1);
+            if (fp == NULL) {
+                ec = NABTO_DEVICE_EC_OUT_OF_MEMORY;
+            } else {
+                np_data_to_hex(deviceFingerprint, sizeof(deviceFingerprint), fp);
+                *fingerprint = fp;
+            }
         }
 
         nabto_device_threads_mutex_unlock(dev->eventMutex);

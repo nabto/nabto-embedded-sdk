@@ -3,6 +3,14 @@
 
 #include <modules/fs/nm_fs.h>
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 struct nm_fs nm_fs_posix_get_impl(void);
+
+#ifdef __cplusplus
+} // extern "C"
+#endif
 
 #endif

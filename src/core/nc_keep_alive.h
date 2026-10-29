@@ -26,6 +26,19 @@
 #define NC_KEEP_ALIVE_DEFAULT_RETRY_INTERVAL 2000
 #define NC_KEEP_ALIVE_DEFAULT_MAX_RETRIES 15
 
+// Bounds for the settings received from the basestation. The retry interval
+// is the period of the keep alive timer, so a small value makes the event loop
+// spin, and zero is a division by zero.
+#ifndef NC_KEEP_ALIVE_MIN_RETRY_INTERVAL
+#define NC_KEEP_ALIVE_MIN_RETRY_INTERVAL 50 // ms
+#endif
+#define NC_KEEP_ALIVE_MAX_INTERVAL 86400000 // ms, one day
+#define NC_KEEP_ALIVE_MAX_MAX_RETRIES 1000
+
+
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 struct nc_keep_alive_context
 {
@@ -68,7 +81,14 @@ void nc_keep_alive_stop(struct nc_keep_alive_context* ctx);
 
 void nc_keep_alive_reset(struct nc_keep_alive_context* ctx);
 
-void nc_keep_alive_set_settings(struct nc_keep_alive_context* ctx, uint32_t interval, uint32_t retryInterval, uint32_t maxRetries);
+/**
+ * Set the keep alive settings. The values are taken as 64 bit such that values
+ * from the network are not truncated before they are checked.
+ *
+ * @return true iff the settings were in range and applied. If false is
+ * returned the current settings are unchanged.
+ */
+bool nc_keep_alive_set_settings(struct nc_keep_alive_context* ctx, uint64_t interval, uint64_t retryInterval, uint64_t maxRetries);
 
 void nc_keep_alive_create_request(struct nc_keep_alive_context* ctx, uint8_t** buffer, size_t* length);
 
@@ -78,5 +98,9 @@ bool nc_keep_alive_handle_request(struct nc_keep_alive_context* ctx, uint8_t* re
 
 void nc_keep_alive_wait(struct nc_keep_alive_context* ctx);
 void nc_keep_alive_packet_sent(const np_error_code ec, void* data);
+
+#ifdef __cplusplus
+} // extern "C"
+#endif
 
 #endif //NC_KEEP_ALIVE_H

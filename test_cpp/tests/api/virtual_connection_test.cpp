@@ -186,6 +186,47 @@ BOOST_AUTO_TEST_CASE(new_free_connection)
     nabto_device_listener_free(l);
 }
 
+BOOST_AUTO_TEST_CASE(device_fingerprint_is_nul_terminated)
+{
+    const char* devFp = "abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789";
+    nabto::test::TestDevice td;
+    NabtoDevice* dev = td.device_;
+    NabtoDeviceListener* l = nabto_device_listener_new(dev);
+    nabto_device_connection_events_init_listener(dev, l);
+    NabtoDeviceFuture* fut = nabto_device_future_new(dev);
+    NabtoDeviceConnectionRef ref;
+    NabtoDeviceConnectionEvent ev;
+    nabto_device_listener_connection_event(l, fut, &ref, &ev);
+
+    NabtoDeviceVirtualConnection* conn = nabto_device_virtual_connection_new(dev);
+
+    nabto_device_future_wait(fut);
+    BOOST_TEST(ev == NABTO_DEVICE_CONNECTION_EVENT_OPENED);
+    nabto_device_listener_connection_event(l, fut, &ref, &ev);
+
+    BOOST_TEST(nabto_device_virtual_connection_set_device_fingerprint(conn, devFp) == NABTO_DEVICE_EC_OK);
+
+    char* devFpGet = NULL;
+    BOOST_TEST(nabto_device_connection_get_device_fingerprint(dev, ref, &devFpGet) == NABTO_DEVICE_EC_OK);
+    BOOST_REQUIRE(devFpGet != NULL);
+
+    // The caller owns a string, strlen reads past the allocation under ASan if
+    // it is not NUL terminated.
+    BOOST_TEST(strlen(devFpGet) == 64u);
+    BOOST_TEST(strcmp(devFp, devFpGet) == 0);
+    nabto_device_string_free(devFpGet);
+
+    nabto_device_virtual_connection_free(conn);
+
+    nabto_device_future_wait(fut);
+    BOOST_TEST(ev == NABTO_DEVICE_CONNECTION_EVENT_CLOSED);
+    nabto_device_listener_connection_event(l, fut, &ref, &ev);
+
+    nabto_device_stop(dev);
+    nabto_device_future_free(fut);
+    nabto_device_listener_free(l);
+}
+
 BOOST_AUTO_TEST_CASE(virtual_connections_limit)
 {
     nabto::test::TestDevice td;
@@ -787,6 +828,105 @@ BOOST_AUTO_TEST_CASE(coap_pwd_auth)
 
     nabto_device_future_free(fut);
     nabto_device_virtual_coap_request_free(req);
+}
+
+BOOST_AUTO_TEST_CASE(coap_pwd_auth_step1_is_rate_limited)
+{
+    const std::string clientFp = "1234567890123456789012345678901212345678901234567890123456789012";
+    const std::string deviceFp = "abcdefabcdefabcdefabcdefabcdefabcdefabcdefabcdefabcdefabcdefabcd";
+    const std::string username = "john";
+    const std::string password = "FFzeqrpJTVF4";
+    const char* auth1Path = "/p2p/pwd-auth/1";
+
+    uint8_t clientFpBin[32];
+    uint8_t deviceFpBin[32];
+
+    nabto::test::fromHex(clientFp, clientFpBin);
+    nabto::test::fromHex(deviceFp, deviceFpBin);
+    nabto::test::Spake2Client cli(password, clientFpBin, deviceFpBin);
+    std::vector<uint8_t> T;
+    BOOST_TEST(cli.calculateT(T) == 0);
+
+    nabto::test::TestDevice td;
+    NabtoDeviceVirtualConnection* conn = td.makeConnection(deviceFp, clientFp);
+
+    // The password handler is where the expensive key computation starts.
+    size_t handled = 0;
+    td.setupPassAuth([&](NabtoDeviceError ec, NabtoDevicePasswordAuthenticationRequest* req) {
+        if (ec == NABTO_DEVICE_EC_OK) {
+            handled++;
+            BOOST_TEST(nabto_device_password_authentication_request_set_password(req, password.c_str()) == NABTO_DEVICE_EC_OK);
+            nabto_device_password_authentication_request_free(req);
+            nabto_device_listener_new_password_authentication_request(td.passListener_, td.passFut_, &td.passReq_);
+            nabto_device_future_set_callback(td.passFut_, &nabto::test::TestDevice::pass_request_callback, &td);
+        }
+    });
+
+    nlohmann::json root;
+    root["Username"] = username;
+    root["T"] = nlohmann::json::binary(T);
+    auto payload = nlohmann::json::to_cbor(root);
+
+    NabtoDeviceFuture* fut = nabto_device_future_new(td.device_);
+    size_t created = 0;
+    size_t tooManyRequests = 0;
+    const size_t requests = 30;
+    for (size_t i = 0; i < requests; i++) {
+        NabtoDeviceVirtualCoapRequest* req = nabto_device_virtual_coap_request_new(conn, NABTO_DEVICE_COAP_POST, auth1Path);
+        BOOST_REQUIRE(req != NULL);
+        BOOST_TEST(nabto_device_virtual_coap_request_set_content_format(req, NABTO_DEVICE_COAP_CONTENT_FORMAT_APPLICATION_CBOR) == NABTO_DEVICE_EC_OK);
+        BOOST_TEST(nabto_device_virtual_coap_request_set_payload(req, payload.data(), payload.size()) == NABTO_DEVICE_EC_OK);
+        nabto_device_virtual_coap_request_execute(req, fut);
+        BOOST_TEST(nabto_device_future_wait(fut) == NABTO_DEVICE_EC_OK);
+
+        uint16_t status = 0;
+        BOOST_TEST(nabto_device_virtual_coap_request_get_response_status_code(req, &status) == NABTO_DEVICE_EC_OK);
+        if (status == 201) {
+            created++;
+        } else {
+            BOOST_TEST(status == 429);
+            tooManyRequests++;
+        }
+        nabto_device_virtual_coap_request_free(req);
+    }
+    nabto_device_future_free(fut);
+
+    // One token is spent per step 1 request, and the bucket holds 10 tokens
+    // which are refilled one per second. The requests take far less than that.
+    BOOST_TEST(created == handled);
+    BOOST_TEST(created > 0u);
+    BOOST_TEST(created <= 10u);
+    BOOST_TEST(tooManyRequests == requests - created);
+}
+
+BOOST_AUTO_TEST_CASE(coap_pwd_auth_step1_malformed_requests_do_not_spend_tokens)
+{
+    const std::string clientFp = "1234567890123456789012345678901212345678901234567890123456789012";
+    const std::string deviceFp = "abcdefabcdefabcdefabcdefabcdefabcdefabcdefabcdefabcdefabcdefabcd";
+    const char* auth1Path = "/p2p/pwd-auth/1";
+
+    nabto::test::TestDevice td;
+    NabtoDeviceVirtualConnection* conn = td.makeConnection(deviceFp, clientFp);
+
+    td.setupPassAuth([&](NabtoDeviceError ec, NabtoDevicePasswordAuthenticationRequest* req) {
+        (void)ec;
+        (void)req;
+    });
+
+    NabtoDeviceFuture* fut = nabto_device_future_new(td.device_);
+    for (size_t i = 0; i < 30; i++) {
+        // No content format, the request is rejected before the key computation.
+        NabtoDeviceVirtualCoapRequest* req = nabto_device_virtual_coap_request_new(conn, NABTO_DEVICE_COAP_POST, auth1Path);
+        BOOST_REQUIRE(req != NULL);
+        nabto_device_virtual_coap_request_execute(req, fut);
+        BOOST_TEST(nabto_device_future_wait(fut) == NABTO_DEVICE_EC_OK);
+        uint16_t status = 0;
+        BOOST_TEST(nabto_device_virtual_coap_request_get_response_status_code(req, &status) == NABTO_DEVICE_EC_OK);
+        // 4.15 Unsupported Content Format, never 4.29 Too Many Requests.
+        BOOST_TEST(status == 415);
+        nabto_device_virtual_coap_request_free(req);
+    }
+    nabto_device_future_free(fut);
 }
 
 BOOST_AUTO_TEST_CASE(coap_get_endpoints)

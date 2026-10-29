@@ -81,7 +81,11 @@ void nc_spake2_handle_coap_1(struct nc_coap_server_request* request, void* data)
 
     struct nc_spake2_module* spake2 = data;
 
-    if (spake2->tokens == 0) {
+    // Step 1 runs the expensive key computation, so it spends a token when the
+    // request is handed to the password handler. Two tokens are required, such
+    // that one is left for step 2 of the same pairing, as step 2 is rejected
+    // when the bucket is empty.
+    if (spake2->tokens < 2) {
         //NOLINTNEXTLINE(clang-analyzer-optin.core.EnumCastOutOfRange) coap codes are any uint16_t
         nc_coap_server_send_error_response(request, (nabto_coap_code)NABTO_COAP_CODE(4,29), NULL);
         nc_coap_server_request_free(request);
@@ -109,6 +113,7 @@ void nc_spake2_handle_coap_1(struct nc_coap_server_request* request, void* data)
                                             payloadLength)) {
                 nc_coap_server_send_error_response(request, (nabto_coap_code)NABTO_COAP_CODE(4,00), NULL);
             } else {
+                nc_spake2_spend_token(spake2);
                 spake2->passwordRequestHandler(passwordRequest, spake2->passwordRequestHandlerData);
                 return;
             }
@@ -142,7 +147,9 @@ void nc_spake2_handle_coap_2(struct nc_coap_server_request* request, void* data)
     } else if (payload == NULL || payloadLength != 32) {
         nc_coap_server_send_error_response(request, (nabto_coap_code)NABTO_COAP_CODE(4,00), NULL);
     } else {
-        if (!connection->hasSpake2Key) {
+        if (connection == NULL) {
+            nc_coap_server_send_error_response(request, (nabto_coap_code)NABTO_COAP_CODE(5,00), NULL);
+        } else if (!connection->hasSpake2Key) {
             nc_coap_server_send_error_response(request, (nabto_coap_code)NABTO_COAP_CODE(4,00), NULL);
         } else {
             uint8_t responseData[32];
