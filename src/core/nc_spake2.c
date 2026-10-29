@@ -123,6 +123,9 @@ void newTokenEvent(void* data)
 
 void nc_spake2_spend_token(struct nc_spake2_module* module)
 {
+    if (module->tokens == 0) {
+        return;
+    }
     if (module->tokens == NC_SPAKE2_MAX_TOKENS) { // if not at max, the event is already scheduled
         np_event_queue_post_timed_event(&module->pl->eq, module->tbEvent, NC_SPAKE2_TOKEN_INTERVAL);
     }
