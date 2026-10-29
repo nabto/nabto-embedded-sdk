@@ -69,6 +69,11 @@ set(test_src
   ../src/api_test/nabto_device_test_logging.c
   )
 
+# Uses the POSIX file system api
+if (UNIX)
+  list(APPEND test_src tests/fs/nm_fs_posix_test.cpp)
+endif()
+
 add_subdirectory(fixtures/udp_server)
 add_subdirectory(fixtures/coap_server)
 add_subdirectory(fixtures/dtls_server)
@@ -90,6 +95,7 @@ target_link_libraries(embedded_unit_test
   dtls_server_cpp
   nm_logging_test
   nm_iam
+  nm_fs_posix
   nabto_device
   np_platform
   nm_event_queue
