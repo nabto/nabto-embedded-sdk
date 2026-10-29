@@ -29,7 +29,9 @@
 // Bounds for the settings received from the basestation. The retry interval
 // is the period of the keep alive timer, so a small value makes the event loop
 // spin, and zero is a division by zero.
-#define NC_KEEP_ALIVE_MIN_RETRY_INTERVAL 500 // ms
+#ifndef NC_KEEP_ALIVE_MIN_RETRY_INTERVAL
+#define NC_KEEP_ALIVE_MIN_RETRY_INTERVAL 50 // ms
+#endif
 #define NC_KEEP_ALIVE_MAX_INTERVAL 86400000 // ms, one day
 #define NC_KEEP_ALIVE_MAX_MAX_RETRIES 1000
 

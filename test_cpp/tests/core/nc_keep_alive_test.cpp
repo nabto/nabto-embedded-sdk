@@ -24,6 +24,10 @@ BOOST_AUTO_TEST_CASE(valid_settings_are_applied)
     BOOST_TEST(ctx.kaMaxRetries == 15u);
     BOOST_TEST(ctx.n == 15u);
 
+    // The settings the attach tests use to detach quickly.
+    BOOST_TEST(nc_keep_alive_set_settings(&ctx, 100, 50, 2));
+    BOOST_TEST(ctx.kaRetryInterval == 50u);
+
     nc_keep_alive_deinit(&ctx);
 }
 
@@ -39,6 +43,7 @@ BOOST_AUTO_TEST_CASE(out_of_range_settings_are_rejected)
     BOOST_TEST(!nc_keep_alive_set_settings(&ctx, 30000, (uint64_t)1 << 32, 15));
     // A small retry interval makes the keep alive timer spin.
     BOOST_TEST(!nc_keep_alive_set_settings(&ctx, 30000, 1, 15));
+    BOOST_TEST(!nc_keep_alive_set_settings(&ctx, 30000, NC_KEEP_ALIVE_MIN_RETRY_INTERVAL - 1, 15));
     BOOST_TEST(!nc_keep_alive_set_settings(&ctx, 1000, 2000, 15));
     BOOST_TEST(!nc_keep_alive_set_settings(&ctx, (uint64_t)1 << 32, 2000, 15));
     BOOST_TEST(!nc_keep_alive_set_settings(&ctx, 30000, 2000, (uint64_t)1 << 32));
