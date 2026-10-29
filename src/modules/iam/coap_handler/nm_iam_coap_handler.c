@@ -133,12 +133,16 @@ void nm_iam_cbor_send_error_response(NabtoDeviceCoapRequest* request, enum nm_ia
     switch(ec) {
     case IAM_CBOR_INVALID_CONTENT_FORMAT:
         nabto_device_coap_error_response(request, 400, "Invalid Content Format");
+        break;
     case IAM_CBOR_MISSING_PAYLOAD:
         nabto_device_coap_error_response(request, 400, "Missing payload");
+        break;
     case IAM_CBOR_PARSING_ERROR:
         nabto_device_coap_error_response(request, 400, "CBOR parsing error");
+        break;
     default:
         nabto_device_coap_error_response(request, 400, "Bad request");
+        break;
     }
 }
 

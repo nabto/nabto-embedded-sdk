@@ -501,6 +501,28 @@ BOOST_AUTO_TEST_CASE(can_remove_password, *boost::unit_test::timeout(180))
     }
 }
 
+static std::string response_payload(nabto::test::IamVirtualConnTester& ctx)
+{
+    void* payload = NULL;
+    size_t payloadLength = 0;
+    BOOST_TEST(nabto_device_virtual_coap_request_get_response_payload(ctx.req_, &payload, &payloadLength) == NABTO_DEVICE_EC_OK);
+    return std::string((const char*)payload, payloadLength);
+}
+
+// The error responder must send exactly one response. A second response
+// replaces the payload of the first, so the payload tells which one was sent.
+// The replaced payloads leaked, which LeakSanitizer reports.
+BOOST_AUTO_TEST_CASE(invalid_content_format_error_response, *boost::unit_test::timeout(180))
+{
+    nabto::test::IamVirtualConnTester ctx(nabto::test::c2, nabto::test::s2);
+    BOOST_TEST(nm_iam_authorize_connection(&ctx.iam_, ctx.ref_, "testuser") == NM_IAM_ERROR_OK);
+
+    ctx.createCoapRequest(NABTO_DEVICE_COAP_PUT, "/iam/users/testuser/password");
+    BOOST_TEST(nabto_device_virtual_coap_request_set_content_format(ctx.req_, NABTO_DEVICE_COAP_CONTENT_FORMAT_TEXT_PLAIN_UTF8) == NABTO_DEVICE_EC_OK);
+    ctx.executeCoap(400);
+    BOOST_TEST(response_payload(ctx) == "Invalid Content Format");
+}
+
 BOOST_AUTO_TEST_CASE(enforce_min_password_len, *boost::unit_test::timeout(180))
 {
     nabto::test::IamVirtualConnTester ctx(nabto::test::c2, nabto::test::s2);
