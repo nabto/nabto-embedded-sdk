@@ -25,8 +25,12 @@ class TempDir {
 
     ~TempDir()
     {
+        // The entries are files or empty directories.
         for (const auto& name : list()) {
-            unlink((path_ + "/" + name).c_str());
+            std::string entry = path_ + "/" + name;
+            if (unlink(entry.c_str()) != 0) {
+                rmdir(entry.c_str());
+            }
         }
         rmdir(path_.c_str());
     }
