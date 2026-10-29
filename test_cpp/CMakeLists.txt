@@ -59,7 +59,6 @@ set(test_src
   tests/core/nc_coap_rest_error_test.cpp
   tests/core/nc_dns_multi_resolver_test.cpp
   tests/core/watchdog_test.cpp
-  tests/fs/nm_fs_posix_test.cpp
   tests/core/nc_stream_demux_test.cpp
   tests/spake2/spake2_test.cpp
   tests/spake2/spake2_mbedtls_test.cpp
@@ -68,6 +67,11 @@ set(test_src
   tests/dtls/dtls_wolfssl_mtu_test.cpp
   ../src/api_test/nabto_device_test_logging.c
   )
+
+# Uses the POSIX file system api
+if (UNIX)
+  list(APPEND test_src tests/fs/nm_fs_posix_test.cpp)
+endif()
 
 add_subdirectory(fixtures/udp_server)
 add_subdirectory(fixtures/coap_server)

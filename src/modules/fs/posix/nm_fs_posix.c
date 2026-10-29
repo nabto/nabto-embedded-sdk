@@ -16,6 +16,7 @@
 #include <direct.h>
 #endif
 
+#include <fcntl.h>
 #include <sys/stat.h>
 #include <sys/types.h>
 
@@ -117,6 +118,33 @@ static enum nm_fs_error read_file(void* impl, const char* path, void* buffer, si
 }
 
 #if defined(HAVE_UNISTD_H) && !defined(_WIN32)
+static enum nm_fs_error sync_parent_directory(const char* path)
+{
+    size_t dirLength = strlen(path);
+    while (dirLength > 0 && path[dirLength - 1] != '/') {
+        dirLength--;
+    }
+    int fd = -1;
+    if (dirLength == 0) {
+        fd = open(".", O_RDONLY);
+    } else {
+        char* dir = (char*)malloc(dirLength + 1);
+        if (dir == NULL) {
+            return NM_FS_UNKNOWN;
+        }
+        memcpy(dir, path, dirLength);
+        dir[dirLength] = 0;
+        fd = open(dir, O_RDONLY);
+        free(dir);
+    }
+    if (fd < 0) {
+        return NM_FS_UNKNOWN;
+    }
+    enum nm_fs_error status = fsync(fd) == 0 ? NM_FS_OK : NM_FS_UNKNOWN;
+    close(fd);
+    return status;
+}
+
 // The file is written to a temporary file which is renamed over the target, so
 // a crash or a full disk leaves the previous content intact. mkstemp creates the
 // temporary file with mode 0600, so the file is never readable by other users,
@@ -165,6 +193,10 @@ static enum nm_fs_error write_file(void* impl, const char* path, const uint8_t* 
     }
     if (status != NM_FS_OK) {
         unlink(tmpPath);
+    } else {
+        // fsync of the file does not make the rename durable, the directory
+        // has to be synced too. Without it a power loss can lose the file.
+        status = sync_parent_directory(path);
     }
     free(tmpPath);
     return status;
