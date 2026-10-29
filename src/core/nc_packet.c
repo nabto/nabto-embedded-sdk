@@ -9,6 +9,9 @@ bool var_uint_read(uint8_t* buf, uint16_t bufSize, uint64_t* val, uint8_t* len)
 {
     *val = 0;
     *len = 0;
+    if (bufSize == 0) {
+        return false;
+    }
     uint8_t first = *buf;
     uint8_t b7 = first & 0x3F; // 00111111
     uint8_t lengthBits = first >> 6;
