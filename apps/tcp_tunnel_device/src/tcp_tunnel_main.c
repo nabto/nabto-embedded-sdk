@@ -48,6 +48,14 @@
 
 #define HOMEDIR_EDGE_FOLDER HOMEDIR_NABTO_FOLDER "/edge"
 
+// Default limits, sized for a Linux host.
+#define DEFAULT_MAX_CONNECTIONS 100
+#define DEFAULT_MAX_STREAMS 500
+#define DEFAULT_MAX_STREAM_SEGMENTS 262144 // 64MB of stream data
+#define DEFAULT_MAX_COAP_REQUESTS 200
+#define DEFAULT_MAX_COAP_REQUEST_SIZE 65536
+#define DEFAULT_MAX_TUNNEL_CONNECTIONS 200 // per service type
+
 const char* DEVICE_CONFIG_FILE = "config/device.json";
 const char* TCP_TUNNEL_STATE_FILE = "state/tcp_tunnel_device_iam_state.json";
 const char* TCP_TUNNEL_IAM_FILE = "config/tcp_tunnel_device_iam_config.json";
@@ -68,6 +76,9 @@ enum {
     OPTION_MAX_CONNECTIONS,
     OPTION_MAX_STREAMS,
     OPTION_MAX_STREAM_SEGMENTS,
+    OPTION_MAX_COAP_REQUESTS,
+    OPTION_MAX_COAP_REQUEST_SIZE,
+    OPTION_MAX_TUNNEL_CONNECTIONS,
     OPTION_SELF_TEST
 };
 
@@ -85,6 +96,9 @@ struct args {
     int maxConnections;
     int maxStreams;
     int maxStreamSegments;
+    int maxCoapRequests;
+    int maxCoapRequestSize;
+    int maxTunnelConnections;
     bool selfTest;
 };
 
@@ -178,6 +192,9 @@ static bool parse_args(int argc, char** argv, struct args* args)
     const char x12s[] = "";       const char* x12l[] = { "limit-streams", 0 };
     const char x13s[] = "";       const char* x13l[] = { "limit-stream-segments", 0 };
     const char x14s[] = "";       const char* x14l[] = { "self-test", 0 };
+    const char x15s[] = "";       const char* x15l[] = { "limit-coap-requests", 0 };
+    const char x16s[] = "";       const char* x16l[] = { "limit-coap-request-size", 0 };
+    const char x17s[] = "";       const char* x17l[] = { "limit-tunnel-connections", 0 };
 
     const struct { int k; int f; const char *s; const char*const* l; } opts[] = {
         { OPTION_HELP, GOPT_NOARG, x1s, x1l },
@@ -194,6 +211,9 @@ static bool parse_args(int argc, char** argv, struct args* args)
         { OPTION_MAX_STREAMS, GOPT_ARG, x12s, x12l },
         { OPTION_MAX_STREAM_SEGMENTS, GOPT_ARG, x13s, x13l },
         { OPTION_SELF_TEST, GOPT_NOARG, x14s, x14l },
+        { OPTION_MAX_COAP_REQUESTS, GOPT_ARG, x15s, x15l },
+        { OPTION_MAX_COAP_REQUEST_SIZE, GOPT_ARG, x16s, x16l },
+        { OPTION_MAX_TUNNEL_CONNECTIONS, GOPT_ARG, x17s, x17l },
         {0,0,0,0}
     };
 
@@ -262,6 +282,21 @@ static bool parse_args(int argc, char** argv, struct args* args)
         args->maxStreamSegments = atoi(maxStreamSegmentsStr);
     }
 
+    const char* maxCoapRequestsStr = NULL;
+    if (gopt_arg(options, OPTION_MAX_COAP_REQUESTS, &maxCoapRequestsStr)) {
+        args->maxCoapRequests = atoi(maxCoapRequestsStr);
+    }
+
+    const char* maxCoapRequestSizeStr = NULL;
+    if (gopt_arg(options, OPTION_MAX_COAP_REQUEST_SIZE, &maxCoapRequestSizeStr)) {
+        args->maxCoapRequestSize = atoi(maxCoapRequestSizeStr);
+    }
+
+    const char* maxTunnelConnectionsStr = NULL;
+    if (gopt_arg(options, OPTION_MAX_TUNNEL_CONNECTIONS, &maxTunnelConnectionsStr)) {
+        args->maxTunnelConnections = atoi(maxTunnelConnectionsStr);
+    }
+
     if (gopt(options, OPTION_SELF_TEST)) {
         args->selfTest = true;
     }
@@ -273,9 +308,15 @@ static bool parse_args(int argc, char** argv, struct args* args)
 void args_init(struct args* args)
 {
     memset(args, 0, sizeof(struct args));
-    args->maxConnections = -1;
-    args->maxStreams = -1;
-    args->maxStreamSegments = -1;
+    // The device is reachable by untrusted clients, so it is limited by
+    // default. The defaults are sized for a Linux host, a negative value
+    // removes a limit.
+    args->maxConnections = DEFAULT_MAX_CONNECTIONS;
+    args->maxStreams = DEFAULT_MAX_STREAMS;
+    args->maxStreamSegments = DEFAULT_MAX_STREAM_SEGMENTS;
+    args->maxCoapRequests = DEFAULT_MAX_COAP_REQUESTS;
+    args->maxCoapRequestSize = DEFAULT_MAX_COAP_REQUEST_SIZE;
+    args->maxTunnelConnections = DEFAULT_MAX_TUNNEL_CONNECTIONS;
 }
 
 void args_deinit(struct args* args)
@@ -586,6 +627,15 @@ bool handle_main(struct args* args, struct tcp_tunnel* tunnel)
             printf("Cannot add tcp tunnel service id: %s, type: %s, host: %s, port: %d. One reason could be if '%s' is not an ipv4 address." NEWLINE, service->id, service->type, service->host, service->port, service->host);
             return false;
         }
+        if (args->maxTunnelConnections >= 0) {
+            // The limit is per service type, setting it again for a type
+            // shared by several services is harmless.
+            ec = nabto_device_limit_tcp_tunnel_connections(tunnel->device, service->type, (size_t)args->maxTunnelConnections);
+            if (ec != NABTO_DEVICE_EC_OK) {
+                printf("Cannot limit tcp tunnel connections for the service type: %s" NEWLINE, service->type);
+                return false;
+            }
+        }
 
         struct nn_string_map_iterator mapIt;
         NN_STRING_MAP_FOREACH(mapIt, &service->metadata)
@@ -646,6 +696,20 @@ bool handle_main(struct args* args, struct tcp_tunnel* tunnel)
         ec = nabto_device_limit_stream_segments(tunnel->device, (size_t)args->maxStreamSegments);
         if (ec != NABTO_DEVICE_EC_OK) {
             printf("Cannot limit stream segments" NEWLINE);
+            return false;
+        }
+    }
+    if (args->maxCoapRequests >= 0) {
+        ec = nabto_device_limit_coap_server_requests(tunnel->device, (size_t)args->maxCoapRequests);
+        if (ec != NABTO_DEVICE_EC_OK) {
+            printf("Cannot limit coap requests" NEWLINE);
+            return false;
+        }
+    }
+    if (args->maxCoapRequestSize >= 0) {
+        ec = nabto_device_limit_coap_server_request_size(tunnel->device, (size_t)args->maxCoapRequestSize);
+        if (ec != NABTO_DEVICE_EC_OK) {
+            printf("Cannot limit coap request size" NEWLINE);
             return false;
         }
     }
