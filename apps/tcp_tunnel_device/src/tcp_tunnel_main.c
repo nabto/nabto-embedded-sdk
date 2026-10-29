@@ -31,6 +31,7 @@
 #endif
 
 #include <stdbool.h>
+#include <stdint.h>
 
 #include <sys/types.h>
 
@@ -317,6 +318,18 @@ void args_init(struct args* args)
     args->maxCoapRequests = DEFAULT_MAX_COAP_REQUESTS;
     args->maxCoapRequestSize = DEFAULT_MAX_COAP_REQUEST_SIZE;
     args->maxTunnelConnections = DEFAULT_MAX_TUNNEL_CONNECTIONS;
+}
+
+/**
+ * Convert a limit argument to the value given to the device. A negative
+ * argument removes the limit, which the device represents as SIZE_MAX.
+ */
+static size_t limit_value(int limit)
+{
+    if (limit < 0) {
+        return SIZE_MAX;
+    }
+    return (size_t)limit;
 }
 
 void args_deinit(struct args* args)
@@ -627,14 +640,12 @@ bool handle_main(struct args* args, struct tcp_tunnel* tunnel)
             printf("Cannot add tcp tunnel service id: %s, type: %s, host: %s, port: %d. One reason could be if '%s' is not an ipv4 address." NEWLINE, service->id, service->type, service->host, service->port, service->host);
             return false;
         }
-        if (args->maxTunnelConnections >= 0) {
-            // The limit is per service type, setting it again for a type
-            // shared by several services is harmless.
-            ec = nabto_device_limit_tcp_tunnel_connections(tunnel->device, service->type, (size_t)args->maxTunnelConnections);
-            if (ec != NABTO_DEVICE_EC_OK) {
-                printf("Cannot limit tcp tunnel connections for the service type: %s" NEWLINE, service->type);
-                return false;
-            }
+        // The limit is per service type, setting it again for a type shared
+        // by several services is harmless.
+        ec = nabto_device_limit_tcp_tunnel_connections(tunnel->device, service->type, limit_value(args->maxTunnelConnections));
+        if (ec != NABTO_DEVICE_EC_OK) {
+            printf("Cannot limit tcp tunnel connections for the service type: %s" NEWLINE, service->type);
+            return false;
         }
 
         struct nn_string_map_iterator mapIt;
@@ -678,40 +689,30 @@ bool handle_main(struct args* args, struct tcp_tunnel* tunnel)
         }
     }
 
-    if (args->maxConnections >= 0) {
-        ec = nabto_device_limit_connections(tunnel->device, (size_t)args->maxConnections);
-        if (ec != NABTO_DEVICE_EC_OK) {
-            printf("Cannot limit connections" NEWLINE);
-            return false;
-        }
+    ec = nabto_device_limit_connections(tunnel->device, limit_value(args->maxConnections));
+    if (ec != NABTO_DEVICE_EC_OK) {
+        printf("Cannot limit connections" NEWLINE);
+        return false;
     }
-    if (args->maxStreams >= 0) {
-        ec = nabto_device_limit_streams(tunnel->device, (size_t)args->maxStreams);
-        if (ec != NABTO_DEVICE_EC_OK) {
-            printf("Cannot limit streams" NEWLINE);
-            return false;
-        }
+    ec = nabto_device_limit_streams(tunnel->device, limit_value(args->maxStreams));
+    if (ec != NABTO_DEVICE_EC_OK) {
+        printf("Cannot limit streams" NEWLINE);
+        return false;
     }
-    if (args->maxStreamSegments >= 0) {
-        ec = nabto_device_limit_stream_segments(tunnel->device, (size_t)args->maxStreamSegments);
-        if (ec != NABTO_DEVICE_EC_OK) {
-            printf("Cannot limit stream segments" NEWLINE);
-            return false;
-        }
+    ec = nabto_device_limit_stream_segments(tunnel->device, limit_value(args->maxStreamSegments));
+    if (ec != NABTO_DEVICE_EC_OK) {
+        printf("Cannot limit stream segments" NEWLINE);
+        return false;
     }
-    if (args->maxCoapRequests >= 0) {
-        ec = nabto_device_limit_coap_server_requests(tunnel->device, (size_t)args->maxCoapRequests);
-        if (ec != NABTO_DEVICE_EC_OK) {
-            printf("Cannot limit coap requests" NEWLINE);
-            return false;
-        }
+    ec = nabto_device_limit_coap_server_requests(tunnel->device, limit_value(args->maxCoapRequests));
+    if (ec != NABTO_DEVICE_EC_OK) {
+        printf("Cannot limit coap requests" NEWLINE);
+        return false;
     }
-    if (args->maxCoapRequestSize >= 0) {
-        ec = nabto_device_limit_coap_server_request_size(tunnel->device, (size_t)args->maxCoapRequestSize);
-        if (ec != NABTO_DEVICE_EC_OK) {
-            printf("Cannot limit coap request size" NEWLINE);
-            return false;
-        }
+    ec = nabto_device_limit_coap_server_request_size(tunnel->device, limit_value(args->maxCoapRequestSize));
+    if (ec != NABTO_DEVICE_EC_OK) {
+        printf("Cannot limit coap request size" NEWLINE);
+        return false;
     }
 
     struct nm_iam iam;
