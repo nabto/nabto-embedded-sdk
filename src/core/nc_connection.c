@@ -1,6 +1,7 @@
 #include "nc_connection.h"
 #include "nc_device.h"
 #include "nc_virtual_connection.h"
+#include <core/nc_config.h>
 #include <platform/np_allocator.h>
 #include <platform/np_logging.h>
 
@@ -9,7 +10,7 @@
 np_error_code nc_connections_init(struct nc_connections_context* ctx, struct nc_device_context* device)
 {
     nn_llist_init(&ctx->connections);
-    ctx->maxConcurrentConnections = SIZE_MAX;
+    ctx->maxConcurrentConnections = NC_DEFAULT_MAX_CONNECTIONS;
     ctx->closing = false;
     ctx->device = device;
     return NABTO_EC_OK;
