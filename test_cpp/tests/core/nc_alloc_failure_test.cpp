@@ -29,6 +29,11 @@ BOOST_AUTO_TEST_CASE(coap_server_request_allocation_failure_refuses_the_request)
     struct nc_coap_server_context ctx;
     BOOST_REQUIRE(nc_coap_server_init(tp->getPlatform(), NULL, NULL, &ctx) == NABTO_EC_OK);
 
+    // The event queue is stopped such that the events posted by the coap
+    // server never run. They would send the response to the fake connection
+    // below.
+    tp->stop();
+
     HandlerState state;
     const char* path[] = { "test", NULL };
     struct nc_coap_server_resource* resource = NULL;
