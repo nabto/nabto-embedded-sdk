@@ -6,6 +6,10 @@
 #include <platform/np_dtls_cli.h>
 #include <platform/np_platform.h>
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 typedef void (*nc_stream_manager_listen_callback)(np_error_code ec, struct nc_stream_context* stream, void* data);
 
 struct nc_client_connection;
@@ -70,5 +74,9 @@ np_error_code nc_stream_manager_get_ephemeral_stream_port(struct nc_stream_manag
 void nc_stream_manager_set_max_segments(struct nc_stream_manager_context* ctx, size_t maxSegments);
 
 void nc_stream_manager_send_rst(struct nc_stream_manager_context* ctx, struct nc_client_connection* conn, uint64_t streamId);
+
+#ifdef __cplusplus
+} // extern c
+#endif
 
 #endif
