@@ -2,6 +2,9 @@ name: build and test ubuntu 22.04
 on:
   push:
 
+permissions:
+  contents: read
+
 jobs:
   build-and-test:
     timeout-minutes: 20
