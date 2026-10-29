@@ -66,6 +66,7 @@ struct np_dtls_srv {
     mbedtls_ssl_config conf;
     mbedtls_x509_crt publicKey;
     mbedtls_pk_context privateKey;
+    uint16_t mtu;
 };
 
 static np_error_code nm_mbedtls_srv_create(struct np_platform* pl, struct np_dtls_srv** server);
@@ -178,6 +179,12 @@ np_error_code nm_mbedtls_srv_create(struct np_platform* pl, struct np_dtls_srv**
         return NABTO_EC_OUT_OF_MEMORY;
     }
     (*server)->pl = pl;
+    np_error_code ec = nm_mbedtls_util_get_mtu(pl, &(*server)->mtu);
+    if (ec != NABTO_EC_OK) {
+        np_free(*server);
+        *server = NULL;
+        return ec;
+    }
     mbedtls_ssl_config_init( &(*server)->conf );
     mbedtls_entropy_init( &(*server)->entropy );
     mbedtls_ctr_drbg_init( &(*server)->ctr_drbg );
@@ -281,6 +288,8 @@ np_error_code nm_mbedtls_srv_create_connection(struct np_dtls_srv* server,
 
     mbedtls_ssl_set_bio( &ctx->ssl, ctx,
                          &nm_mbedtls_srv_mbedtls_send, &nm_mbedtls_srv_mbedtls_recv, NULL );
+
+    mbedtls_ssl_set_mtu(&ctx->ssl, server->mtu);
 
     *dtls = ctx;
     return NABTO_EC_OK;
@@ -584,7 +593,15 @@ int nm_mbedtls_srv_mbedtls_send(void* data, const unsigned char* buffer, size_t 
             // if we return WANT_WRITE there is no mechanism which ensures a retransmission occurs.
             return (int)bufferSize;
         }
-        memcpy(ctx->pl->buf.start(ctx->sslSendBuffer), buffer, (uint16_t)bufferSize);
+        if (bufferSize > pl->buf.size(ctx->sslSendBuffer)) {
+            // Cannot happen as the mtu is the size of a communication
+            // buffer.
+            NABTO_LOG_ERROR(LOG, "The dtls record (%u bytes) does not fit in a communication buffer, dropping the packet.", (unsigned)bufferSize);
+            pl->buf.free(ctx->sslSendBuffer);
+            ctx->sslSendBuffer = NULL;
+            return (int)bufferSize;
+        }
+        memcpy(pl->buf.start(ctx->sslSendBuffer), buffer, bufferSize);
 
         np_error_code ec = ctx->sender(ctx->channelId, pl->buf.start(ctx->sslSendBuffer), (uint16_t)bufferSize, &ctx->senderEvent, ctx->senderData);
         if (ec != NABTO_EC_OK) {

@@ -5,6 +5,17 @@
 
 #define NP_DTLS_DEFAULT_CHANNEL_ID 0xff
 
+/**
+ * Upper bound on the number of bytes a DTLS record adds to the plaintext it
+ * carries. With TLS_ECDHE_ECDSA_WITH_AES_128_CCM it is 37 bytes: a 13 byte
+ * record header, an 8 byte explicit nonce and a 16 byte tag.
+ *
+ * Each record is sent from a communication buffer, so data given to
+ * async_send_data must be at most the size of a communication buffer minus
+ * this overhead. The DTLS modules refuse data which does not fit.
+ */
+#define NP_DTLS_MAX_RECORD_OVERHEAD 64
+
 struct np_communication_buffer;
 
 enum np_dtls_event {

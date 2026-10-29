@@ -35,6 +35,8 @@ struct nm_wolfssl_cli_context {
 
     int timeoutMin;
     int timeoutMax;
+
+    uint16_t mtu;
 };
 
 struct np_dtls_cli_connection {
@@ -193,6 +195,10 @@ np_error_code initialize_context(struct np_platform* pl)
     }
     pl->dtlsCData = ctx;
     ctx->pl = pl;
+    np_error_code ec = nm_wolfssl_util_get_mtu(pl, &ctx->mtu);
+    if (ec != NABTO_EC_OK) {
+        return ec;
+    }
     WOLFSSL_METHOD *method = wolfDTLSv1_2_client_method();
     ctx->ctx = wolfSSL_CTX_new(method);
 
@@ -280,6 +286,12 @@ static np_error_code create_client_connection(
     };
 
     wolfSSL_set_verify(conn->ssl, (WOLFSSL_VERIFY_NONE), NULL);
+
+    ec = nm_wolfssl_util_set_mtu(conn->ssl, ctx->mtu);
+    if (ec != NABTO_EC_OK) {
+        do_destroy_connection(conn);
+        return ec;
+    }
 
     *connection = conn;
     return NABTO_EC_OK;
@@ -694,6 +706,15 @@ int nm_dtls_wolfssl_send(WOLFSSL* ssl, char* buffer,
             // retransmission of the packet once the system has available memory
             // again.
             return (int)bufferSize;
+        }
+        if (bufferSize < 0 || bufferSize > pl->buf.size(conn->sslSendBuffer)) {
+            NABTO_LOG_ERROR(LOG,
+                            "The dtls record (%d bytes) does not fit in a "
+                            "communication buffer. Dropping the packet",
+                            bufferSize);
+            pl->buf.free(conn->sslSendBuffer);
+            conn->sslSendBuffer = NULL;
+            return bufferSize;
         }
         memcpy(pl->buf.start(conn->sslSendBuffer), buffer, bufferSize);
         np_error_code ec =
