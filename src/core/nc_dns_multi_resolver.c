@@ -50,6 +50,12 @@ void nc_dns_multi_resolver_resolve(struct nc_dns_multi_resolver_context* ctx, co
         np_completion_event_resolve(completionEvent, NABTO_EC_OPERATION_IN_PROGRESS);
         return;
     }
+    char* hostCopy = nn_strdup(host, np_allocator_get());
+    if (hostCopy == NULL) {
+        NABTO_LOG_ERROR(LOG, "Out of memory, cannot resolve the host");
+        np_completion_event_resolve(completionEvent, NABTO_EC_OUT_OF_MEMORY);
+        return;
+    }
     ctx->resolvedCompletionEvent = completionEvent;
     ctx->ips = ips;
     ctx->ipsSize = ipsSize;
@@ -58,7 +64,7 @@ void nc_dns_multi_resolver_resolve(struct nc_dns_multi_resolver_context* ctx, co
     ctx->v6IpsSize = 0;
     ctx->v4Ec = NABTO_EC_OPERATION_IN_PROGRESS;
     ctx->v6Ec = NABTO_EC_OPERATION_IN_PROGRESS;
-    ctx->host = nn_strdup(host, np_allocator_get());
+    ctx->host = hostCopy;
     np_dns_async_resolve_v4(&pl->dns, host, ctx->v4Ips, NC_DNS_MULTI_RESOLVER_MAX_IPS, &ctx->v4IpsSize, &ctx->v4CompletionEvent);
     np_dns_async_resolve_v6(&pl->dns, host, ctx->v6Ips, NC_DNS_MULTI_RESOLVER_MAX_IPS, &ctx->v6IpsSize, &ctx->v6CompletionEvent);
 }

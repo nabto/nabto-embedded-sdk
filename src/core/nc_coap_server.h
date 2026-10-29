@@ -7,6 +7,10 @@
 #include <nabto_coap/nabto_coap_server.h>
 #include <nn/string_map.h>
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 struct nc_client_connection;
 
 struct nc_coap_server_context {
@@ -135,6 +139,8 @@ bool nc_coap_server_response_get_payload(struct nc_coap_server_request* request,
 
 np_error_code nc_coap_server_response_get_code_human(struct nc_coap_server_request* request, uint16_t* code);
 
-
+#ifdef __cplusplus
+} // extern "C"
+#endif
 
 #endif // NC_COAP_SERVER_H
