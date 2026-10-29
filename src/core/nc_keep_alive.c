@@ -4,6 +4,7 @@
 #include <platform/np_event_queue_wrapper.h>
 #include <platform/np_logging.h>
 
+#include <inttypes.h>
 #include <string.h>
 
 #define LOG NABTO_LOG_MODULE_KEEP_ALIVE
@@ -51,12 +52,21 @@ void nc_keep_alive_reset(struct nc_keep_alive_context* ctx)
     ctx->lostKeepAlives = 0;
 }
 
-void nc_keep_alive_set_settings(struct nc_keep_alive_context* ctx, uint32_t interval, uint32_t retryInterval, uint32_t maxRetries)
+bool nc_keep_alive_set_settings(struct nc_keep_alive_context* ctx, uint64_t interval, uint64_t retryInterval, uint64_t maxRetries)
 {
-    ctx->kaInterval = interval;
-    ctx->kaRetryInterval = retryInterval;
-    ctx->kaMaxRetries = maxRetries;
+    if (retryInterval < NC_KEEP_ALIVE_MIN_RETRY_INTERVAL ||
+        interval < retryInterval ||
+        interval > NC_KEEP_ALIVE_MAX_INTERVAL ||
+        maxRetries > NC_KEEP_ALIVE_MAX_MAX_RETRIES)
+    {
+        NABTO_LOG_ERROR(LOG, "Keep alive settings out of range, interval: %" PRIu64 ", retryInterval: %" PRIu64 ", maxRetries: %" PRIu64 ", using the current settings", interval, retryInterval, maxRetries);
+        return false;
+    }
+    ctx->kaInterval = (uint32_t)interval;
+    ctx->kaRetryInterval = (uint32_t)retryInterval;
+    ctx->kaMaxRetries = (uint32_t)maxRetries;
     ctx->n = ctx->kaInterval/ctx->kaRetryInterval;
+    return true;
 }
 
 enum nc_keep_alive_action nc_keep_alive_should_send(struct nc_keep_alive_context* ctx, uint32_t recvCount, uint32_t sentCount)

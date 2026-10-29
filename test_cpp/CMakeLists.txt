@@ -59,6 +59,7 @@ set(test_src
   tests/core/nc_coap_rest_error_test.cpp
   tests/core/nc_dns_multi_resolver_test.cpp
   tests/core/watchdog_test.cpp
+  tests/core/nc_keep_alive_test.cpp
   tests/spake2/spake2_test.cpp
   tests/spake2/spake2_mbedtls_test.cpp
   tests/spake2/spake2_wolfssl_test.cpp
