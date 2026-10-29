@@ -22,16 +22,25 @@ TCP Tunnel Device Help.
                       production setup.
 
                       Below are several options which can be used to limit the memory
-                      usage of a device.
+                      usage of a device. The defaults are sized for a Linux host. A
+                      negative value removes a limit, e.g. --limit-streams=-1.
       --limit-connections
                       Limit the max number of concurrent nabto connections which a
-                      device accepts.
+                      device accepts. Default 100.
       --limit-streams Limit the max number of concurrent nabto streams the Device
                       can handle. Each tunnel connection e.g. tcp connection accounts
-                      for one stream.
+                      for one stream. Default 500.
       --limit-stream-segments
                       Limit the total number of segments used concurrently by the
                       streaming layer. Each segment consumes roughly 256bytes ram.
+                      Default 262144 (64MB).
+      --limit-coap-requests
+                      Limit the max number of concurrent coap requests. Default 200.
+      --limit-coap-request-size
+                      Limit the size in bytes of a coap request body. Default 65536.
+      --limit-tunnel-connections
+                      Limit the max number of concurrent tcp connections through the
+                      tunnels of each service type. Default 200.
 
 
 # Files
