@@ -149,9 +149,9 @@ np_error_code nc_coap_packet_print(const char* header, const uint8_t* packet, si
             size_t optionDataLength = iterator->optionDataEnd - iterator->optionDataBegin;
             uint32_t value = 0;
             if (iterator->option == NABTO_COAP_OPTION_URI_PATH) {
-                ptr = safeWrite(ptr, end, ", Uri-Path: %.*s", optionDataLength, iterator->optionDataBegin);
+                ptr = safeWrite(ptr, end, ", Uri-Path: %.*s", (int)optionDataLength, iterator->optionDataBegin);
             } else if (iterator->option == NABTO_COAP_OPTION_URI_HOST) {
-                ptr = safeWrite(ptr, end, ", Uri-Host: %.*s", optionDataLength, iterator->optionDataBegin);
+                ptr = safeWrite(ptr, end, ", Uri-Host: %.*s", (int)optionDataLength, iterator->optionDataBegin);
             } else if (iterator->option == NABTO_COAP_OPTION_URI_PORT &&
                        nabto_coap_parse_variable_int(iterator->optionDataBegin, iterator->optionDataEnd, 3, &value))
             {
