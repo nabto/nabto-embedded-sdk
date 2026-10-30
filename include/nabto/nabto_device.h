@@ -2427,6 +2427,15 @@ nabto_device_ice_servers_request_get_url(NabtoDeviceIceServersRequest* request, 
  * Functions for limiting the amount of resources the SDK is using.
  *
  * Generally limits are a `size_t`, unlimited is set by using the value `SIZE_MAX`.
+ *
+ * The limits are unlimited by default, except the stream segments, because no
+ * default fits both a small embedded device and a Linux server. A device which
+ * can be reached by untrusted clients should set the limits to what it can
+ * afford. A platform can also change the defaults at build time, see
+ * `src/core/nc_config.h`.
+ *
+ * The limits are shared by all connections, so one client can use all of a
+ * resource.
  */
 
 /**
@@ -2451,7 +2460,11 @@ nabto_device_limit_streams(NabtoDevice* device, size_t limit);
  *
  * This function limits the amount of segments which can be allocated for
  * streaming. A segment is 256 bytes of data, so the max allocated memory for
- * streaming is limit*256bytes.
+ * streaming is limit*256bytes plus a small overhead per segment.
+ *
+ * A single stream can use up to 10000 receive segments, about 2.5MB, before
+ * this limit is reached. The default is 1000000 segments, which is more memory
+ * than most devices have, so a device should set a limit it can afford.
  *
  * If the limit is reached no new segments can be allocated until there again
  * are free segments available. The streams are built to survive a case where no
@@ -2503,6 +2516,29 @@ nabto_device_limit_connections(NabtoDevice* device, size_t limit);
  */
 NABTO_DEVICE_DECL_PREFIX NabtoDeviceError NABTO_DEVICE_API
 nabto_device_limit_coap_server_requests(NabtoDevice* device, size_t limit);
+
+/**
+ * Limit the size of a coap server request body.
+ *
+ * A request body larger than the limit is rejected with coap status `REQUEST
+ * ENTITY TOO LARGE 4.13` before it reaches the application. The limit also
+ * applies to a body which is sent in multiple blocks, so the device never
+ * allocates more than the limit for the body of a single request. The memory
+ * used by request bodies is bounded by this limit times the coap server
+ * request limit.
+ *
+ * The size of the requests the device handles is defined by the application,
+ * so the limit should be set to the largest request body it expects.
+ *
+ * Virtual coap requests are made by the application itself and are not
+ * limited.
+ *
+ * @param device [in]  The device.
+ * @param limit [in]  The maximum size in bytes of a coap server request body.
+ * @return NABTO_DEVICE_EC_OK iff ok
+ */
+NABTO_DEVICE_DECL_PREFIX NabtoDeviceError NABTO_DEVICE_API
+nabto_device_limit_coap_server_request_size(NabtoDevice* device, size_t limit);
 
 /**
  * Limit concurrent TCP tunnel connections of a specific service type.
