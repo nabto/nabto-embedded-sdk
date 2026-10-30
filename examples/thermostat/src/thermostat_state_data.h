@@ -15,6 +15,7 @@ struct thermostat_state_data {
     double target;
     double temperature;
     enum thermostat_mode mode;
+    struct thermostat_schedule schedule;
 };
 
 cJSON* thermostat_state_data_encode_as_json(struct thermostat_state_data* data);

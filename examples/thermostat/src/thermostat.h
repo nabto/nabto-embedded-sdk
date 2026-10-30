@@ -2,8 +2,10 @@
 #define THERMOSTAT_H_
 
 #include "thermostat_coap_handler.h"
+#include "thermostat_history.h"
 #include "thermostat_iam.h"
 #include "thermostat_state.h"
+#include "thermostat_stream.h"
 
 #include <nabto/nabto_device.h>
 #include <nabto/nabto_device_experimental.h>
@@ -23,6 +25,8 @@ struct thermostat {
     struct thermostat_coap_handler coapSetMode;
     struct thermostat_coap_handler coapSetPower;
     struct thermostat_coap_handler coapSetTarget;
+    struct thermostat_coap_handler coapGetHistory;
+    struct thermostat_coap_handler coapSetSchedule;
     // compabibility handlers such that apps which uses the heatpump api is
     // still compatible with this example.
     struct thermostat_coap_handler coapGetLegacy;
@@ -30,6 +34,14 @@ struct thermostat {
     struct thermostat_coap_handler coapSetPowerLegacy;
     struct thermostat_coap_handler coapSetTargetLegacy;
 
+    struct thermostat_history history;
+    struct thermostat_stream_manager streamManager;
+
+    // tick accumulators, only touched from the main thread.
+    double historySampleAccumulator;
+    double scheduleCheckAccumulator;
+    int lastScheduleMinute;
+    double lastTickTemperature;
 };
 
 void thermostat_init(struct thermostat* thermostat, NabtoDevice* device, struct nm_iam* iam, struct thermostat_state* state, struct nn_log* logger);
