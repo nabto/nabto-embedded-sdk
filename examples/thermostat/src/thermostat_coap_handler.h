@@ -35,6 +35,8 @@ NabtoDeviceError thermostat_get_init(struct thermostat_coap_handler* handler, Na
 NabtoDeviceError thermostat_set_mode_init(struct thermostat_coap_handler* handler, NabtoDevice* device, struct thermostat* thermostat);
 NabtoDeviceError thermostat_set_power_init(struct thermostat_coap_handler* handler, NabtoDevice* device, struct thermostat* thermostat);
 NabtoDeviceError thermostat_set_target_init(struct thermostat_coap_handler* handler, NabtoDevice* device, struct thermostat* thermostat);
+NabtoDeviceError thermostat_get_history_init(struct thermostat_coap_handler* handler, NabtoDevice* device, struct thermostat* thermostat);
+NabtoDeviceError thermostat_set_schedule_init(struct thermostat_coap_handler* handler, NabtoDevice* device, struct thermostat* thermostat);
 
 NabtoDeviceError thermostat_get_legacy_init(struct thermostat_coap_handler* handler, NabtoDevice* device, struct thermostat* thermostat);
 NabtoDeviceError thermostat_set_mode_legacy_init(struct thermostat_coap_handler* handler, NabtoDevice* device, struct thermostat* thermostat);
