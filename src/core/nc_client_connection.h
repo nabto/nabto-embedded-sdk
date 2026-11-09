@@ -14,6 +14,9 @@
 
 #define NC_CLIENT_CONNECTION_MAX_CHANNELS 16
 
+// ip type + ip + port + the connection header without the channel id.
+#define NC_CLIENT_CONNECTION_CLIENT_ID_MAX_SIZE (1 + 16 + 2 + 15)
+
 struct nc_stream_manager_context;
 struct nc_udp_dispatch_context;
 struct nc_device_context;
@@ -69,6 +72,16 @@ np_error_code nc_client_connection_init(struct np_platform* pl, struct nc_client
                                      struct nc_device_context* device,
                                      struct nc_udp_dispatch_context* sock, struct np_udp_endpoint* ep,
                                      uint8_t* buffer, uint16_t bufferSize);
+
+/**
+ * Write the id the DTLS cookie of a new connection is bound to. It
+ * consists of the peer endpoint and the connection id from the 16 byte
+ * connection header, but not the channel id.
+ *
+ * @param out  buffer of NC_CLIENT_CONNECTION_CLIENT_ID_MAX_SIZE bytes.
+ * @return the number of bytes written.
+ */
+size_t nc_client_connection_client_id(const struct np_udp_endpoint* ep, const uint8_t* header, uint8_t* out);
 
 np_error_code nc_client_connection_start(struct nc_client_connection* conn, uint8_t* buffer, size_t bufferSize);
 

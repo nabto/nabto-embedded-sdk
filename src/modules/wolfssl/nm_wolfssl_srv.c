@@ -86,7 +86,8 @@ static np_error_code nm_wolfssl_srv_set_keys(struct np_dtls_srv* server,
                                              size_t privateKeySize);
 
 static np_error_code nm_wolfssl_srv_create_connection(
-    struct np_dtls_srv* server, struct np_dtls_srv_connection** dtls,
+    struct np_dtls_srv* server, const uint8_t* clientId, size_t clientIdSize,
+    struct np_dtls_srv_connection** dtls,
     np_dtls_sender sender, np_dtls_data_handler dataHandler,
     np_dtls_event_handler eventHandler, void* data);
 static void nm_wolfssl_srv_destroy_connection(
@@ -167,6 +168,7 @@ np_error_code nm_wolfssl_srv_init(struct np_platform* pl)
     pl->dtlsS.destroy = &nm_wolfssl_srv_destroy;
     pl->dtlsS.set_keys = &nm_wolfssl_srv_set_keys;
     pl->dtlsS.get_server_fingerprint = &nm_wolfssl_srv_get_server_fingerprint;
+    pl->dtlsS.verify_client_hello = NULL;
     pl->dtlsS.create_connection = &nm_wolfssl_srv_create_connection;
     pl->dtlsS.destroy_connection = &nm_wolfssl_srv_destroy_connection;
     pl->dtlsS.async_send_data = &nm_wolfssl_srv_async_send_data;
@@ -243,10 +245,15 @@ np_error_code nm_wolfssl_srv_set_keys(struct np_dtls_srv* server,
 }
 
 np_error_code nm_wolfssl_srv_create_connection(
-    struct np_dtls_srv* server, struct np_dtls_srv_connection** dtls,
+    struct np_dtls_srv* server, const uint8_t* clientId, size_t clientIdSize,
+    struct np_dtls_srv_connection** dtls,
     np_dtls_sender sender, np_dtls_data_handler dataHandler,
     np_dtls_event_handler eventHandler, void* data)
 {
+    // The client id is used for the stateless cookie exchange which is not
+    // implemented for wolfSSL, see verify_client_hello.
+    (void)clientId;
+    (void)clientIdSize;
     struct np_dtls_srv_connection* ctx =
         (struct np_dtls_srv_connection*)np_calloc(
             1, sizeof(struct np_dtls_srv_connection));

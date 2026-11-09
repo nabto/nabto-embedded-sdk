@@ -16,6 +16,9 @@ extern "C" {
 
 #define NP_DTLS_SRV_DEFAULT_CHANNEL_ID  NP_DTLS_DEFAULT_CHANNEL_ID
 
+// Largest HelloVerifyRequest record verify_client_hello can produce.
+#define NP_DTLS_SRV_MAX_HELLO_VERIFY_SIZE 64
+
 enum np_dtls_srv_event {
     NP_DTLS_SRV_EVENT_CLOSED,
     NP_DTLS_SRV_EVENT_HANDSHAKE_COMPLETE
@@ -51,7 +54,37 @@ struct np_dtls_srv_module {
     np_error_code (*get_server_fingerprint)(struct np_dtls_srv* srv, uint8_t* fp);
 
 
-    np_error_code (*create_connection)(struct np_dtls_srv* server, struct np_dtls_srv_connection** dtls,
+    /**
+     * Statelessly check a packet from a peer which has no connection yet,
+     * such that a connection is only created for peers which have proven
+     * that they own their source address with a DTLS HelloVerifyRequest
+     * cookie exchange.
+     *
+     * @param clientId  Identifies the peer, e.g. its address, port and
+     *                  connection id. The same id must be given to
+     *                  create_connection.
+     * @param response  Buffer of at least NP_DTLS_SRV_MAX_HELLO_VERIFY_SIZE bytes.
+     * @return NABTO_EC_OK if the packet is a ClientHello with a valid cookie
+     *         for clientId, a connection can be created for it.
+     *         NABTO_EC_OPERATION_STARTED if response now holds a
+     *         HelloVerifyRequest of *responseSize bytes to send to the peer.
+     *         Any other error means the packet should be dropped.
+     *
+     * May be NULL if the module does not support it, then every ClientHello
+     * creates a connection.
+     */
+    np_error_code (*verify_client_hello)(struct np_dtls_srv* server,
+                                         const uint8_t* clientId, size_t clientIdSize,
+                                         const uint8_t* packet, size_t packetSize,
+                                         uint8_t* response, size_t* responseSize);
+
+    /**
+     * Create a connection. clientId identifies the peer and binds the DTLS
+     * cookie to it, see verify_client_hello.
+     */
+    np_error_code (*create_connection)(struct np_dtls_srv* server,
+                                       const uint8_t* clientId, size_t clientIdSize,
+                                       struct np_dtls_srv_connection** dtls,
                                        np_dtls_sender packetSender, np_dtls_data_handler dataHandler,
                                        np_dtls_event_handler eventHandler, void* data);
 
