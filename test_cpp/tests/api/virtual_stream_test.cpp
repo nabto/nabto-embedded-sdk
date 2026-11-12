@@ -692,4 +692,36 @@ BOOST_AUTO_TEST_CASE(abort_while_reading)
     nabto_device_future_free(fut);
 }
 
+BOOST_AUTO_TEST_CASE(read_all_while_reading, *boost::unit_test::timeout(60))
+{
+    char readBuffer[256];
+    nabto::test::TestStreamDevice td;
+    nabto::test::TestStream ts(&td);
+
+    td.streamListen([&](NabtoDeviceError ec, NabtoDeviceStream* stream) {
+        if (ec == NABTO_DEVICE_EC_OK) {
+            ts.acceptStream(stream);
+        }
+        });
+
+    td.makeConnection();
+    NabtoDeviceVirtualStream* virtStream = td.virtualStreamOpen();
+
+    ts.futureWait(NABTO_DEVICE_EC_OK); // wait for accept
+
+    NabtoDeviceFuture* fut = nabto_device_future_new(td.device_);
+    NabtoDeviceFuture* fut2 = nabto_device_future_new(td.device_);
+    size_t readen = 0;
+    size_t readen2 = 0;
+    nabto_device_virtual_stream_read_all(virtStream, fut, readBuffer, sizeof(readBuffer), &readen);
+    nabto_device_virtual_stream_read_all(virtStream, fut2, readBuffer, sizeof(readBuffer), &readen2);
+    BOOST_TEST((nabto_device_future_wait(fut2) == NABTO_DEVICE_EC_OPERATION_IN_PROGRESS));
+
+    // The rejected read must leave the device usable.
+    nabto_device_virtual_stream_abort(virtStream);
+    BOOST_TEST((nabto_device_future_wait(fut) == NABTO_DEVICE_EC_ABORTED));
+    nabto_device_future_free(fut);
+    nabto_device_future_free(fut2);
+}
+
 BOOST_AUTO_TEST_SUITE_END()
