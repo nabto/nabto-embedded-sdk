@@ -3,6 +3,7 @@
 #include <nabto/nabto_device.h>
 #include <nabto/nabto_device_experimental.h>
 #include <api/nabto_device_defines.h>
+#include <api/nabto_device_threads.h>
 
 #include <future>
 
@@ -111,6 +112,21 @@ class AuthCallback {
     std::promise<bool> ec_;
 };
 
+/**
+ * Ask the authorization platform module for a verdict. The core only calls
+ * the module with the event mutex held, since the listener state it changes is
+ * shared with the future queue thread.
+ */
+void checkAccess(NabtoDevice* device, const char* action, AuthCallback& authCallback)
+{
+    struct nabto_device_context* dev = (struct nabto_device_context*)device;
+    struct np_platform* pl = &dev->pl;
+    nabto_device_threads_mutex_lock(dev->eventMutex);
+    struct np_authorization_request* req = pl->authorization.create_request(pl, 0, action);
+    pl->authorization.check_access(req, &AuthCallback::callback, &authCallback, NULL, NULL);
+    nabto_device_threads_mutex_unlock(dev->eventMutex);
+}
+
 }
 
 BOOST_AUTO_TEST_SUITE(authorization)
@@ -122,19 +138,14 @@ BOOST_AUTO_TEST_CASE(allow_and_deny)
     {
         auto authDecider = AuthorizationDecider::create(device);
 
-        struct nabto_device_context* internalDevice = (struct nabto_device_context*)device;
-        struct np_platform* pl = &internalDevice->pl;
-
         {
             AuthCallback authCallback;
-            struct np_authorization_request* req = pl->authorization.create_request(pl, 0, "Custom:AllowThis");
-            pl->authorization.check_access(req, &AuthCallback::callback, &authCallback, NULL, NULL);
+            checkAccess(device, "Custom:AllowThis", authCallback);
             BOOST_TEST(authCallback.waitForCallback() == true);
         }
         {
             AuthCallback authCallback;
-            struct np_authorization_request* req = pl->authorization.create_request(pl, 0, "Custom:DenyThis");
-            pl->authorization.check_access(req, &AuthCallback::callback, &authCallback, NULL, NULL);
+            checkAccess(device, "Custom:DenyThis", authCallback);
             BOOST_TEST(authCallback.waitForCallback() == false);
         }
         authDecider->stop();
@@ -149,13 +160,9 @@ BOOST_AUTO_TEST_CASE(no_listener)
     NabtoDevice* device = nabto_device_new();
 
     {
-        struct nabto_device_context* internalDevice = (struct nabto_device_context*)device;
-        struct np_platform* pl = &internalDevice->pl;
-
         {
             AuthCallback authCallback;
-            struct np_authorization_request* req = pl->authorization.create_request(pl, 0, "Custom:AllowThis");
-            pl->authorization.check_access(req, &AuthCallback::callback, &authCallback, NULL, NULL);
+            checkAccess(device, "Custom:AllowThis", authCallback);
             BOOST_TEST(authCallback.waitForCallback() == false);
         }
     }
@@ -171,13 +178,9 @@ BOOST_AUTO_TEST_CASE(no_verdict)
     {
         auto authDecider = AuthorizationDecider::create(device);
         authDecider->doVerdict_ = false;
-        struct nabto_device_context* internalDevice = (struct nabto_device_context*)device;
-        struct np_platform* pl = &internalDevice->pl;
-
         {
             AuthCallback authCallback;
-            struct np_authorization_request* req = pl->authorization.create_request(pl, 0, "Custom:AllowThis");
-            pl->authorization.check_access(req, &AuthCallback::callback, &authCallback, NULL, NULL);
+            checkAccess(device, "Custom:AllowThis", authCallback);
             BOOST_TEST(authCallback.waitForCallback() == false);
         }
         authDecider->stop();
