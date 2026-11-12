@@ -343,7 +343,13 @@ np_error_code nm_mbedtls_util_get_mtu(struct np_platform* pl, uint16_t* mtu)
     if (buf == NULL) {
         return NABTO_EC_OUT_OF_MEMORY;
     }
-    *mtu = pl->buf.size(buf);
+    size_t size = pl->buf.size(buf);
     pl->buf.free(buf);
+    // Leave room for the connection id header which is put in front of
+    // datagrams on client connections.
+    if (size <= NP_DTLS_CONNECTION_ID_HEADER_SIZE) {
+        return NABTO_EC_FAILED;
+    }
+    *mtu = (uint16_t)(size - NP_DTLS_CONNECTION_ID_HEADER_SIZE);
     return NABTO_EC_OK;
 }

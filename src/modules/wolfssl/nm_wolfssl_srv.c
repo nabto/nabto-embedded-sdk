@@ -617,7 +617,7 @@ int wolfssl_send(WOLFSSL* ssl, char* buffer, int bufferSize, void* data)
             // retransmission occurs.
             return (int)bufferSize;
         }
-        if (bufferSize < 0 || bufferSize > pl->buf.size(ctx->sslSendBuffer)) {
+        if (bufferSize < 0 || (size_t)bufferSize + NP_DTLS_CONNECTION_ID_HEADER_SIZE > pl->buf.size(ctx->sslSendBuffer)) {
             NABTO_LOG_ERROR(LOG,
                             "The dtls record (%d bytes) does not fit in a "
                             "communication buffer, dropping the packet.",

@@ -348,9 +348,10 @@ np_error_code nc_client_connection_async_send_to_udp(uint8_t channel,
     conn->sentCb = cb;
 
     uint8_t* start = buffer;
-    memmove(start+16, start, bufferSize);
+    // The DTLS modules leave room for the header in the buffer.
+    memmove(start+NP_DTLS_CONNECTION_ID_HEADER_SIZE, start, bufferSize);
     memcpy(start, conn->id.id, 15);
-    bufferSize = bufferSize + 16;
+    bufferSize = bufferSize + NP_DTLS_CONNECTION_ID_HEADER_SIZE;
 
     if (channel == conn->currentChannel.channelId || channel == NP_DTLS_CLI_DEFAULT_CHANNEL_ID) {
         *(start+15) = conn->currentChannel.channelId;

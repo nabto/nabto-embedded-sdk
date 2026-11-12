@@ -9,6 +9,7 @@
 
 #include "../attach/certificates.hpp"
 
+#include <algorithm>
 #include <deque>
 #include <functional>
 #include <future>
@@ -87,6 +88,8 @@ class DtlsPair {
     // server respectively.
     size_t clientReceived_ = 0;
     size_t serverReceived_ = 0;
+    // Largest datagram either side has given to its send callback.
+    size_t maxDatagram_ = 0;
 
  private:
     np_error_code send(size_t size, bool fromClient)
@@ -137,6 +140,7 @@ class DtlsPair {
         (void)channelId;
         DtlsPair* self = (DtlsPair*)data;
         self->toServer_.emplace_back(buffer, buffer + bufferSize);
+        self->maxDatagram_ = std::max(self->maxDatagram_, (size_t)bufferSize);
         np_event_queue_post(&self->pl_->eq, self->deliverEvent_);
         np_completion_event_resolve(cb, NABTO_EC_OK);
         return NABTO_EC_OK;
@@ -147,6 +151,7 @@ class DtlsPair {
         (void)channelId;
         DtlsPair* self = (DtlsPair*)data;
         self->toClient_.emplace_back(buffer, buffer + bufferSize);
+        self->maxDatagram_ = std::max(self->maxDatagram_, (size_t)bufferSize);
         np_event_queue_post(&self->pl_->eq, self->deliverEvent_);
         np_completion_event_resolve(cb, NABTO_EC_OK);
         return NABTO_EC_OK;
@@ -267,7 +272,7 @@ BOOST_AUTO_TEST_CASE(max_plaintext_fits_in_a_record)
     auto tp = nabto::test::TestPlatform::create();
     struct np_platform* pl = tp->getPlatform();
     struct np_communication_buffer* buf = pl->buf.allocate();
-    size_t maxPlaintext = pl->buf.size(buf) - NP_DTLS_MAX_RECORD_OVERHEAD;
+    size_t maxPlaintext = pl->buf.size(buf) - NP_DTLS_MAX_SEND_OVERHEAD;
     pl->buf.free(buf);
 
     nabto::test::DtlsPair pair(*tp);
@@ -277,6 +282,31 @@ BOOST_AUTO_TEST_CASE(max_plaintext_fits_in_a_record)
     BOOST_TEST(pair.serverReceived_ == maxPlaintext);
     BOOST_TEST(pair.serverSend(maxPlaintext) == NABTO_EC_OK);
     BOOST_TEST(pair.clientReceived_ == maxPlaintext);
+}
+
+BOOST_AUTO_TEST_CASE(datagrams_leave_room_for_connection_id_header)
+{
+    auto tp = nabto::test::TestPlatform::create();
+    struct np_platform* pl = tp->getPlatform();
+    struct np_communication_buffer* buf = pl->buf.allocate();
+    size_t bufferSize = pl->buf.size(buf);
+    pl->buf.free(buf);
+
+    nabto::test::DtlsPair pair(*tp);
+    pair.connect();
+
+    // Client connections put a connection id header in front of each
+    // datagram in the same communication buffer. Payloads up to the largest
+    // which would fit a record in a whole buffer must not produce a datagram
+    // without room for the header.
+    // Actual record overhead with TLS_ECDHE_ECDSA_WITH_AES_128_CCM, see
+    // NP_DTLS_MAX_RECORD_OVERHEAD.
+    const size_t recordOverhead = 37;
+    for (size_t size = bufferSize - NP_DTLS_MAX_SEND_OVERHEAD; size <= bufferSize - recordOverhead; size++) {
+        pair.clientSend(size);
+        pair.serverSend(size);
+    }
+    BOOST_TEST(pair.maxDatagram_ <= bufferSize - NP_DTLS_CONNECTION_ID_HEADER_SIZE);
 }
 
 BOOST_AUTO_TEST_SUITE_END()
