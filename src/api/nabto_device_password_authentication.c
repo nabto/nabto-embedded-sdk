@@ -84,7 +84,7 @@ nabto_device_connection_get_password_authentication_username(NabtoDevice* device
     struct nc_connection* connection = nc_device_connection_from_ref(&dev->core, ref);
     if (connection == NULL) {
         ec = NABTO_DEVICE_EC_INVALID_CONNECTION;
-    } else if (connection->username[0] == 0) {
+    } else if (connection->username == NULL || connection->username[0] == 0) {
         ec = NABTO_DEVICE_EC_INVALID_STATE;
     } else {
         *username = nn_strdup(connection->username, np_allocator_get());

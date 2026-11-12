@@ -250,7 +250,9 @@ nabto_device_authorization_request_get_attribute_name(NabtoDeviceAuthorizationRe
     const char* ret = NULL;
     nabto_device_threads_mutex_lock(dev->eventMutex);
     struct nabto_device_authorization_request_attribute* attribute = get_attribute(authReq, index);
-    ret = attribute->key;
+    if (attribute != NULL) {
+        ret = attribute->key;
+    }
     nabto_device_threads_mutex_unlock(dev->eventMutex);
     return ret;
 }
@@ -268,7 +270,9 @@ nabto_device_authorization_request_get_attribute_value(NabtoDeviceAuthorizationR
     nabto_device_threads_mutex_lock(dev->eventMutex);
 
     struct nabto_device_authorization_request_attribute* attribute = get_attribute(authReq, index);
-    ret = attribute->value;
+    if (attribute != NULL) {
+        ret = attribute->value;
+    }
 
     nabto_device_threads_mutex_unlock(dev->eventMutex);
 
