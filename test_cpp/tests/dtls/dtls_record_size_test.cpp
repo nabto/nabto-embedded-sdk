@@ -272,7 +272,7 @@ BOOST_AUTO_TEST_CASE(max_plaintext_fits_in_a_record)
     auto tp = nabto::test::TestPlatform::create();
     struct np_platform* pl = tp->getPlatform();
     struct np_communication_buffer* buf = pl->buf.allocate();
-    size_t maxPlaintext = pl->buf.size(buf) - NP_DTLS_MAX_RECORD_OVERHEAD;
+    size_t maxPlaintext = pl->buf.size(buf) - NP_DTLS_MAX_SEND_OVERHEAD;
     pl->buf.free(buf);
 
     nabto::test::DtlsPair pair(*tp);
@@ -302,7 +302,7 @@ BOOST_AUTO_TEST_CASE(datagrams_leave_room_for_connection_id_header)
     // Actual record overhead with TLS_ECDHE_ECDSA_WITH_AES_128_CCM, see
     // NP_DTLS_MAX_RECORD_OVERHEAD.
     const size_t recordOverhead = 37;
-    for (size_t size = bufferSize - NP_DTLS_MAX_RECORD_OVERHEAD; size <= bufferSize - recordOverhead; size++) {
+    for (size_t size = bufferSize - NP_DTLS_MAX_SEND_OVERHEAD; size <= bufferSize - recordOverhead; size++) {
         pair.clientSend(size);
         pair.serverSend(size);
     }

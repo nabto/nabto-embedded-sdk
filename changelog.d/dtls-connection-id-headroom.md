@@ -5,4 +5,5 @@
    whole buffer was written up to 16 bytes past its end. With the default
    1500 byte communication buffer no datagram was large enough to trigger
    this, but builds with a smaller `NABTO_COMMUNICATION_BUFFER_LENGTH` could
-   be affected during the DTLS handshake.
+   be affected during the DTLS handshake. CoAP packets are now limited to 16
+   bytes less than before, to keep room for the header.
