@@ -593,9 +593,9 @@ int nm_mbedtls_srv_mbedtls_send(void* data, const unsigned char* buffer, size_t 
             // if we return WANT_WRITE there is no mechanism which ensures a retransmission occurs.
             return (int)bufferSize;
         }
-        if (bufferSize > pl->buf.size(ctx->sslSendBuffer)) {
-            // Cannot happen as the mtu is the size of a communication
-            // buffer.
+        if (bufferSize + NP_DTLS_CONNECTION_ID_HEADER_SIZE > pl->buf.size(ctx->sslSendBuffer)) {
+            // Cannot happen as the mtu leaves room for the connection id
+            // header in a communication buffer.
             NABTO_LOG_ERROR(LOG, "The dtls record (%u bytes) does not fit in a communication buffer, dropping the packet.", (unsigned)bufferSize);
             pl->buf.free(ctx->sslSendBuffer);
             ctx->sslSendBuffer = NULL;

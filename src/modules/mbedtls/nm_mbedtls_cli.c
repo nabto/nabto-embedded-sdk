@@ -783,9 +783,9 @@ int nm_dtls_mbedtls_send(void* data, const unsigned char* buffer,
             // again.
             return (int)bufferSize;
         }
-        if (bufferSize > pl->buf.size(conn->sslSendBuffer)) {
-            // Cannot happen as the mtu is the size of a communication
-            // buffer.
+        if (bufferSize + NP_DTLS_CONNECTION_ID_HEADER_SIZE > pl->buf.size(conn->sslSendBuffer)) {
+            // Cannot happen as the mtu leaves room for the connection id
+            // header in a communication buffer.
             NABTO_LOG_ERROR(LOG,
                             "The dtls record (%u bytes) does not fit in a "
                             "communication buffer. Dropping the packet",

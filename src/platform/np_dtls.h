@@ -16,6 +16,14 @@
  */
 #define NP_DTLS_MAX_RECORD_OVERHEAD 64
 
+/**
+ * Datagrams on client connections are prefixed with a 16 byte connection id
+ * header. The header is inserted in front of the DTLS record in the same
+ * communication buffer, so the DTLS modules keep their datagrams this much
+ * smaller than a communication buffer.
+ */
+#define NP_DTLS_CONNECTION_ID_HEADER_SIZE 16
+
 struct np_communication_buffer;
 
 enum np_dtls_event {
