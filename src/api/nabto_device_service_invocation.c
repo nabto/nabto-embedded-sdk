@@ -83,6 +83,7 @@ nabto_device_service_invocation_set_message(NabtoDeviceServiceInvocation* servic
     if (s->serviceInvoke.serviceInvokeRequest.message != NULL) {
         np_free(s->serviceInvoke.serviceInvokeRequest.message);
     }
+    s->serviceInvoke.serviceInvokeRequest.messageLength = 0;
 
     s->serviceInvoke.serviceInvokeRequest.message = np_calloc(1, messageLength);
     if (s->serviceInvoke.serviceInvokeRequest.message == NULL) {

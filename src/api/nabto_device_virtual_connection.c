@@ -288,6 +288,8 @@ nabto_device_virtual_coap_request_set_payload(NabtoDeviceVirtualCoapRequest* req
     size_t dataSize)
 {
     struct nabto_device_virtual_coap_request* req = (struct nabto_device_virtual_coap_request*)request;
+    np_free(req->payload);
+    req->payloadSize = 0;
     req->payload = np_calloc(1, dataSize);
     if (req->payload == NULL) {
         return NABTO_DEVICE_EC_OUT_OF_MEMORY;
