@@ -606,7 +606,7 @@ enum nm_iam_error nm_iam_internal_set_user_fingerprint(struct nm_iam* iam, const
 
 enum nm_iam_error nm_iam_internal_add_user_fingerprint(struct nm_iam* iam, const char* username, const char* fingerprint, const char* fingerprintName)
 {
-    if (strlen(fingerprint) != 64 || strlen(fingerprintName) > iam->displayNameMaxLength) {
+    if (strlen(fingerprint) != 64 || (fingerprintName != NULL && strlen(fingerprintName) > iam->displayNameMaxLength)) {
         return NM_IAM_ERROR_INVALID_ARGUMENT;
     }
 
