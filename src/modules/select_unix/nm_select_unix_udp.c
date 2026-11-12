@@ -248,7 +248,7 @@ void nm_select_unix_udp_handle_select(struct nm_select_unix* ctx, int nfds)
 int nm_select_unix_udp_nonblocking_socket(int domain, int type)
 {
 #if defined(SOCK_NONBLOCK)
-    return socket(domain, type | SOCK_NONBLOCK, 0);
+    int sock = socket(domain, type | SOCK_NONBLOCK, 0);
 #elif defined(F_GETFL)
     int sock = socket(domain, type, 0);
     if (sock == NM_SELECT_UNIX_INVALID_SOCKET) {
@@ -267,10 +267,16 @@ int nm_select_unix_udp_nonblocking_socket(int domain, int type)
         close(sock);
         return NM_SELECT_UNIX_INVALID_SOCKET;
     }
-    return sock;
 #else
     #error Cannot create a nonblocking socket.
 #endif
+    if (sock >= FD_SETSIZE) {
+        // The socket cannot be used with select.
+        NABTO_LOG_ERROR(LOG, "UDP socket fd %d is too large for select, FD_SETSIZE is %d.", sock, FD_SETSIZE);
+        close(sock);
+        return NM_SELECT_UNIX_INVALID_SOCKET;
+    }
+    return sock;
 }
 
 np_error_code udp_send_to(struct np_udp_socket* s, const struct np_udp_endpoint* ep, const uint8_t* buffer, uint16_t bufferSize)
