@@ -152,6 +152,12 @@ np_error_code async_connect_ec(struct np_tcp_socket* sock, struct np_ip_address*
     if (s < 0) {
         return NABTO_EC_UNKNOWN;
     }
+    if (s >= FD_SETSIZE) {
+        // The socket cannot be used with select.
+        NABTO_LOG_ERROR(LOG, "TCP socket fd %d is too large for select, FD_SETSIZE is %d.", s, FD_SETSIZE);
+        close(s);
+        return NABTO_EC_UNKNOWN;
+    }
 
     sock->fd = s;
 
