@@ -24,6 +24,17 @@ void handle_request(struct nm_iam_coap_handler* handler, NabtoDeviceCoapRequest*
         nabto_device_coap_error_response(request, 400, "Bad request");
         return;
     }
+    struct nn_string_map attributes;
+    nn_string_map_init(&attributes, nm_iam_allocator_get());
+    nn_string_map_insert(&attributes, "IAM:Username", username);
+
+    if (!nm_iam_internal_check_access(handler->iam, nabto_device_coap_request_get_connection_ref(request), "IAM:SetUserNotificationCategories", &attributes)) {
+        nabto_device_coap_error_response(request, 403, "Access Denied");
+        nn_string_map_deinit(&attributes);
+        return;
+    }
+    nn_string_map_deinit(&attributes);
+
     enum nm_iam_cbor_error ec = nm_iam_cbor_init_parser(request, &parser, &value);
     if ( ec != IAM_CBOR_OK ) {
         nm_iam_cbor_send_error_response(request, ec);
@@ -37,18 +48,6 @@ void handle_request(struct nm_iam_coap_handler* handler, NabtoDeviceCoapRequest*
         nabto_device_coap_error_response(request, 400, "Bad request");
         return;
     }
-
-    struct nn_string_map attributes;
-    nn_string_map_init(&attributes, nm_iam_allocator_get());
-    nn_string_map_insert(&attributes, "IAM:Username", username);
-
-    if (!nm_iam_internal_check_access(handler->iam, nabto_device_coap_request_get_connection_ref(request), "IAM:SetUserNotificationCategories", &attributes)) {
-        nabto_device_coap_error_response(request, 403, "Access Denied");
-        nn_string_set_deinit(&categories);
-        nn_string_map_deinit(&attributes);
-        return;
-    }
-    nn_string_map_deinit(&attributes);
 
     enum nm_iam_error err = nm_iam_internal_set_user_notification_categories(handler->iam, username, &categories);
     if (err == NM_IAM_ERROR_NO_SUCH_USER) {

@@ -185,7 +185,8 @@ bool nm_iam_cbor_decode_string_set(CborValue* value, struct nn_string_set* set)
     }
     while(!cbor_value_at_end(&item)) {
         char* s = NULL;
-        if (nm_iam_cbor_decode_string(&item, &s) && nn_string_set_insert(set, s)) {
+        // A null item decodes to s == NULL which is not a valid set member.
+        if (nm_iam_cbor_decode_string(&item, &s) && s != NULL && nn_string_set_insert(set, s)) {
             nm_iam_free(s);
         } else {
             nm_iam_free(s);

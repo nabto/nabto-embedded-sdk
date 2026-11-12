@@ -41,7 +41,7 @@ void handle_request(struct nm_iam_coap_handler* handler, NabtoDeviceCoapRequest*
 
     char* username = NULL;
 
-    if (!nm_iam_cbor_decode_kv_string(&value, "Username", &username)) {
+    if (!nm_iam_cbor_decode_kv_string(&value, "Username", &username) || username == NULL) {
         nabto_device_coap_error_response(request, 400, "Username missing");
         return;
     }
