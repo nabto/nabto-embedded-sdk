@@ -611,18 +611,17 @@ nabto_device_connection_is_password_authenticated(NabtoDevice* device, NabtoDevi
 
 
 /**
- * Get the username used for password authentication if it was
- * attempted. The username is set during the authentication process,
- * meaning the username should only be used if a prior call to
- * nabto_device_connection_is_password_authenticated() returned
- * true. The returned string must be freed using
+ * Get the username of the last successful password authentication on
+ * the connection. The username is set when a password authentication
+ * completes, so a password authentication in progress does not change
+ * it. The returned string must be freed using
  * nabto_device_string_free().
  *
  * @param device [in]    The device.
  * @param ref    [in]    The connection reference for which to get username.
  * @param username [out] Where to put the username string.
  * @retval NABTO_DEVICE_EC_INVALID_CONNECTION iff connection does not exist
- * @retval NABTO_DEVICE_EC_INVALID_STATE iff password authentication not performed
+ * @retval NABTO_DEVICE_EC_INVALID_STATE iff no password authentication has succeeded
  * @retval NABTO_DEVICE_EC_OUT_OF_MEMORY iff string could not be allocated
  */
 NABTO_DEVICE_DECL_PREFIX NabtoDeviceError NABTO_DEVICE_API

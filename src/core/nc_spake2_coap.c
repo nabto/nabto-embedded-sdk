@@ -10,6 +10,9 @@
 
 #include <tinycbor/cbor.h>
 
+#include <platform/np_allocator.h>
+#include <nn/string.h>
+
 void nc_spake2_handle_coap_1(struct nc_coap_server_request* request, void* data);
 void nc_spake2_handle_coap_2(struct nc_coap_server_request* request, void* data);
 
@@ -125,6 +128,22 @@ void nc_spake2_handle_coap_1(struct nc_coap_server_request* request, void* data)
 }
 
 
+/**
+ * The key has been confirmed, the username of the exchange becomes the
+ * username the connection is authenticated as.
+ */
+static bool set_authenticated_username(struct nc_connection* connection)
+{
+    char* username = nn_strdup(connection->spake2Username, np_allocator_get());
+    if (username == NULL) {
+        return false;
+    }
+    np_free(connection->username);
+    connection->username = username;
+    connection->passwordAuthenticated = true;
+    return true;
+}
+
 void nc_spake2_handle_coap_2(struct nc_coap_server_request* request, void* data)
 {
     uint8_t* payload = NULL;
@@ -156,8 +175,9 @@ void nc_spake2_handle_coap_2(struct nc_coap_server_request* request, void* data)
             if (spake2->pl->spake2.key_confirmation(payload, payloadLength, connection->spake2Key, 32, responseData, 32) != NABTO_EC_OK) {
                 nc_coap_server_send_error_response(request, (nabto_coap_code)NABTO_COAP_CODE(4,01), NULL);
                 nc_spake2_spend_token(spake2);
+            } else if (!set_authenticated_username(connection)) {
+                nc_coap_server_send_error_response(request, (nabto_coap_code)NABTO_COAP_CODE(5,00), NULL);
             } else {
-                connection->passwordAuthenticated = true;
                 nc_coap_server_response_set_code_human(request, 201);
                 nc_coap_server_response_set_content_format(request, NABTO_COAP_CONTENT_FORMAT_APPLICATION_OCTET_STREAM);
                 nc_coap_server_response_set_payload(request, responseData, 32);
