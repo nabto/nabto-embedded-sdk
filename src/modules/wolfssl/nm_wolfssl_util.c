@@ -120,7 +120,7 @@ np_error_code nm_wolfssl_create_crt_from_private_key(const char* privateKey,
     if (ec == NABTO_EC_OK) {
         certLen = wc_SignCert(cert.bodySz, cert.sigType, derCert,
                               sizeof(derCert), NULL, &eccKey, &rng);
-        if (ret < 0) {
+        if (certLen < 0) {
             ec = NABTO_EC_FAILED;
         }
     }
