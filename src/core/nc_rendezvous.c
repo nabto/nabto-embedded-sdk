@@ -138,7 +138,7 @@ void nc_rendezvous_handle_packet(
     uint8_t type = buffer[16];
     if (type == CT_RENDEZVOUS_CLIENT_REQUEST) {
         // validate connection id and make a CT_RENDEZVOUS_CLIENT_RESPONSE
-        if (nc_client_connection_dispatch_validate_connection_id(connectionDispatch, buffer+1)) {
+        if (nc_client_connection_dispatch_validate_connection_id(connectionDispatch, buffer)) {
             struct nc_rendezvous_send_packet packet;
             packet.type = CT_RENDEZVOUS_CLIENT_RESPONSE;
             memcpy(packet.connectionId, buffer+1, 14);
