@@ -76,7 +76,7 @@ np_error_code resolve_one_ec(struct nm_dns_resolve_event* event)
 
     size_t resolved = 0;
     while (p != NULL) {
-        if (*(event->ipsResolved) < event->ipsSize) {
+        if (resolved < event->ipsSize) {
             if (p->ai_family == AF_INET) {
                 ips[resolved].type = NABTO_IPV4;
                 struct sockaddr_in* addr = (struct sockaddr_in*)p->ai_addr;
