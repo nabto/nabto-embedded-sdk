@@ -517,7 +517,10 @@ nabto_coap_method method, const char** segments, void* payload, size_t payloadSi
     virReq->clientFreed = false;
     virReq->serverFreed = false;
     virReq->resolved = false;
-    memcpy(virReq->reqPayload, payload, payloadSize);
+    if (payloadSize > 0) {
+        // payload is NULL for a request without a payload.
+        memcpy(virReq->reqPayload, payload, payloadSize);
+    }
     nn_string_map_init(&virReq->parameters, np_allocator_get());
     nc_virtual_connection_add_coap_request(conn->connectionImplCtx, req);
 
