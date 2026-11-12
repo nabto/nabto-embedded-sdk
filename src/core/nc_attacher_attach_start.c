@@ -290,7 +290,7 @@ enum nc_attacher_status handle_redirect(struct nc_attach_context* ctx,
         if (ctx->dns != NULL) {
             np_free(ctx->dns);
         }
-        ctx->dns = calloc(1, hostLength + 1);
+        ctx->dns = np_calloc(1, hostLength + 1);
         if (ctx->dns == NULL) {
             NABTO_LOG_ERROR(LOG, "Out of memory when handling redirect.");
             return NC_ATTACHER_STATUS_ERROR;
