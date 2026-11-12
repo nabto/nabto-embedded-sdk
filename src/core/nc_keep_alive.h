@@ -90,10 +90,10 @@ void nc_keep_alive_reset(struct nc_keep_alive_context* ctx);
  */
 bool nc_keep_alive_set_settings(struct nc_keep_alive_context* ctx, uint64_t interval, uint64_t retryInterval, uint64_t maxRetries);
 
-void nc_keep_alive_create_request(struct nc_keep_alive_context* ctx, uint8_t** buffer, size_t* length);
+void nc_keep_alive_create_request(struct nc_keep_alive_context* ctx, uint8_t** buffer, uint16_t* length);
 
 enum nc_keep_alive_action nc_keep_alive_should_send(struct nc_keep_alive_context* ctx, uint32_t recvCount, uint32_t sentCount);
-bool nc_keep_alive_handle_request(struct nc_keep_alive_context* ctx, uint8_t* reqBuffer, size_t reqLength, uint8_t** respBuffer, size_t* respLength);
+bool nc_keep_alive_handle_request(struct nc_keep_alive_context* ctx, uint8_t* reqBuffer, size_t reqLength, uint8_t** respBuffer, uint16_t* respLength);
 
 
 void nc_keep_alive_wait(struct nc_keep_alive_context* ctx);
