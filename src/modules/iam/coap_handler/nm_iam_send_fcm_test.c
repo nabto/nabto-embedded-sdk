@@ -54,9 +54,10 @@ void msg_sent_callback(NabtoDeviceFuture* fut, NabtoDeviceError ec, void* data)
         NN_LOG_ERROR(ctx->handler->iam->logger, LOGM, "FCM request failed. Basestation returned: %s", nabto_device_error_get_string(ec));
         nabto_device_coap_error_response(ctx->req, 503, "Failed to send to basestation");
         nabto_device_fcm_notification_free(ctx->msg);
+        struct nm_iam_coap_handler* h = ctx->handler;
         nm_iam_free(ctx);
         nabto_device_future_free(fut);
-        nm_iam_coap_handler_async_request_end(ctx->handler);
+        nm_iam_coap_handler_async_request_end(h);
         return;
     }
 
@@ -65,9 +66,10 @@ void msg_sent_callback(NabtoDeviceFuture* fut, NabtoDeviceError ec, void* data)
     if (payload == NULL) {
         nabto_device_coap_error_response(ctx->req, 500, "Insufficient resources");
         nabto_device_fcm_notification_free(ctx->msg);
+        struct nm_iam_coap_handler* h = ctx->handler;
         nm_iam_free(ctx);
         nabto_device_future_free(fut);
-        nm_iam_coap_handler_async_request_end(ctx->handler);
+        nm_iam_coap_handler_async_request_end(h);
         return;
     }
 
