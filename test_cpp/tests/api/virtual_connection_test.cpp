@@ -262,6 +262,17 @@ BOOST_AUTO_TEST_CASE(new_free_coap)
     nabto_device_virtual_coap_request_free(req);
 }
 
+BOOST_AUTO_TEST_CASE(new_free_coap_empty_path)
+{
+    nabto::test::TestDevice td;
+    NabtoDeviceVirtualConnection* conn = td.makeConnection();
+
+    // An empty path must not be indexed at pathLen-1.
+    NabtoDeviceVirtualCoapRequest* req = nabto_device_virtual_coap_request_new(conn, NABTO_DEVICE_COAP_GET, "");
+    BOOST_TEST((req != NULL));
+    nabto_device_virtual_coap_request_free(req);
+}
+
 BOOST_AUTO_TEST_CASE(execute_coap)
 {
     const char* data = "FOOBAR";

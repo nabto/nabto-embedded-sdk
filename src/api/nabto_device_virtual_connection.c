@@ -236,7 +236,7 @@ nabto_device_virtual_coap_request_new(NabtoDeviceVirtualConnection* connection, 
     virReq->apiReq.dev = conn->dev;
     virReq->apiReq.connectionRef = conn->connection->connectionRef;
     size_t pathLen = strlen(virReq->path);
-    if (virReq->path[pathLen-1] == '/') {
+    if (pathLen > 0 && virReq->path[pathLen-1] == '/') {
         // URL has trailing '/'
         virReq->path[pathLen-1] = 0;
         pathLen--;
