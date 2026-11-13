@@ -28,8 +28,9 @@ struct nc_connection {
 #if defined(NABTO_DEVICE_PASSWORD_AUTHENTICATION)
     bool hasSpake2Key;  // true iff the key has been set
     uint8_t spake2Key[32];
+    char* spake2Username; // username of the password authentication in progress, the spake2Key belongs to this username.
     bool passwordAuthenticated; // true iff some password authentication request has succeeded on the connection.
-    char* username; // username used for password authentication if passwordAuthentication was attempted
+    char* username; // username of the last successful password authentication, NULL until then.
 #endif
 };
 

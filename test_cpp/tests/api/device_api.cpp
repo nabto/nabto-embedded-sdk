@@ -237,4 +237,23 @@ BOOST_AUTO_TEST_CASE(tcp_tunnel_service_duplicate_id, *boost::unit_test::timeout
     nabto_device_free(dev);
 }
 
+BOOST_AUTO_TEST_CASE(stream_listener_port_in_use, *boost::unit_test::timeout(30))
+{
+    NabtoDevice* dev = nabto_device_new();
+    BOOST_REQUIRE(dev);
+    NabtoDeviceListener* listener1 = nabto_device_listener_new(dev);
+    NabtoDeviceListener* listener2 = nabto_device_listener_new(dev);
+
+    BOOST_TEST(nabto_device_stream_init_listener(dev, listener1, 4242) == NABTO_DEVICE_EC_OK);
+    BOOST_TEST(nabto_device_stream_init_listener(dev, listener2, 4242) != NABTO_DEVICE_EC_OK);
+
+    // The failed init must release the device and leave listener2 unused.
+    BOOST_TEST(nabto_device_stream_init_listener(dev, listener2, 4243) == NABTO_DEVICE_EC_OK);
+
+    nabto_device_stop(dev);
+    nabto_device_listener_free(listener1);
+    nabto_device_listener_free(listener2);
+    nabto_device_free(dev);
+}
+
 BOOST_AUTO_TEST_SUITE_END()

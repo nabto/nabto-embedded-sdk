@@ -22,55 +22,53 @@ static void nabto_device_stream_free_internal(struct nabto_device_stream* stream
  * Streaming Api
  *******************************************/
 
+/**
+ * Add a core stream listener for the type, 0 means an ephemeral type, and
+ * attach it to the api listener.
+ */
+static np_error_code init_stream_listener(struct nabto_device_context* dev, struct nabto_device_listener* listener, uint32_t type, uint32_t* actualType)
+{
+    struct nabto_device_stream_listener_context* listenerContext = np_calloc(1, sizeof(struct nabto_device_stream_listener_context));
+    if (listenerContext == NULL) {
+        return NABTO_EC_OUT_OF_MEMORY;
+    }
+    listenerContext->device = dev;
+    listenerContext->listener = listener;
+    np_error_code ec = nc_stream_manager_add_listener(&dev->core.streamManager, &listenerContext->coreListener, type, &nabto_device_stream_core_callback, listenerContext);
+    if (ec) {
+        np_free(listenerContext);
+        return ec;
+    }
+    // Once the listener is initialized, its callback frees the listener context.
+    ec = nabto_device_listener_init(dev, listener, NABTO_DEVICE_LISTENER_TYPE_STREAMS, &nabto_device_stream_listener_callback, listenerContext);
+    if (ec) {
+        nc_stream_manager_remove_listener(&listenerContext->coreListener);
+        np_free(listenerContext);
+        return ec;
+    }
+    *actualType = listenerContext->coreListener.type;
+    return NABTO_EC_OK;
+}
+
 NabtoDeviceError NABTO_DEVICE_API nabto_device_stream_init_listener(NabtoDevice* device, NabtoDeviceListener* deviceListener, uint32_t type)
 {
     struct nabto_device_context* dev = (struct nabto_device_context*)device;
     struct nabto_device_listener* listener = (struct nabto_device_listener*)deviceListener;
-    struct nabto_device_stream_listener_context* listenerContext = np_calloc(1, sizeof(struct nabto_device_stream_listener_context));
-    if (listenerContext == NULL) {
-        return NABTO_DEVICE_EC_OUT_OF_MEMORY;
-    }
+    uint32_t actualType = 0;
     nabto_device_threads_mutex_lock(dev->eventMutex);
-    np_error_code ec  = nabto_device_listener_init(dev, listener, NABTO_DEVICE_LISTENER_TYPE_STREAMS, &nabto_device_stream_listener_callback, listenerContext);
-    if (ec) {
-        np_free(listenerContext);
-        return nabto_device_error_core_to_api(ec);
-    }
-    listenerContext->device = dev;
-    listenerContext->listener = listener;
-    ec = nc_stream_manager_add_listener(&dev->core.streamManager, &listenerContext->coreListener, type, &nabto_device_stream_core_callback, listenerContext);
-    if (ec) {
-        np_free(listenerContext);
-        return nabto_device_error_core_to_api(ec);
-    }
+    np_error_code ec = init_stream_listener(dev, listener, type, &actualType);
     nabto_device_threads_mutex_unlock(dev->eventMutex);
-    return NABTO_DEVICE_EC_OK;
+    return nabto_device_error_core_to_api(ec);
 }
 
 NabtoDeviceError NABTO_DEVICE_API nabto_device_stream_init_listener_ephemeral(NabtoDevice* device, NabtoDeviceListener* deviceListener, uint32_t* type)
 {
     struct nabto_device_context* dev = (struct nabto_device_context*)device;
     struct nabto_device_listener* listener = (struct nabto_device_listener*)deviceListener;
-    struct nabto_device_stream_listener_context* listenerContext = np_calloc(1, sizeof(struct nabto_device_stream_listener_context));
-    if (listenerContext == NULL) {
-        return NABTO_DEVICE_EC_OUT_OF_MEMORY;
-    }
     nabto_device_threads_mutex_lock(dev->eventMutex);
-    np_error_code ec  = nabto_device_listener_init(dev, listener, NABTO_DEVICE_LISTENER_TYPE_STREAMS, &nabto_device_stream_listener_callback, listenerContext);
-    if (ec) {
-        np_free(listenerContext);
-        return nabto_device_error_core_to_api(ec);
-    }
-    listenerContext->device = dev;
-    listenerContext->listener = listener;
-    ec = nc_stream_manager_add_listener(&dev->core.streamManager, &listenerContext->coreListener, 0, &nabto_device_stream_core_callback, listenerContext);
-    if (ec) {
-        np_free(listenerContext);
-        return nabto_device_error_core_to_api(ec);
-    }
-    *type = listenerContext->coreListener.type;
+    np_error_code ec = init_stream_listener(dev, listener, 0, type);
     nabto_device_threads_mutex_unlock(dev->eventMutex);
-    return NABTO_DEVICE_EC_OK;
+    return nabto_device_error_core_to_api(ec);
 }
 
 void NABTO_DEVICE_API nabto_device_listener_new_stream(NabtoDeviceListener* deviceListener, NabtoDeviceFuture* future, NabtoDeviceStream** stream)

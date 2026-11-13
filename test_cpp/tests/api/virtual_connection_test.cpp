@@ -841,6 +841,125 @@ BOOST_AUTO_TEST_CASE(coap_pwd_auth)
     nabto_device_virtual_coap_request_free(req);
 }
 
+BOOST_AUTO_TEST_CASE(coap_pwd_auth_username_changes_only_after_step2, *boost::unit_test::timeout(60))
+{
+    const std::string clientFp = "1234567890123456789012345678901212345678901234567890123456789012";
+    const std::string deviceFp = "abcdefabcdefabcdefabcdefabcdefabcdefabcdefabcdefabcdefabcdefabcd";
+    const std::string username = "john";
+    const std::string password = "FFzeqrpJTVF4";
+    const char* auth1Path = "/p2p/pwd-auth/1";
+    const char* auth2Path = "/p2p/pwd-auth/2";
+
+    uint8_t clientFpBin[32];
+    uint8_t deviceFpBin[32];
+    nabto::test::fromHex(clientFp, clientFpBin);
+    nabto::test::fromHex(deviceFp, deviceFpBin);
+    nabto::test::Spake2Client cli(password, clientFpBin, deviceFpBin);
+    std::vector<uint8_t> T;
+    BOOST_TEST(cli.calculateT(T) == 0);
+
+    nabto::test::TestDevice td;
+    NabtoDeviceVirtualConnection* conn = td.makeConnection(deviceFp, clientFp);
+
+    size_t handled = 0;
+    td.setupPassAuth([&](NabtoDeviceError ec, NabtoDevicePasswordAuthenticationRequest* req) {
+        if (ec == NABTO_DEVICE_EC_OK) {
+            handled++;
+            BOOST_TEST(nabto_device_password_authentication_request_set_password(req, password.c_str()) == NABTO_DEVICE_EC_OK);
+            nabto_device_password_authentication_request_free(req);
+            nabto_device_listener_new_password_authentication_request(td.passListener_, td.passFut_, &td.passReq_);
+            nabto_device_future_set_callback(td.passFut_, &nabto::test::TestDevice::pass_request_callback, &td);
+        }
+    });
+
+    auto step1Payload = [&](const std::string& user) {
+        nlohmann::json root;
+        root["Username"] = user;
+        root["T"] = nlohmann::json::binary(T);
+        return nlohmann::json::to_cbor(root);
+    };
+
+    NabtoDeviceFuture* fut = nabto_device_future_new(td.device_);
+    uint16_t status = 0;
+
+    // Authenticate as john.
+    auto payload = step1Payload(username);
+    NabtoDeviceVirtualCoapRequest* req = nabto_device_virtual_coap_request_new(conn, NABTO_DEVICE_COAP_POST, auth1Path);
+    BOOST_REQUIRE(req != NULL);
+    BOOST_TEST(nabto_device_virtual_coap_request_set_content_format(req, NABTO_DEVICE_COAP_CONTENT_FORMAT_APPLICATION_CBOR) == NABTO_DEVICE_EC_OK);
+    BOOST_TEST(nabto_device_virtual_coap_request_set_payload(req, payload.data(), payload.size()) == NABTO_DEVICE_EC_OK);
+    nabto_device_virtual_coap_request_execute(req, fut);
+    BOOST_TEST(nabto_device_future_wait(fut) == NABTO_DEVICE_EC_OK);
+    BOOST_TEST(nabto_device_virtual_coap_request_get_response_status_code(req, &status) == NABTO_DEVICE_EC_OK);
+    BOOST_TEST(status == 201);
+    uint8_t* respPayload;
+    size_t len;
+    BOOST_TEST(nabto_device_virtual_coap_request_get_response_payload(req, (void**)&respPayload, &len) == NABTO_DEVICE_EC_OK);
+    BOOST_TEST(cli.calculateK(respPayload, len) == 0);
+    BOOST_TEST(cli.calculateKey());
+    std::array<uint8_t, 32> req2Key;
+    BOOST_TEST(nabto::test::Spake2Client::sha256(cli.key_.data(), cli.key_.size(), req2Key.data()) == 0);
+    std::array<uint8_t, 32> req2KeyHash;
+    BOOST_TEST(nabto::test::Spake2Client::sha256(req2Key.data(), req2Key.size(), req2KeyHash.data()) == 0);
+    nabto_device_virtual_coap_request_free(req);
+
+    // Step 1 alone neither authenticates the connection nor sets its username.
+    NabtoDeviceConnectionRef ref = nabto_device_connection_get_connection_ref(conn);
+    char* authUsername = NULL;
+    BOOST_TEST(!nabto_device_connection_is_password_authenticated(td.device_, ref));
+    BOOST_TEST(nabto_device_connection_get_password_authentication_username(td.device_, ref, &authUsername) == NABTO_DEVICE_EC_INVALID_STATE);
+
+    req = nabto_device_virtual_coap_request_new(conn, NABTO_DEVICE_COAP_POST, auth2Path);
+    BOOST_REQUIRE(req != NULL);
+    BOOST_TEST(nabto_device_virtual_coap_request_set_content_format(req, NABTO_DEVICE_COAP_CONTENT_FORMAT_APPLICATION_OCTET_STREAM) == NABTO_DEVICE_EC_OK);
+    BOOST_TEST(nabto_device_virtual_coap_request_set_payload(req, req2KeyHash.data(), req2KeyHash.size()) == NABTO_DEVICE_EC_OK);
+    nabto_device_virtual_coap_request_execute(req, fut);
+    BOOST_TEST(nabto_device_future_wait(fut) == NABTO_DEVICE_EC_OK);
+    BOOST_TEST(nabto_device_virtual_coap_request_get_response_status_code(req, &status) == NABTO_DEVICE_EC_OK);
+    BOOST_TEST(status == 201);
+    nabto_device_virtual_coap_request_free(req);
+
+    auto checkAuthenticatedAsJohn = [&]() {
+        BOOST_TEST(nabto_device_connection_is_password_authenticated(td.device_, ref));
+        char* u = NULL;
+        BOOST_TEST(nabto_device_connection_get_password_authentication_username(td.device_, ref, &u) == NABTO_DEVICE_EC_OK);
+        BOOST_REQUIRE(u != NULL);
+        BOOST_TEST(std::string(u) == username);
+        nabto_device_string_free(u);
+    };
+    checkAuthenticatedAsJohn();
+
+    // Starting over as another user, here without knowing that user's
+    // password, leaves the connection authenticated as john.
+    payload = step1Payload("admin");
+    req = nabto_device_virtual_coap_request_new(conn, NABTO_DEVICE_COAP_POST, auth1Path);
+    BOOST_REQUIRE(req != NULL);
+    BOOST_TEST(nabto_device_virtual_coap_request_set_content_format(req, NABTO_DEVICE_COAP_CONTENT_FORMAT_APPLICATION_CBOR) == NABTO_DEVICE_EC_OK);
+    BOOST_TEST(nabto_device_virtual_coap_request_set_payload(req, payload.data(), payload.size()) == NABTO_DEVICE_EC_OK);
+    nabto_device_virtual_coap_request_execute(req, fut);
+    BOOST_TEST(nabto_device_future_wait(fut) == NABTO_DEVICE_EC_OK);
+    BOOST_TEST(nabto_device_virtual_coap_request_get_response_status_code(req, &status) == NABTO_DEVICE_EC_OK);
+    BOOST_TEST(status == 201);
+    nabto_device_virtual_coap_request_free(req);
+    BOOST_TEST(handled == 2u);
+    checkAuthenticatedAsJohn();
+
+    // The key of the new exchange belongs to admin, the key confirmation from
+    // john's exchange is rejected.
+    req = nabto_device_virtual_coap_request_new(conn, NABTO_DEVICE_COAP_POST, auth2Path);
+    BOOST_REQUIRE(req != NULL);
+    BOOST_TEST(nabto_device_virtual_coap_request_set_content_format(req, NABTO_DEVICE_COAP_CONTENT_FORMAT_APPLICATION_OCTET_STREAM) == NABTO_DEVICE_EC_OK);
+    BOOST_TEST(nabto_device_virtual_coap_request_set_payload(req, req2KeyHash.data(), req2KeyHash.size()) == NABTO_DEVICE_EC_OK);
+    nabto_device_virtual_coap_request_execute(req, fut);
+    BOOST_TEST(nabto_device_future_wait(fut) == NABTO_DEVICE_EC_OK);
+    BOOST_TEST(nabto_device_virtual_coap_request_get_response_status_code(req, &status) == NABTO_DEVICE_EC_OK);
+    BOOST_TEST(status == 401);
+    nabto_device_virtual_coap_request_free(req);
+    checkAuthenticatedAsJohn();
+
+    nabto_device_future_free(fut);
+}
+
 BOOST_AUTO_TEST_CASE(coap_pwd_auth_step1_is_rate_limited)
 {
     const std::string clientFp = "1234567890123456789012345678901212345678901234567890123456789012";
