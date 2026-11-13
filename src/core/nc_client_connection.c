@@ -267,31 +267,35 @@ void nc_client_connection_keep_alive_event(void* data)
     }
 }
 
+static np_error_code send_keep_alive(struct nc_client_connection* ctx, struct np_dtls_send_context* sendCtx)
+{
+#if defined(NABTO_DEVICE_DTLS_CLIENT_ONLY)
+    return ctx->pl->dtlsC.async_send_data(ctx->dtls, sendCtx);
+#else
+    return ctx->pl->dtlsS.async_send_data(ctx->pl, ctx->dtls, sendCtx);
+#endif
+}
+
 void nc_client_connection_keep_alive_send_req(struct nc_client_connection* ctx)
 {
-    struct np_platform* pl = ctx->pl;
     struct np_dtls_send_context* sendCtx = &ctx->keepAliveSendCtx;
 
     nc_keep_alive_create_request(&ctx->keepAlive, &sendCtx->buffer, &sendCtx->bufferSize);
     sendCtx->channelId = ctx->currentChannel.channelId;
-#if defined(NABTO_DEVICE_DTLS_CLIENT_ONLY)
-    pl->dtlsC.async_send_data(ctx->dtls, sendCtx);
-#else
-    pl->dtlsS.async_send_data(ctx->pl, ctx->dtls, sendCtx);
-#endif
+    if (send_keep_alive(ctx, sendCtx) != NABTO_EC_OK) {
+        // The completion event is only resolved for accepted packets.
+        nc_keep_alive_packet_sent(NABTO_EC_FAILED, &ctx->keepAlive);
+    }
 }
 
 void nc_client_connection_keep_alive_send_response(struct nc_client_connection* ctx, uint8_t channelId, uint8_t* buffer, size_t length)
 {
-    struct np_platform* pl = ctx->pl;
     struct np_dtls_send_context* sendCtx = &ctx->keepAliveSendCtx;
     if(nc_keep_alive_handle_request(&ctx->keepAlive, buffer, length, &sendCtx->buffer, &sendCtx->bufferSize)) {
         sendCtx->channelId = channelId;
-#if defined(NABTO_DEVICE_DTLS_CLIENT_ONLY)
-        pl->dtlsC.async_send_data(ctx->dtls, sendCtx);
-#else
-        pl->dtlsS.async_send_data(ctx->pl, ctx->dtls, sendCtx);
-#endif
+        if (send_keep_alive(ctx, sendCtx) != NABTO_EC_OK) {
+            nc_keep_alive_packet_sent(NABTO_EC_FAILED, &ctx->keepAlive);
+        }
     }
 }
 
