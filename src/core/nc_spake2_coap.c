@@ -10,8 +10,8 @@
 
 #include <tinycbor/cbor.h>
 
-#include <platform/np_allocator.h>
 #include <nn/string.h>
+#include <platform/np_allocator.h>
 
 void nc_spake2_handle_coap_1(struct nc_coap_server_request* request, void* data);
 void nc_spake2_handle_coap_2(struct nc_coap_server_request* request, void* data);
