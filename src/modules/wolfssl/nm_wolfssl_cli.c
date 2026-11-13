@@ -390,6 +390,8 @@ np_error_code set_root_certs(struct np_platform* pl, const char* rootCerts)
     if (wolfSSL_CTX_load_verify_buffer(ctx->ctx, (const unsigned char*)rootCerts, strlen(rootCerts), WOLFSSL_FILETYPE_PEM) != WOLFSSL_SUCCESS)
     {
         NABTO_LOG_ERROR(LOG, "cannot load ca certificate");
+        // The certs loaded before the failure are still trusted, remove them.
+        wolfSSL_CTX_UnloadCAs(ctx->ctx);
         return NABTO_EC_FAILED;
     }
     return NABTO_EC_OK;
