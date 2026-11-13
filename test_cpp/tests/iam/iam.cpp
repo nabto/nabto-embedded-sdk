@@ -391,6 +391,37 @@ BOOST_AUTO_TEST_CASE(coap_add_fingerprint, *boost::unit_test::timeout(180))
     BOOST_TEST(nm_iam_check_access(&ctx.iam_, ctx.ref_, "Admin:foo", NULL));
 }
 
+BOOST_AUTO_TEST_CASE(coap_add_fingerprint_invalid, *boost::unit_test::timeout(180))
+{
+    nabto::test::IamVirtualConnTester ctx(nabto::test::c2, nabto::test::s2);
+    nabto_device_virtual_connection_set_client_fingerprint(ctx.connection_, nabto::test::aFp.c_str());
+
+    auto fingerprintCount = [&]() {
+        auto usr = ctx.findStateUser("testuser");
+        BOOST_REQUIRE(usr != NULL);
+        size_t n = nn_llist_size(&usr->fingerprints);
+        nm_iam_user_free(usr);
+        return n;
+    };
+    size_t before = fingerprintCount();
+
+    // A fingerprint which is not 64 characters.
+    ctx.createCoapRequest(NABTO_DEVICE_COAP_PUT, "/iam/users/testuser/fingerprints/abcd");
+    nlohmann::json root;
+    root["FingerprintName"] = "mynewphone";
+    ctx.setCborPayload(root);
+    ctx.executeCoap(400);
+
+    // A fingerprint name longer than the display name limit.
+    std::string path = "/iam/users/testuser/fingerprints/" + nabto::test::cFp;
+    ctx.createCoapRequest(NABTO_DEVICE_COAP_PUT, path);
+    root["FingerprintName"] = std::string(ctx.iam_.displayNameMaxLength + 1, 'a');
+    ctx.setCborPayload(root);
+    ctx.executeCoap(400);
+
+    BOOST_TEST(fingerprintCount() == before);
+}
+
 BOOST_AUTO_TEST_CASE(coap_add_fingerprint_noname, *boost::unit_test::timeout(180))
 {
     nabto::test::IamVirtualConnTester ctx(nabto::test::c2, nabto::test::s2);
