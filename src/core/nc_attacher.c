@@ -891,7 +891,7 @@ void keep_alive_send_req(struct nc_attach_context* ctx)
     struct np_platform* pl = ctx->pl;
     struct np_dtls_send_context* sendCtx = &ctx->keepAliveSendCtx;
 
-    nc_keep_alive_create_request(&ctx->keepAlive, &sendCtx->buffer, (size_t*)&sendCtx->bufferSize);
+    nc_keep_alive_create_request(&ctx->keepAlive, &sendCtx->buffer, &sendCtx->bufferSize);
 
     pl->dtlsC.async_send_data(ctx->dtls, sendCtx);
 }
@@ -900,7 +900,7 @@ void keep_alive_send_response(struct nc_attach_context* ctx, uint8_t* buffer, si
 {
     struct np_platform* pl = ctx->pl;
     struct np_dtls_send_context* sendCtx = &ctx->keepAliveSendCtx;
-    if(nc_keep_alive_handle_request(&ctx->keepAlive, buffer, length, &sendCtx->buffer, (size_t*)&sendCtx->bufferSize)) {
+    if(nc_keep_alive_handle_request(&ctx->keepAlive, buffer, length, &sendCtx->buffer, &sendCtx->bufferSize)) {
         pl->dtlsC.async_send_data(ctx->dtls, sendCtx);
     }
 }

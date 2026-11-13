@@ -3,6 +3,7 @@
 #include <test_platform.hpp>
 
 #include <core/nc_keep_alive.h>
+#include <platform/np_dtls.h>
 
 namespace {
 
@@ -53,6 +54,34 @@ BOOST_AUTO_TEST_CASE(out_of_range_settings_are_rejected)
     BOOST_TEST(ctx.kaInterval == (uint32_t)NC_KEEP_ALIVE_DEFAULT_INTERVAL);
     BOOST_TEST(ctx.kaRetryInterval == (uint32_t)NC_KEEP_ALIVE_DEFAULT_RETRY_INTERVAL);
     BOOST_TEST(ctx.kaMaxRetries == (uint32_t)NC_KEEP_ALIVE_DEFAULT_MAX_RETRIES);
+
+    nc_keep_alive_deinit(&ctx);
+}
+
+BOOST_AUTO_TEST_CASE(packet_length_fits_the_send_context)
+{
+    auto tp = nabto::test::TestPlatform::create();
+    struct nc_keep_alive_context ctx;
+    BOOST_TEST(nc_keep_alive_init(&ctx, tp->getPlatform(), &nop, NULL) == NABTO_EC_OK);
+
+    // The length is written straight into the send context, the fields next
+    // to it must be left alone.
+    struct np_dtls_send_context sendCtx;
+    memset(&sendCtx, 0, sizeof(sendCtx));
+    sendCtx.channelId = 42;
+    nc_keep_alive_create_request(&ctx, &sendCtx.buffer, &sendCtx.bufferSize);
+    BOOST_TEST(sendCtx.bufferSize == 18);
+    BOOST_TEST(sendCtx.channelId == 42);
+    nc_keep_alive_packet_sent(NABTO_EC_OK, &ctx);
+
+    uint8_t request[18];
+    memcpy(request, sendCtx.buffer, sizeof(request));
+    memset(&sendCtx, 0, sizeof(sendCtx));
+    sendCtx.channelId = 42;
+    BOOST_TEST(nc_keep_alive_handle_request(&ctx, request, sizeof(request), &sendCtx.buffer, &sendCtx.bufferSize));
+    BOOST_TEST(sendCtx.bufferSize == 18);
+    BOOST_TEST(sendCtx.channelId == 42);
+    nc_keep_alive_packet_sent(NABTO_EC_OK, &ctx);
 
     nc_keep_alive_deinit(&ctx);
 }
