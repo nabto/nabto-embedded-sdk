@@ -391,6 +391,37 @@ BOOST_AUTO_TEST_CASE(coap_add_fingerprint, *boost::unit_test::timeout(180))
     BOOST_TEST(nm_iam_check_access(&ctx.iam_, ctx.ref_, "Admin:foo", NULL));
 }
 
+BOOST_AUTO_TEST_CASE(coap_add_fingerprint_invalid, *boost::unit_test::timeout(180))
+{
+    nabto::test::IamVirtualConnTester ctx(nabto::test::c2, nabto::test::s2);
+    nabto_device_virtual_connection_set_client_fingerprint(ctx.connection_, nabto::test::aFp.c_str());
+
+    auto fingerprintCount = [&]() {
+        auto usr = ctx.findStateUser("testuser");
+        BOOST_REQUIRE(usr != NULL);
+        size_t n = nn_llist_size(&usr->fingerprints);
+        nm_iam_user_free(usr);
+        return n;
+    };
+    size_t before = fingerprintCount();
+
+    // A fingerprint which is not 64 characters.
+    ctx.createCoapRequest(NABTO_DEVICE_COAP_PUT, "/iam/users/testuser/fingerprints/abcd");
+    nlohmann::json root;
+    root["FingerprintName"] = "mynewphone";
+    ctx.setCborPayload(root);
+    ctx.executeCoap(400);
+
+    // A fingerprint name longer than the display name limit.
+    std::string path = "/iam/users/testuser/fingerprints/" + nabto::test::cFp;
+    ctx.createCoapRequest(NABTO_DEVICE_COAP_PUT, path);
+    root["FingerprintName"] = std::string(ctx.iam_.displayNameMaxLength + 1, 'a');
+    ctx.setCborPayload(root);
+    ctx.executeCoap(400);
+
+    BOOST_TEST(fingerprintCount() == before);
+}
+
 BOOST_AUTO_TEST_CASE(coap_add_fingerprint_noname, *boost::unit_test::timeout(180))
 {
     nabto::test::IamVirtualConnTester ctx(nabto::test::c2, nabto::test::s2);
@@ -617,6 +648,29 @@ BOOST_AUTO_TEST_CASE(pwd_open_pairing, *boost::unit_test::timeout(180))
         BOOST_CHECK(found);
         nm_iam_user_free(usr);
     }
+}
+
+BOOST_AUTO_TEST_CASE(pwd_open_pairing_max_users, *boost::unit_test::timeout(180))
+{
+    nabto::test::IamVirtualConnTester ctx(nabto::test::c2, nabto::test::s2);
+    const std::string username = "";
+    const std::string clientFp = "1234567890123456789012345678901212345678901234567890123456789012";
+    std::string pwd(ctx.iam_.state->passwordOpenPassword);
+
+    size_t users = nn_llist_size(&ctx.iam_.state->users);
+    nm_iam_set_max_users(&ctx.iam_, users);
+
+    ctx.doPwdAuth(username, clientFp, pwd);
+
+    ctx.createCoapRequest(NABTO_DEVICE_COAP_POST, "/iam/pairing/password-open");
+    nlohmann::json root;
+    root["Username"] = "newuser";
+    ctx.setCborPayload(root);
+    ctx.executeCoap(500);
+
+    BOOST_TEST(nn_llist_size(&ctx.iam_.state->users) == users);
+    auto usr = ctx.findStateUser("newuser");
+    BOOST_TEST((usr == NULL));
 }
 
 BOOST_AUTO_TEST_CASE(pwd_open_pairing_no_fpname, *boost::unit_test::timeout(180))

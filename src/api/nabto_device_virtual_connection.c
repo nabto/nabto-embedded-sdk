@@ -456,6 +456,7 @@ nabto_device_virtual_stream_read_all(NabtoDeviceVirtualStream* stream,
     nabto_device_future_reset(fut);
     if (str->readFuture != NULL) {
         nabto_device_future_resolve(fut, NABTO_DEVICE_EC_OPERATION_IN_PROGRESS);
+        nabto_device_threads_mutex_unlock(dev->eventMutex);
         return;
     }
     str->readFuture = fut;

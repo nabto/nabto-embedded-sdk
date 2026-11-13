@@ -891,17 +891,24 @@ void keep_alive_send_req(struct nc_attach_context* ctx)
     struct np_platform* pl = ctx->pl;
     struct np_dtls_send_context* sendCtx = &ctx->keepAliveSendCtx;
 
-    nc_keep_alive_create_request(&ctx->keepAlive, &sendCtx->buffer, (size_t*)&sendCtx->bufferSize);
+    nc_keep_alive_create_request(&ctx->keepAlive, &sendCtx->buffer, &sendCtx->bufferSize);
 
-    pl->dtlsC.async_send_data(ctx->dtls, sendCtx);
+    np_error_code ec = pl->dtlsC.async_send_data(ctx->dtls, sendCtx);
+    if (ec != NABTO_EC_OK) {
+        // The completion event is only resolved for accepted packets.
+        nc_keep_alive_packet_sent(ec, &ctx->keepAlive);
+    }
 }
 
 void keep_alive_send_response(struct nc_attach_context* ctx, uint8_t* buffer, size_t length)
 {
     struct np_platform* pl = ctx->pl;
     struct np_dtls_send_context* sendCtx = &ctx->keepAliveSendCtx;
-    if(nc_keep_alive_handle_request(&ctx->keepAlive, buffer, length, &sendCtx->buffer, (size_t*)&sendCtx->bufferSize)) {
-        pl->dtlsC.async_send_data(ctx->dtls, sendCtx);
+    if(nc_keep_alive_handle_request(&ctx->keepAlive, buffer, length, &sendCtx->buffer, &sendCtx->bufferSize)) {
+        np_error_code ec = pl->dtlsC.async_send_data(ctx->dtls, sendCtx);
+        if (ec != NABTO_EC_OK) {
+            nc_keep_alive_packet_sent(ec, &ctx->keepAlive);
+        }
     }
 }
 

@@ -94,7 +94,7 @@ void nc_keep_alive_wait(struct nc_keep_alive_context* ctx)
     np_event_queue_post_timed_event(&ctx->pl->eq, ctx->keepAliveEvent, ctx->kaRetryInterval);
 }
 
-void nc_keep_alive_create_request(struct nc_keep_alive_context* ctx, uint8_t** buffer, size_t* length)
+void nc_keep_alive_create_request(struct nc_keep_alive_context* ctx, uint8_t** buffer, uint16_t* length)
 {
     uint8_t* ptr = ctx->sendBuffer;
     *ptr = AT_KEEP_ALIVE; ptr++;
@@ -106,7 +106,7 @@ void nc_keep_alive_create_request(struct nc_keep_alive_context* ctx, uint8_t** b
     *length = 18;
 }
 
-bool nc_keep_alive_handle_request(struct nc_keep_alive_context* ctx, uint8_t* reqBuffer, size_t reqLength, uint8_t** respBuffer, size_t* respLength)
+bool nc_keep_alive_handle_request(struct nc_keep_alive_context* ctx, uint8_t* reqBuffer, size_t reqLength, uint8_t** respBuffer, uint16_t* respLength)
 {
     if (reqLength < 18 || ctx->isSending) {
         // dont respond
