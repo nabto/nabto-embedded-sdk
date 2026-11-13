@@ -58,6 +58,11 @@ void nm_select_unix_tcp_build_fd_sets(struct nm_select_unix* ctx)
     nm_select_unix_lock(ctx);
     NN_LLIST_FOREACH(s, &ctx->tcpSockets)
     {
+        // A socket is in the list from create, but has no fd until it is
+        // connected.
+        if (s->fd == NM_SELECT_UNIX_INVALID_SOCKET) {
+            continue;
+        }
         if (s->read.completionEvent != NULL) {
             FD_SET(s->fd, &ctx->readFds);
             ctx->maxReadFd = NP_MAX(ctx->maxReadFd, s->fd);
@@ -77,8 +82,10 @@ void nm_select_unix_tcp_free_socket(struct np_tcp_socket* sock)
     nm_select_unix_unlock(sock->selectCtx);
 
     tcp_abort(sock);
-    shutdown(sock->fd, SHUT_RDWR);
-    close(sock->fd);
+    if (sock->fd != NM_SELECT_UNIX_INVALID_SOCKET) {
+        shutdown(sock->fd, SHUT_RDWR);
+        close(sock->fd);
+    }
     np_free(sock);
 
 }
@@ -90,6 +97,9 @@ void nm_select_unix_tcp_handle_select(struct nm_select_unix* ctx, int nfds)
     nm_select_unix_lock(ctx);
     NN_LLIST_FOREACH(s, &ctx->tcpSockets)
     {
+        if (s->fd == NM_SELECT_UNIX_INVALID_SOCKET) {
+            continue;
+        }
         if (FD_ISSET(s->fd, &ctx->readFds)) {
             tcp_do_read(s);
         }

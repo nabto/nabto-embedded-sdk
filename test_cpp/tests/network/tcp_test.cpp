@@ -200,6 +200,28 @@ BOOST_DATA_TEST_CASE(echo, nabto::test::TestPlatformFactory::multi(), tpf)
     BOOST_TEST(tcpServer.getConnectionsCount() > (size_t)0);
 }
 
+// A socket which has been created but not connected yet has no file
+// descriptor. The platform has to handle traffic on other sockets meanwhile.
+BOOST_TEST_DECORATOR(* boost::unit_test::timeout(120))
+BOOST_DATA_TEST_CASE(echo_with_unconnected_socket, nabto::test::TestPlatformFactory::multi(), tpf)
+{
+    auto tp = tpf->create();
+    auto ioService = IoService::create("test");
+    test::TcpEchoServer tcpServer(ioService->getIoService(), nullptr);
+
+    struct np_tcp tcp = tp->getPlatform()->tcp;
+    struct np_tcp_socket* unconnected = NULL;
+    BOOST_TEST(np_tcp_create(&tcp, &unconnected) == NABTO_EC_OK);
+
+    test::TcpEchoClientTest client(*tp);
+    client.start(tcpServer.getPort());
+
+    client.waitForTestEnded();
+
+    np_tcp_destroy(&tcp, unconnected);
+    BOOST_TEST(tcpServer.getConnectionsCount() > (size_t)0);
+}
+
 BOOST_TEST_DECORATOR(* boost::unit_test::timeout(120))
 BOOST_DATA_TEST_CASE(close, nabto::test::TestPlatformFactory::multi(), tpf)
 {

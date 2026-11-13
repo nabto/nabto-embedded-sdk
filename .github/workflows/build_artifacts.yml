@@ -8,8 +8,17 @@ on:
 permissions:
   contents: read
 
+# A new push to a branch cancels the runs for the previous commit. Runs on
+# master and for releases always complete.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.ref != 'refs/heads/master' && github.event_name != 'release' }}
+
 jobs:
+  # These builds are also done by build_and_test.yml, so here they only run
+  # where the artifacts are needed.
   build:
+    if: github.event_name == 'release' || github.ref == 'refs/heads/master'
     strategy:
       matrix:
         os: [windows-2022, macos-15]
@@ -38,20 +47,16 @@ jobs:
         with:
           cmake-version: '3.31.x'
 
-      - name: Export GitHub Actions cache environment variables
-        uses: actions/github-script@v7
-        with:
-          script: |
-            core.exportVariable('ACTIONS_CACHE_URL', process.env.ACTIONS_CACHE_URL || '');
-            core.exportVariable('ACTIONS_RUNTIME_TOKEN', process.env.ACTIONS_RUNTIME_TOKEN || '');
-
       - if: matrix.os == 'macos-15'
         name: Install Ninja
         run: brew install ninja
 
+      - name: vcpkg binary cache
+        uses: ./.github/actions/vcpkg-cache
+        with:
+          name: ${{ matrix.workflow }}
+
       - name: Build
-        env:
-          VCPKG_BINARY_SOURCES: "clear;x-gha,readwrite"
         run: cmake --workflow --preset ${{matrix.workflow}}
 
       - if: matrix.os != 'windows-2022'
@@ -121,19 +126,15 @@ jobs:
     - name: Install Ninja
       run: sudo apt-get update && sudo apt-get install -y ninja-build
 
-    - name: Export GitHub Actions cache environment variables
-      uses: actions/github-script@v7
+    - name: vcpkg binary cache
+      uses: ./.github/actions/vcpkg-cache
       with:
-        script: |
-          core.exportVariable('ACTIONS_CACHE_URL', process.env.ACTIONS_CACHE_URL || '');
-          core.exportVariable('ACTIONS_RUNTIME_TOKEN', process.env.ACTIONS_RUNTIME_TOKEN || '');
+        name: ${{ matrix.target }}
 
     # Downloads and relocates the toolchain, configures, builds, installs and
     # prints the resulting architecture. For linux_x86_64 it also runs the unit
     # tests, since those binaries run on the build host.
     - name: Build
-      env:
-        VCPKG_BINARY_SOURCES: "clear;x-gha,readwrite"
       run: ./build-scripts/linux.sh ${{ matrix.target }}
 
     - name: Prepare assets
@@ -141,6 +142,8 @@ jobs:
         mkdir -p ${{ github.workspace }}/artifacts/bin
         mv ${{ github.workspace }}/build/${{ matrix.target }}/install/bin/tcp_tunnel_device ${{ github.workspace }}/artifacts/bin/tcp_tunnel_device_${{ matrix.target }}
         mv ${{ github.workspace }}/build/${{ matrix.target }}/install/bin/thermostat_device ${{ github.workspace }}/artifacts/bin/thermostat_device_${{ matrix.target }}
+        mv ${{ github.workspace }}/build/${{ matrix.target }}/install/sbom/tcp_tunnel_device.cdx.json ${{ github.workspace }}/artifacts/bin/tcp_tunnel_device_${{ matrix.target }}.cdx.json
+        mv ${{ github.workspace }}/build/${{ matrix.target }}/install/sbom/thermostat_device.cdx.json ${{ github.workspace }}/artifacts/bin/thermostat_device_${{ matrix.target }}.cdx.json
 
     - name: Upload artifacts
       if: ${{ success() }}
@@ -150,6 +153,8 @@ jobs:
         path: |
           ${{ github.workspace }}/artifacts/bin/tcp_tunnel_device_${{ matrix.target }}
           ${{ github.workspace }}/artifacts/bin/thermostat_device_${{ matrix.target }}
+          ${{ github.workspace }}/artifacts/bin/tcp_tunnel_device_${{ matrix.target }}.cdx.json
+          ${{ github.workspace }}/artifacts/bin/thermostat_device_${{ matrix.target }}.cdx.json
         if-no-files-found: error
         overwrite: true
 
@@ -188,3 +193,14 @@ jobs:
           asset_path: ./${{matrix.friendly_name}}/${{matrix.binary}}_${{matrix.friendly_name}}${{matrix.file_suffix}}
           asset_name: ${{matrix.binary}}_${{matrix.friendly_name}}${{matrix.file_suffix}}
           asset_content_type: application/octet-stream
+      # Only the linux builds generate SBOMs, see build-scripts/linux.sh.
+      - name: Upload SBOM Asset
+        if: startsWith(matrix.friendly_name, 'linux_')
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ github.event.release.upload_url }}
+          asset_path: ./${{matrix.friendly_name}}/${{matrix.binary}}_${{matrix.friendly_name}}.cdx.json
+          asset_name: ${{matrix.binary}}_${{matrix.friendly_name}}.cdx.json
+          asset_content_type: application/vnd.cyclonedx+json

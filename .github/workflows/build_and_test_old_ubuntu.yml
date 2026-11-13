@@ -5,6 +5,12 @@ on:
 permissions:
   contents: read
 
+# A new push to a branch cancels the runs for the previous commit. Runs on
+# master and for releases always complete.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.ref != 'refs/heads/master' && github.event_name != 'release' }}
+
 jobs:
   build-and-test:
     timeout-minutes: 20
