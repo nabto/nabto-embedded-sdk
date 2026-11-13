@@ -329,7 +329,9 @@ nabto_device_set_private_key(NabtoDevice* device, const char* privKey);
  * PEM. The certs replace the trusted root certs, including the
  * default, so only the certs in the latest call are trusted. If the
  * certs cannot be loaded, no root certs are trusted until the
- * function succeeds. The certs are copied into the device so the
+ * function succeeds. Some TLS libraries skip certs they cannot
+ * parse and load the rest, so check that all the certs are valid.
+ * The certs are copied into the device so the
  * string can be freed after the call.
  *
  * Root certs are used to validate the connection to the basestation.
