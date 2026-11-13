@@ -142,6 +142,8 @@ jobs:
         mkdir -p ${{ github.workspace }}/artifacts/bin
         mv ${{ github.workspace }}/build/${{ matrix.target }}/install/bin/tcp_tunnel_device ${{ github.workspace }}/artifacts/bin/tcp_tunnel_device_${{ matrix.target }}
         mv ${{ github.workspace }}/build/${{ matrix.target }}/install/bin/thermostat_device ${{ github.workspace }}/artifacts/bin/thermostat_device_${{ matrix.target }}
+        mv ${{ github.workspace }}/build/${{ matrix.target }}/install/sbom/tcp_tunnel_device.cdx.json ${{ github.workspace }}/artifacts/bin/tcp_tunnel_device_${{ matrix.target }}.cdx.json
+        mv ${{ github.workspace }}/build/${{ matrix.target }}/install/sbom/thermostat_device.cdx.json ${{ github.workspace }}/artifacts/bin/thermostat_device_${{ matrix.target }}.cdx.json
 
     - name: Upload artifacts
       if: ${{ success() }}
@@ -151,6 +153,8 @@ jobs:
         path: |
           ${{ github.workspace }}/artifacts/bin/tcp_tunnel_device_${{ matrix.target }}
           ${{ github.workspace }}/artifacts/bin/thermostat_device_${{ matrix.target }}
+          ${{ github.workspace }}/artifacts/bin/tcp_tunnel_device_${{ matrix.target }}.cdx.json
+          ${{ github.workspace }}/artifacts/bin/thermostat_device_${{ matrix.target }}.cdx.json
         if-no-files-found: error
         overwrite: true
 
@@ -189,3 +193,14 @@ jobs:
           asset_path: ./${{matrix.friendly_name}}/${{matrix.binary}}_${{matrix.friendly_name}}${{matrix.file_suffix}}
           asset_name: ${{matrix.binary}}_${{matrix.friendly_name}}${{matrix.file_suffix}}
           asset_content_type: application/octet-stream
+      # Only the linux builds generate SBOMs, see build-scripts/linux.sh.
+      - name: Upload SBOM Asset
+        if: startsWith(matrix.friendly_name, 'linux_')
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ github.event.release.upload_url }}
+          asset_path: ./${{matrix.friendly_name}}/${{matrix.binary}}_${{matrix.friendly_name}}.cdx.json
+          asset_name: ${{matrix.binary}}_${{matrix.friendly_name}}.cdx.json
+          asset_content_type: application/vnd.cyclonedx+json
