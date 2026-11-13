@@ -527,8 +527,18 @@ np_error_code set_root_certs(struct np_platform* pl, const char* rootCerts)
     if (ctx == NULL) {
         return NABTO_EC_INVALID_STATE;
     }
+    // The certs replace the trusted roots, including the default ones.
+    // attachConf refers to ctx->rootCerts, so the chain is reset in place.
+    mbedtls_x509_crt_free(&ctx->rootCerts);
+    mbedtls_x509_crt_init(&ctx->rootCerts);
     int ret = 0;
     ret = mbedtls_x509_crt_parse (&ctx->rootCerts, (const unsigned char *)rootCerts, strlen(rootCerts)+1);
+    if (ret != 0) {
+        // The parser keeps the certs it could parse, so a bundle which
+        // fails partially would otherwise still be trusted.
+        mbedtls_x509_crt_free(&ctx->rootCerts);
+        mbedtls_x509_crt_init(&ctx->rootCerts);
+    }
     if (ret == MBEDTLS_ERR_PEM_ALLOC_FAILED) {
         return NABTO_EC_OUT_OF_MEMORY;
     }
