@@ -13,8 +13,10 @@
 
 #include <boost/asio.hpp>
 
+#if !defined(_WIN32)
 #include <fcntl.h>
 #include <unistd.h>
+#endif
 
 namespace nabto {
 namespace test {
@@ -115,6 +117,7 @@ class UdpEchoClientTest {
 
 };
 
+#if !defined(_WIN32)
 class UdpBindFailureTest {
  public:
     UdpBindFailureTest(TestPlatform& tp)
@@ -161,6 +164,7 @@ class UdpBindFailureTest {
     struct np_completion_event completionEvent_;
     std::promise<void> ended_;
 };
+#endif
 
 } } // namespace
 
@@ -185,6 +189,7 @@ BOOST_DATA_TEST_CASE(echo, nabto::test::TestPlatformFactory::multi(), tpf)
 }
 
 
+#if !defined(_WIN32)
 BOOST_TEST_DECORATOR(* boost::unit_test::timeout(120))
 BOOST_DATA_TEST_CASE(failed_bind_does_not_close_reused_descriptor, nabto::test::TestPlatformFactory::multi(), tpf)
 {
@@ -198,5 +203,6 @@ BOOST_DATA_TEST_CASE(failed_bind_does_not_close_reused_descriptor, nabto::test::
     t.start(port);
     t.waitForEnd();
 }
+#endif
 
 BOOST_AUTO_TEST_SUITE_END()
