@@ -1,26 +1,25 @@
 #!/usr/bin/env python3
 #
-# Generate CycloneDX SBOMs for the artifacts installed by one
+# Generate CycloneDX SBOMs for the executables released from one
 # build-scripts/linux.sh target:
 #
-#   <install>/sbom/nabto-embedded-sdk.cdx.json  libnabto_device.a + libnm_iam.a
-#   <install>/sbom/tcp_tunnel_device.cdx.json   the static tcp_tunnel_device
+#   <install>/sbom/tcp_tunnel_device.cdx.json
+#   <install>/sbom/thermostat_device.cdx.json
 #
 # The SBOMs describe what is inside the shipped files, not everything the build
-# uses: test/example only dependencies (boost, nlohmann-json, ...) and build
-# tools are left out. Versions are taken from the build itself rather than from
-# 3rdparty/, since the release presets build the dependencies with vcpkg:
+# uses: test only dependencies (boost, nlohmann-json, ...) and build tools are
+# left out. Versions are taken from the build itself rather than from 3rdparty/,
+# since the release presets build the dependencies with vcpkg:
 #
 #   * third party libraries: the vcpkg.spdx.json vcpkg writes for each port,
-#     walked transitively from the ports each artifact links.
+#     walked transitively from the ports the executables link.
 #   * nabto-common: the git commit of the nabto-common submodule, as the overlay
 #     port builds the local checkout and its port version is a placeholder.
 #   * musl and the GCC runtime: the summary.csv in the bootlin toolchain.
 #
-# The static libraries do not contain their third party dependencies, the
-# consumer links them, so they are listed with the property
-# nabto:contained=false. The executable is linked fully statically, so
-# everything in its SBOM, including the libc, is inside the binary.
+# The executables are linked fully statically, so everything in their SBOMs,
+# including the libc, is inside the binary. The nabto_device and nm_iam
+# libraries are not distributed, so they get no SBOM of their own.
 #
 # Usage: generate_sbom.py <build_dir> <toolchain_root>
 #
@@ -39,11 +38,26 @@ import uuid
 SDK_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
 # vcpkg ports linked by nabto_device and nm_iam (see the target_link_libraries
-# in src/). The tunnel links the same set through the libraries. Their own vcpkg
-# dependencies are added transitively.
+# in src/), and through them by the executables. Their own vcpkg dependencies
+# are added transitively.
 PORTS = ["mbedtls", "libevent", "tinycbor", "cjson"]
 
-# Vendored sources which are compiled into the tunnel directly from 3rdparty/.
+# The released executables: where they are built from, and what they link
+# directly besides the SDK (see their target_link_libraries).
+EXECUTABLES = {
+    "tcp_tunnel_device": {
+        "source": "apps/tcp_tunnel_device",
+        "description": "Nabto Edge TCP tunnel device",
+        "depends": {"nabto-common", "gopt", "cjson", "mbedtls"},
+    },
+    "thermostat_device": {
+        "source": "examples/thermostat",
+        "description": "Nabto Edge thermostat example device",
+        "depends": {"nabto-common", "gopt", "cjson", "mbedtls", "tinycbor"},
+    },
+}
+
+# Vendored sources which are compiled into the executables from 3rdparty/.
 GOPT = {
     "type": "library",
     "bom-ref": "gopt",
@@ -252,13 +266,6 @@ def bom(root, components, dependencies):
     }
 
 
-def with_contained(comp, contained):
-    c = dict(comp)
-    c["properties"] = list(c.get("properties", [])) + [
-        {"name": "nabto:contained", "value": "true" if contained else "false"}]
-    return c
-
-
 def main():
     if len(sys.argv) != 3:
         die("usage: generate_sbom.py <build_dir> <toolchain_root>")
@@ -274,15 +281,13 @@ def main():
     version = sdk_version()
     commit = git("rev-parse", "HEAD")
     status = vcpkg_status(installed_dir)
-    nabto_common = nabto_common_component()
 
-    def ports_for(roots):
-        closure = vcpkg_closure(roots, status, triplet)
-        missing = [r for r in roots if r not in closure]
-        if missing:
-            die("ports %s are not installed for %s" % (missing, triplet))
-        return closure
+    ports = vcpkg_closure(PORTS, status, triplet)
+    missing = [p for p in PORTS if p not in ports]
+    if missing:
+        die("ports %s are not installed for %s" % (missing, triplet))
 
+    # nabto_device and nm_iam, which every executable links.
     sdk_ref = "nabto-embedded-sdk"
     sdk_component = {
         "type": "library",
@@ -293,66 +298,39 @@ def main():
         "supplier": {"name": "Nabto"},
         "licenses": [{"license": {"name": "Nabto commercial license, see LICENSING.md"}}],
         "purl": "pkg:github/nabto/nabto-embedded-sdk@" + commit,
-        "properties": [{"name": "nabto:vcpkg-triplet", "value": triplet}],
     }
+    components = ([sdk_component, nabto_common_component(), GOPT] +
+                  toolchain_components(toolchain_root) +
+                  [vcpkg_component(installed_dir, triplet, p) for p in sorted(ports)])
+    deps = {sdk_ref: {"nabto-common", "mbedtls", "libevent", "tinycbor", "cjson"},
+            "nabto-common": set(), "gopt": set(), "musl": set(), "gcc-runtime": set()}
+    for p, d in ports.items():
+        deps[p] = set(d)
 
     sbom_dir = os.path.join(install_dir, "sbom")
     os.makedirs(sbom_dir, exist_ok=True)
 
-    # The library SBOM. The root is the SDK, the installed archives are the
-    # files it consists of.
-    ports = ports_for(PORTS)
-    lib_components = []
-    for name in ["nabto_device", "nm_iam"]:
-        path = os.path.join(install_dir, "lib", "lib%s.a" % name)
+    for name, exe in EXECUTABLES.items():
+        path = os.path.join(install_dir, "bin", name)
         if not os.path.exists(path):
             die("missing " + path)
-        lib_components.append({
-            "type": "file",
-            "bom-ref": "file:lib%s.a" % name,
-            "name": "lib%s.a" % name,
+        root = {
+            "type": "application",
+            "bom-ref": name,
+            "name": name,
             "version": version,
+            "description": exe["description"],
+            "supplier": {"name": "Nabto"},
+            "licenses": [{"license": {"name": "Nabto commercial license, see LICENSING.md"}}],
             "hashes": file_hashes(path),
-        })
-    lib_components.append(with_contained(nabto_common, False))
-    lib_components += [with_contained(vcpkg_component(installed_dir, triplet, p), False) for p in sorted(ports)]
-    lib_deps = {sdk_ref: {"file:libnabto_device.a", "file:libnm_iam.a"},
-                "file:libnabto_device.a": {"nabto-common", "mbedtls", "libevent", "tinycbor"},
-                "file:libnm_iam.a": {"file:libnabto_device.a", "cjson", "nabto-common"},
-                "nabto-common": set()}
-    for p, d in ports.items():
-        lib_deps[p] = set(d)
-    with open(os.path.join(sbom_dir, "nabto-embedded-sdk.cdx.json"), "w") as f:
-        json.dump(bom(sdk_component, lib_components, lib_deps), f, indent=2)
-        f.write("\n")
-
-    # The tcp_tunnel_device SBOM. Everything is linked statically into it.
-    tunnel_path = os.path.join(install_dir, "bin", "tcp_tunnel_device")
-    if not os.path.exists(tunnel_path):
-        die("missing " + tunnel_path)
-    tunnel_root = {
-        "type": "application",
-        "bom-ref": "tcp_tunnel_device",
-        "name": "tcp_tunnel_device",
-        "version": version,
-        "supplier": {"name": "Nabto"},
-        "licenses": [{"license": {"name": "Nabto commercial license, see LICENSING.md"}}],
-        "hashes": file_hashes(tunnel_path),
-        "purl": "pkg:github/nabto/nabto-embedded-sdk@" + commit + "#apps/tcp_tunnel_device",
-        "properties": [{"name": "nabto:vcpkg-triplet", "value": triplet}],
-    }
-    toolchain = toolchain_components(toolchain_root)
-    tunnel_components = [with_contained(c, True) for c in
-                         [sdk_component, nabto_common, GOPT] + toolchain +
-                         [vcpkg_component(installed_dir, triplet, p) for p in sorted(ports)]]
-    tunnel_deps = {"tcp_tunnel_device": {sdk_ref, "nabto-common", "gopt", "cjson", "mbedtls", "musl", "gcc-runtime"},
-                   sdk_ref: {"nabto-common", "mbedtls", "libevent", "tinycbor", "cjson"},
-                   "nabto-common": set(), "gopt": set(), "musl": set(), "gcc-runtime": set()}
-    for p, d in ports.items():
-        tunnel_deps[p] = set(d)
-    with open(os.path.join(sbom_dir, "tcp_tunnel_device.cdx.json"), "w") as f:
-        json.dump(bom(tunnel_root, tunnel_components, tunnel_deps), f, indent=2)
-        f.write("\n")
+            "purl": "pkg:github/nabto/nabto-embedded-sdk@%s#%s" % (commit, exe["source"]),
+            "properties": [{"name": "nabto:vcpkg-triplet", "value": triplet}],
+        }
+        exe_deps = dict(deps)
+        exe_deps[name] = exe["depends"] | {sdk_ref, "musl", "gcc-runtime"}
+        with open(os.path.join(sbom_dir, name + ".cdx.json"), "w") as f:
+            json.dump(bom(root, components, exe_deps), f, indent=2)
+            f.write("\n")
 
     print("==> Wrote SBOMs to " + sbom_dir)
 

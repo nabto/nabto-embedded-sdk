@@ -55,8 +55,8 @@ $(printf '  %s\n' "${ALL_TARGETS[@]}")
 Debug variants (not included in 'all'):
   linux_x86_64_debug
 
-Each target installs into build/<target>/install, with CycloneDX SBOMs for the
-libraries and tcp_tunnel_device in build/<target>/install/sbom.
+Each target installs into build/<target>/install, with CycloneDX SBOMs for
+tcp_tunnel_device and thermostat_device in build/<target>/install/sbom.
 EOF
     exit "${1:-1}"
 }
