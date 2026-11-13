@@ -113,7 +113,10 @@ void nc_connections_free_connection(struct nc_connections_context* ctx, struct n
 {
     nn_llist_erase_node(&connection->connectionsNode);
     np_free(connection->connectionImplCtx);
+#if defined(NABTO_DEVICE_PASSWORD_AUTHENTICATION)
+    np_free(connection->spake2Username);
     np_free(connection->username);
+#endif
     np_free(connection);
     ctx->currentConnections--;
     if (ctx->closing && ctx->currentConnections <= 0) {
@@ -179,7 +182,9 @@ np_error_code nc_connection_init(struct nc_connection* conn, struct nc_device_co
     conn->connectionImplCtx = impl;
 #if defined(NABTO_DEVICE_PASSWORD_AUTHENTICATION)
     conn->hasSpake2Key = false;
+    conn->spake2Username = NULL;
     conn->passwordAuthenticated = false;
+    conn->username = NULL;
 #endif
     np_error_code ec = nc_device_next_connection_ref(device, &conn->connectionRef);
     return ec;

@@ -89,9 +89,12 @@ void nc_spake2_password_ready(struct nc_spake2_password_request* req, const char
         if (req->pl->spake2.calculate_key(req, password, buffer, &olen,
                                       connection->spake2Key) == NABTO_EC_OK) {
             connection->hasSpake2Key = true;
-            np_free(connection->username);
-            connection->username = nn_strdup(req->username, np_allocator_get());
-            if (connection->username == NULL) {
+            // The username only becomes the username of the connection when
+            // step 2 has confirmed the key.
+            np_free(connection->spake2Username);
+            connection->spake2Username = nn_strdup(req->username, np_allocator_get());
+            if (connection->spake2Username == NULL) {
+                connection->hasSpake2Key = false;
                 nc_coap_server_send_error_response(coap, (nabto_coap_code)NABTO_COAP_CODE(5,00), NULL);
             } else {
 
@@ -102,6 +105,8 @@ void nc_spake2_password_ready(struct nc_spake2_password_request* req, const char
                 nc_coap_server_response_ready(coap);
             }
         } else {
+            // The key of an earlier exchange may have been overwritten.
+            connection->hasSpake2Key = false;
             nc_coap_server_send_error_response(coap, (nabto_coap_code)NABTO_COAP_CODE(5,00), NULL);
         }
 
