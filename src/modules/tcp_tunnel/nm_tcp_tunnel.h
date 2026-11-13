@@ -83,7 +83,20 @@ struct nm_tcp_tunnel_service* nm_tcp_tunnel_service_create(struct nm_tcp_tunnels
 
 np_error_code nm_tcp_tunnel_service_destroy_by_id(struct nm_tcp_tunnels* tunnels, const char* id);
 
+/**
+ * Initialize the service and add it to the tunnels.
+ *
+ * @retval NABTO_EC_IN_USE if a service with the id exists.
+ *
+ * If this fails the service is not added, free it with
+ * nm_tcp_tunnel_service_free.
+ */
 np_error_code nm_tcp_tunnel_service_init(struct nm_tcp_tunnel_service* service, const char* id, const char* type, struct np_ip_address* address, uint16_t port);
+
+/**
+ * Free a service from nm_tcp_tunnel_service_create which has not been added.
+ */
+void nm_tcp_tunnel_service_free(struct nm_tcp_tunnel_service* service);
 void nm_tcp_tunnel_service_deinit(struct nm_tcp_tunnel_service* service);
 np_error_code nm_tcp_tunnel_init_stream_listener(struct nm_tcp_tunnel_service* service);
 

@@ -227,6 +227,19 @@ BOOST_AUTO_TEST_CASE(new_device_after_free, *boost::unit_test::timeout(10))
 }
 
 
+BOOST_AUTO_TEST_CASE(tcp_tunnel_service_duplicate_id, *boost::unit_test::timeout(30))
+{
+    NabtoDevice* dev = nabto_device_new();
+    BOOST_REQUIRE(dev);
+    BOOST_TEST(nabto_device_add_tcp_tunnel_service(dev, "ssh", "ssh", "127.0.0.1", 22) == NABTO_DEVICE_EC_OK);
+    // The failed add frees what it allocated, LeakSanitizer reports it otherwise.
+    BOOST_TEST(nabto_device_add_tcp_tunnel_service(dev, "ssh", "ssh", "127.0.0.1", 2222) == NABTO_DEVICE_EC_IN_USE);
+    BOOST_TEST(nabto_device_remove_tcp_tunnel_service(dev, "ssh") == NABTO_DEVICE_EC_OK);
+    BOOST_TEST(nabto_device_remove_tcp_tunnel_service(dev, "ssh") != NABTO_DEVICE_EC_OK);
+    nabto_device_stop(dev);
+    nabto_device_free(dev);
+}
+
 BOOST_AUTO_TEST_CASE(future_wait_ignores_wakeups_before_resolve, *boost::unit_test::timeout(30))
 {
     NabtoDevice* dev = nabto_device_new();
