@@ -56,10 +56,14 @@ void handle_request(struct nm_iam_coap_handler* handler, NabtoDeviceCoapRequest*
                 }
             }
 
-            if (nm_iam_pairing_pair_user(iam, initialUser, ref, fpName)) {
+            enum nm_iam_error e = nm_iam_pairing_pair_user(iam, initialUser, ref, fpName);
+            if (e == NM_IAM_ERROR_OK) {
                 nm_iam_internal_state_has_changed(iam);
                 nabto_device_coap_response_set_code(request, 201);
                 nabto_device_coap_response_ready(request);
+            } else if (e == NM_IAM_ERROR_USER_EXISTS) {
+                // the client is already paired as another user.
+                nabto_device_coap_error_response(request, 409, "Fingerprint in use");
             } else {
                 nabto_device_coap_error_response(request, 500, "Server error");
             }
