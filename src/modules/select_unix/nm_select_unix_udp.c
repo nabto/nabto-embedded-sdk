@@ -433,7 +433,7 @@ np_error_code create_socket_any(struct np_udp_socket* s)
     int sock = nm_select_unix_udp_nonblocking_socket(AF_INET6, SOCK_DGRAM);
     if (sock == NM_SELECT_UNIX_INVALID_SOCKET) {
         sock = nm_select_unix_udp_nonblocking_socket(AF_INET, SOCK_DGRAM);
-        if (s->sock == NM_SELECT_UNIX_INVALID_SOCKET) {
+        if (sock == NM_SELECT_UNIX_INVALID_SOCKET) {
             int e = errno;
             NABTO_LOG_ERROR(LOG, "Unable to create socket: (%i) '%s'.", e, strerror(e));
             return NABTO_EC_UDP_SOCKET_CREATION_ERROR;
@@ -448,7 +448,7 @@ np_error_code create_socket_any(struct np_udp_socket* s)
             int e = errno;
             NABTO_LOG_ERROR(LOG,"Unable to set option: (%i) '%s'.", e, strerror(e));
 
-            close(s->sock);
+            close(sock);
             return NABTO_EC_UDP_SOCKET_CREATION_ERROR;
         }
     }
