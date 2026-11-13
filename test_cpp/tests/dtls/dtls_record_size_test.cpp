@@ -70,7 +70,7 @@ class DtlsPair {
             if (noBuffersForCreate) {
                 pl_->buf.allocate = []() -> struct np_communication_buffer* { return NULL; };
             }
-            np_error_code srvEc = pl_->dtlsS.create_connection(srv_, &srvConn_, &DtlsPair::serverSender, &DtlsPair::serverData, &DtlsPair::serverEvent, this);
+            np_error_code srvEc = pl_->dtlsS.create_connection(srv_, clientId_, sizeof(clientId_), &srvConn_, &DtlsPair::serverSender, &DtlsPair::serverData, &DtlsPair::serverEvent, this);
             np_error_code cliEc = pl_->dtlsC.create_client_connection(pl_, &cli_, &DtlsPair::clientSender, &DtlsPair::clientData, &DtlsPair::clientEvent, this);
             pl_->buf.allocate = allocate;
             BOOST_REQUIRE(srvEc == NABTO_EC_OK);
@@ -83,6 +83,9 @@ class DtlsPair {
 
     np_error_code clientSend(size_t size) { return send(size, true); }
     np_error_code serverSend(size_t size) { return send(size, false); }
+
+    // The DTLS cookie of the server connection is bound to this id.
+    const uint8_t clientId_[4] = { 1, 2, 3, 4 };
 
     // Size of the last application packet delivered to the client and the
     // server respectively.
