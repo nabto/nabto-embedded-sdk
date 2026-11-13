@@ -68,6 +68,9 @@ class AttachTest {
                              reinterpret_cast<const unsigned char*>(nabto::test::devicePublicKey.c_str()), nabto::test::devicePublicKey.size(),
                              reinterpret_cast<const unsigned char*>(nabto::test::devicePrivateKey.c_str()), nabto::test::devicePrivateKey.size());
         nc_attacher_set_root_certs(&attach_, rootCerts_.c_str());
+        if (!replacementRootCerts_.empty()) {
+            BOOST_TEST(nc_attacher_set_root_certs(&attach_, replacementRootCerts_.c_str()) == NABTO_EC_OK);
+        }
         nc_attacher_set_app_info(&attach_, appName_, appVersion_);
         nc_attacher_set_device_info(&attach_, productId_.c_str(), deviceId_.c_str());
         // set timeout to approximately one seconds for the dtls handshake
@@ -172,6 +175,7 @@ class AttachTest {
     std::string hostname_;
     uint16_t serverPort_;
     std::string rootCerts_;
+    std::string replacementRootCerts_;
     const char* appName_ = "foo";
     const char* appVersion_ = "bar";
     std::string productId_ = "test";
@@ -354,6 +358,29 @@ BOOST_AUTO_TEST_CASE(wrong_root_cert, * boost::unit_test::timeout(300))
     at.start([](nabto::test::AttachTest& at){(void)at;},
              [](nabto::test::AttachTest& at){
                      if (at.attach_.state == NC_ATTACHER_STATE_RETRY_WAIT) {
+                         at.end();
+                     }
+                 });
+
+    at.waitForTestEnd();
+    attachServer->stop();
+    BOOST_TEST(attachServer->attachCount_ == (uint64_t)0);
+}
+
+BOOST_AUTO_TEST_CASE(root_certs_are_replaced, * boost::unit_test::timeout(300))
+{
+    auto ioService = nabto::IoService::create("test");
+    auto attachServer = nabto::test::AttachServer::create(ioService->getIoService());
+
+    auto tp = nabto::test::TestPlatform::create();
+    // The root certs which validate the test attach server are replaced by
+    // nabtoRootCA1, which cannot validate it.
+    nabto::test::AttachTest at(*tp, attachServer->getHostname(), attachServer->getPort(), attachServer->getRootCerts());
+    at.replacementRootCerts_ = nabto::test::nabtoRootCA1;
+    at.start([](nabto::test::AttachTest& at){(void)at;},
+             [](nabto::test::AttachTest& at){
+                     if (at.attach_.state == NC_ATTACHER_STATE_RETRY_WAIT ||
+                         at.attach_.state == NC_ATTACHER_STATE_ATTACHED) {
                          at.end();
                      }
                  });

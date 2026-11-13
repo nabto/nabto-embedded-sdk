@@ -326,8 +326,11 @@ nabto_device_set_private_key(NabtoDevice* device, const char* privKey);
  * By default the device is configured to trust "Nabto Root CA
  * 1". This behavior can be overridden by the following function. All
  * trusted root certs should be in the string and be encoded as
- * PEM. The certs are copied into the device so the string can be
- * freed after the call.
+ * PEM. The certs replace the trusted root certs, including the
+ * default, so only the certs in the latest call are trusted. If the
+ * certs cannot be loaded, no root certs are trusted until the
+ * function succeeds. The certs are copied into the device so the
+ * string can be freed after the call.
  *
  * Root certs are used to validate the connection to the basestation.
  *

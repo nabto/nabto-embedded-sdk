@@ -382,6 +382,11 @@ np_error_code set_root_certs(struct np_platform* pl, const char* rootCerts)
     struct nm_wolfssl_cli_context* ctx =
         (struct nm_wolfssl_cli_context*)pl->dtlsCData;
 
+    // The certs replace the trusted roots, including the default ones.
+    if (wolfSSL_CTX_UnloadCAs(ctx->ctx) != WOLFSSL_SUCCESS) {
+        NABTO_LOG_ERROR(LOG, "cannot unload ca certificates");
+        return NABTO_EC_FAILED;
+    }
     if (wolfSSL_CTX_load_verify_buffer(ctx->ctx, (const unsigned char*)rootCerts, strlen(rootCerts), WOLFSSL_FILETYPE_PEM) != WOLFSSL_SUCCESS)
     {
         NABTO_LOG_ERROR(LOG, "cannot load ca certificate");
