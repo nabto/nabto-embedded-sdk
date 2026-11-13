@@ -59,6 +59,7 @@ np_error_code nm_select_unix_async_bind_mdns_ipv4_ec(struct np_udp_socket* sock)
 
     if (!init_mdns_ipv4_socket(sock->sock)) {
         close(sock->sock);
+        sock->sock = NM_SELECT_UNIX_INVALID_SOCKET;
         return NABTO_EC_UDP_SOCKET_CREATION_ERROR;
     }
 
@@ -94,6 +95,7 @@ np_error_code nm_select_unix_async_bind_mdns_ipv6_ec(struct np_udp_socket* sock)
 
     if (!init_mdns_ipv6_socket(sock->sock)) {
         close(sock->sock);
+        sock->sock = NM_SELECT_UNIX_INVALID_SOCKET;
         return NABTO_EC_UDP_SOCKET_CREATION_ERROR;
     }
 

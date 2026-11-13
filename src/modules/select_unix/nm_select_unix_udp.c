@@ -106,6 +106,7 @@ np_error_code nm_select_unix_udp_async_bind_port_ec(struct np_udp_socket* sock, 
     ec = bind_port(sock, port);
     if (ec != NABTO_EC_OK) {
         close(sock->sock);
+        sock->sock = NM_SELECT_UNIX_INVALID_SOCKET;
     }
 
     return ec;
@@ -210,8 +211,10 @@ void nm_select_unix_udp_free_socket(struct np_udp_socket* sock)
     nm_select_unix_unlock(sock->selectCtx);
 
     nm_select_unix_udp_abort(sock);
-    shutdown(sock->sock, SHUT_RDWR);
-    close(sock->sock);
+    if (sock->sock != NM_SELECT_UNIX_INVALID_SOCKET) {
+        shutdown(sock->sock, SHUT_RDWR);
+        close(sock->sock);
+    }
     np_free(sock);
 }
 
