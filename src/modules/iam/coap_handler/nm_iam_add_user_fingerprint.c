@@ -9,6 +9,8 @@
 
 #include <tinycbor/cbor.h>
 
+#include <string.h>
+
 static void handle_request(struct nm_iam_coap_handler* handler, NabtoDeviceCoapRequest* request);
 
 NabtoDeviceError nm_iam_add_user_fingerprint_init(struct nm_iam_coap_handler* handler, NabtoDevice* device, struct nm_iam* iam)
@@ -36,6 +38,19 @@ void handle_request(struct nm_iam_coap_handler* handler, NabtoDeviceCoapRequest*
     char* fpName = NULL;
     // fpName is optional, so ignore return value
     nm_iam_cbor_decode_kv_string(&value, "FingerprintName", &fpName);
+
+    // A fingerprint the state validation rejects would make the saved state
+    // fail to load.
+    if (strlen(fp) != 64) {
+        nabto_device_coap_error_response(request, 400, "Invalid fingerprint length");
+        nm_iam_free(fpName);
+        return;
+    }
+    if (fpName != NULL && strlen(fpName) > handler->iam->displayNameMaxLength) {
+        nabto_device_coap_error_response(request, 400, "Invalid fingerprint name length");
+        nm_iam_free(fpName);
+        return;
+    }
 
 
     struct nn_string_map attributes;
