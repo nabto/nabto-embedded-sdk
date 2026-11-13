@@ -673,10 +673,11 @@ int wolfssl_recv(WOLFSSL* ssl, char* buffer, int bufferSize, void* data)
     if (ctx->recvBufferSize == 0) {
         return WOLFSSL_CBIO_ERR_WANT_READ;
     } else {
-        if (ctx->recvBufferSize >= 12) {
-            // the sequence number is byte 4-11
+        if (ctx->recvBufferSize >= 11) {
+            // DTLS record header: type (1), version (2), epoch (2),
+            // sequence number (6). Epoch and sequence number are bytes 3-10.
             ctx->lastRecvSequenceNumber =
-                uint64_from_bigendian(ctx->recvBuffer + 4);
+                uint64_from_bigendian(ctx->recvBuffer + 3);
         }
         size_t maxCp =
             bufferSize > ctx->recvBufferSize ? ctx->recvBufferSize : bufferSize;
