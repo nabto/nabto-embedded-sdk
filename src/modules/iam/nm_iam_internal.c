@@ -186,6 +186,10 @@ enum nm_iam_error nm_iam_internal_pair_new_client(struct nm_iam* iam, const char
         return NM_IAM_ERROR_USER_EXISTS;
     }
 
+    if (nn_llist_size(&iam->state->users) >= iam->maxUsers) {
+        return NM_IAM_ERROR_INTERNAL;
+    }
+
     const char* role = iam->state->openPairingRole;
 
     char* sct = NULL;

@@ -619,6 +619,29 @@ BOOST_AUTO_TEST_CASE(pwd_open_pairing, *boost::unit_test::timeout(180))
     }
 }
 
+BOOST_AUTO_TEST_CASE(pwd_open_pairing_max_users, *boost::unit_test::timeout(180))
+{
+    nabto::test::IamVirtualConnTester ctx(nabto::test::c2, nabto::test::s2);
+    const std::string username = "";
+    const std::string clientFp = "1234567890123456789012345678901212345678901234567890123456789012";
+    std::string pwd(ctx.iam_.state->passwordOpenPassword);
+
+    size_t users = nn_llist_size(&ctx.iam_.state->users);
+    nm_iam_set_max_users(&ctx.iam_, users);
+
+    ctx.doPwdAuth(username, clientFp, pwd);
+
+    ctx.createCoapRequest(NABTO_DEVICE_COAP_POST, "/iam/pairing/password-open");
+    nlohmann::json root;
+    root["Username"] = "newuser";
+    ctx.setCborPayload(root);
+    ctx.executeCoap(500);
+
+    BOOST_TEST(nn_llist_size(&ctx.iam_.state->users) == users);
+    auto usr = ctx.findStateUser("newuser");
+    BOOST_TEST((usr == NULL));
+}
+
 BOOST_AUTO_TEST_CASE(pwd_open_pairing_no_fpname, *boost::unit_test::timeout(180))
 {
     nabto::test::IamVirtualConnTester ctx(nabto::test::c2, nabto::test::s2);
