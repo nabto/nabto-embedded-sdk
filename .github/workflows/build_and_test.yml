@@ -8,6 +8,12 @@ on:
 permissions:
   contents: read
 
+# A new push to a branch cancels the runs for the previous commit. Runs on
+# master and for releases always complete.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.ref != 'refs/heads/master' && github.event_name != 'release' }}
+
 jobs:
   build-and-test:
     timeout-minutes: 30
@@ -27,8 +33,6 @@ jobs:
             name: "windows_vcpkg_static"
 
           - os: macos-15
-            name: mac_vcpkg_x86_64
-          - os: macos-15
             name: mac_fetchcontent_universal
 
     steps:
@@ -43,13 +47,6 @@ jobs:
         with:
           cmake-version: '3.31.x'
 
-      - name: Export GitHub Actions cache environment variables
-        uses: actions/github-script@v7
-        with:
-          script: |
-            core.exportVariable('ACTIONS_CACHE_URL', process.env.ACTIONS_CACHE_URL || '');
-            core.exportVariable('ACTIONS_RUNTIME_TOKEN', process.env.ACTIONS_RUNTIME_TOKEN || '');
-
       - if: matrix.workflow.os == 'ubuntu-24.04'
         name: Install Ninja
         run: sudo apt-get update && sudo apt-get install -y ninja-build
@@ -58,9 +55,12 @@ jobs:
         name: Install Ninja
         run: brew install ninja
 
+      - name: vcpkg binary cache
+        uses: ./.github/actions/vcpkg-cache
+        with:
+          name: ${{ matrix.workflow.name }}
+
       - name: Build
-        env:
-          VCPKG_BINARY_SOURCES: "clear;x-gha,readwrite"
         run: cmake --workflow --preset ${{ matrix.workflow.name }}
 
       - if: matrix.workflow.os == 'windows-2022'
