@@ -6,7 +6,10 @@
 #include <modules/libevent/nm_libevent_udp.h>
 
 #include <api/nabto_device_defines.h>
+#include <api/nabto_device_future.h>
 
+#include <atomic>
+#include <chrono>
 #include <thread>
 
 namespace nabto {
@@ -223,6 +226,41 @@ BOOST_AUTO_TEST_CASE(new_device_after_free, *boost::unit_test::timeout(10))
     nabto_device_free(dev);
 }
 
+
+BOOST_AUTO_TEST_CASE(future_wait_ignores_wakeups_before_resolve, *boost::unit_test::timeout(30))
+{
+    NabtoDevice* dev = nabto_device_new();
+    BOOST_REQUIRE(dev);
+    NabtoDeviceFuture* future = nabto_device_future_new(dev);
+    struct nabto_device_future* fut = (struct nabto_device_future*)future;
+    nabto_device_future_reset(fut);
+
+    std::atomic<bool> returned(false);
+    NabtoDeviceError ec = NABTO_DEVICE_EC_FAILED;
+    std::thread waiter([&]() {
+        ec = nabto_device_future_wait(future);
+        returned = true;
+    });
+
+    // Wake the waiter without resolving the future, as a spurious wakeup does.
+    auto end = std::chrono::steady_clock::now() + std::chrono::milliseconds(200);
+    while (std::chrono::steady_clock::now() < end) {
+        nabto_device_threads_mutex_lock(fut->mutex);
+        nabto_device_threads_cond_signal(fut->cond);
+        nabto_device_threads_mutex_unlock(fut->mutex);
+        std::this_thread::sleep_for(std::chrono::milliseconds(5));
+    }
+    BOOST_TEST(!returned);
+
+    nabto_device_future_resolve(fut, NABTO_DEVICE_EC_OK);
+    waiter.join();
+    BOOST_TEST(returned);
+    BOOST_TEST(ec == NABTO_DEVICE_EC_OK);
+
+    nabto_device_future_free(future);
+    nabto_device_stop(dev);
+    nabto_device_free(dev);
+}
 
 BOOST_AUTO_TEST_CASE(stream_listener_port_in_use, *boost::unit_test::timeout(30))
 {

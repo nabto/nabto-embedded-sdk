@@ -96,7 +96,8 @@ NabtoDeviceError NABTO_DEVICE_API nabto_device_future_wait(NabtoDeviceFuture* fu
     NabtoDeviceError ec = 0;
 
     nabto_device_threads_mutex_lock(fut->mutex);
-    if (!fut->ready) {
+    // A condition wait can return without being signalled.
+    while (!fut->ready) {
         nabto_device_threads_cond_wait(fut->cond, fut->mutex);
     }
     ec = fut->ec;
