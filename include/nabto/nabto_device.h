@@ -1446,6 +1446,7 @@ nabto_device_fcm_notification_get_response_body(NabtoDeviceFcmNotification* noti
  * @param port [in]          Port number 22, 80, 554 etc
  * @retval NABTO_DEVICE_EC_OK  iff the service was added.
  * @retval NABTO_DEVICE_EC_INVALID_ARGUMENT if the host could not be parsed as IPv4
+ * @retval NABTO_DEVICE_EC_IN_USE if a service with the id exists
  * @retval NABTO_DEVICE_EC_OUT_OF_MEMORY if the underlying structure could not be allocated
  */
 NABTO_DEVICE_DECL_PREFIX NabtoDeviceError NABTO_DEVICE_API

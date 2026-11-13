@@ -110,6 +110,9 @@ void nm_tcp_tunnel_service_destroy(struct nm_tcp_tunnel_service* service)
 np_error_code nm_tcp_tunnel_service_init(struct nm_tcp_tunnel_service* service, const char* id, const char* type, struct np_ip_address* address, uint16_t port)
 {
     struct nm_tcp_tunnels* tunnels = service->tunnels;
+    if (nm_tcp_tunnels_find_service(tunnels, id) != NULL) {
+        return NABTO_EC_IN_USE;
+    }
     service->id = nn_strdup(id, np_allocator_get());
     service->type = nn_strdup(type, np_allocator_get());
     service->address = *address;
@@ -124,6 +127,14 @@ np_error_code nm_tcp_tunnel_service_init(struct nm_tcp_tunnel_service* service, 
         nn_llist_append(&tunnels->services, &service->servicesListItem, service);
     }
     return ec;
+}
+
+void nm_tcp_tunnel_service_free(struct nm_tcp_tunnel_service* service)
+{
+    nn_string_map_deinit(&service->metadata);
+    np_free(service->id);
+    np_free(service->type);
+    np_free(service);
 }
 
 void nm_tcp_tunnel_service_deinit(struct nm_tcp_tunnel_service* service)
