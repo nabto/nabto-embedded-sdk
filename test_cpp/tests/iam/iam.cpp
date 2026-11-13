@@ -885,10 +885,12 @@ BOOST_AUTO_TEST_CASE(pair_user_rejects_fingerprint_in_use, *boost::unit_test::ti
 
     // aFp belongs to testuser.
     nabto_device_virtual_connection_set_client_fingerprint(ctx.connection_, nabto::test::aFp.c_str());
+    BOOST_TEST(nm_iam_pairing_is_fingerprint_in_use(&ctx.iam_, ctx.ref_));
     BOOST_TEST(nm_iam_pairing_pair_user(&ctx.iam_, otheruser, ctx.ref_, "phone") == NM_IAM_ERROR_USER_EXISTS);
     BOOST_TEST(nn_llist_empty(&otheruser->fingerprints));
 
     nabto_device_virtual_connection_set_client_fingerprint(ctx.connection_, nabto::test::cFp.c_str());
+    BOOST_TEST(!nm_iam_pairing_is_fingerprint_in_use(&ctx.iam_, ctx.ref_));
     BOOST_TEST(nm_iam_pairing_pair_user(&ctx.iam_, otheruser, ctx.ref_, "phone") == NM_IAM_ERROR_OK);
     BOOST_TEST(nm_iam_internal_find_user_by_fingerprint(&ctx.iam_, nabto::test::cFp.c_str()) == otheruser);
 }

@@ -22,6 +22,11 @@ bool nm_iam_pairing_is_local_initial_possible(struct nm_iam* iam, NabtoDeviceCon
 enum nm_iam_error nm_iam_pairing_pair_user(struct nm_iam* iam, struct nm_iam_user* user, NabtoDeviceConnectionRef ref, const char* fpName);
 bool nm_iam_pairing_is_user_paired(struct nm_iam_user* user);
 
+/**
+ * Return true if the client fingerprint of the connection belongs to a user.
+ */
+bool nm_iam_pairing_is_fingerprint_in_use(struct nm_iam* iam, NabtoDeviceConnectionRef ref);
+
 #ifdef __cplusplus
 } //extern "C"
 #endif
