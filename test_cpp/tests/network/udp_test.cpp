@@ -13,6 +13,9 @@
 
 #include <boost/asio.hpp>
 
+#include <fcntl.h>
+#include <unistd.h>
+
 namespace nabto {
 namespace test {
 
@@ -112,6 +115,53 @@ class UdpEchoClientTest {
 
 };
 
+class UdpBindFailureTest {
+ public:
+    UdpBindFailureTest(TestPlatform& tp)
+        : pl_(tp.getPlatform())
+    {
+        np_completion_event_init(&pl_->eq, &completionEvent_, &UdpBindFailureTest::bound, this);
+    }
+
+    ~UdpBindFailureTest()
+    {
+        np_completion_event_deinit(&completionEvent_);
+    }
+
+    void start(uint16_t port)
+    {
+        BOOST_TEST(np_udp_create(&pl_->udp, &socket_) == NABTO_EC_OK);
+        np_udp_async_bind_port(&pl_->udp, socket_, port, &completionEvent_);
+    }
+
+    static void bound(np_error_code ec, void* data)
+    {
+        UdpBindFailureTest* t = (UdpBindFailureTest*)data;
+        BOOST_TEST(ec != NABTO_EC_OK);
+        // The descriptor of the failed socket is free again, so the pipe is
+        // likely to get it. Destroying the socket must not close the pipe.
+        int fds[2];
+        BOOST_REQUIRE(pipe(fds) == 0);
+        np_udp_destroy(&t->pl_->udp, t->socket_);
+        BOOST_TEST(fcntl(fds[0], F_GETFD) != -1);
+        BOOST_TEST(fcntl(fds[1], F_GETFD) != -1);
+        close(fds[0]);
+        close(fds[1]);
+        t->ended_.set_value();
+    }
+
+    void waitForEnd()
+    {
+        ended_.get_future().get();
+    }
+
+ private:
+    struct np_platform* pl_;
+    struct np_udp_socket* socket_ = NULL;
+    struct np_completion_event completionEvent_;
+    std::promise<void> ended_;
+};
+
 } } // namespace
 
 
@@ -134,5 +184,19 @@ BOOST_DATA_TEST_CASE(echo, nabto::test::TestPlatformFactory::multi(), tpf)
     udpServer->stop();
 }
 
+
+BOOST_TEST_DECORATOR(* boost::unit_test::timeout(120))
+BOOST_DATA_TEST_CASE(failed_bind_does_not_close_reused_descriptor, nabto::test::TestPlatformFactory::multi(), tpf)
+{
+    auto ioService = nabto::IoService::create("test");
+    // Hold a port such that binding to it fails.
+    boost::asio::ip::udp::socket holder(ioService->getIoService(), boost::asio::ip::udp::endpoint(boost::asio::ip::udp::v6(), 0));
+    uint16_t port = holder.local_endpoint().port();
+
+    auto tp = tpf->create();
+    nabto::test::UdpBindFailureTest t(*tp);
+    t.start(port);
+    t.waitForEnd();
+}
 
 BOOST_AUTO_TEST_SUITE_END()
