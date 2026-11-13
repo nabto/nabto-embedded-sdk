@@ -55,7 +55,8 @@ $(printf '  %s\n' "${ALL_TARGETS[@]}")
 Debug variants (not included in 'all'):
   linux_x86_64_debug
 
-Each target installs into build/<target>/install.
+Each target installs into build/<target>/install, with CycloneDX SBOMs for the
+libraries and tcp_tunnel_device in build/<target>/install/sbom.
 EOF
     exit "${1:-1}"
 }
@@ -148,6 +149,8 @@ build_slice() {
         cmake --preset "$preset"
         cmake --build   "$build_dir"
         cmake --install "$build_dir"
+
+        python3 "$SCRIPT_DIR/generate_sbom.py" "$build_dir" "$TOOLCHAIN_ROOT"
     )
 
     file "$install_dir/bin/tcp_tunnel_device"
