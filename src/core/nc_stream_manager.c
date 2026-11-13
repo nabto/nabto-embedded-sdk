@@ -2,6 +2,7 @@
 #include "nc_stream_manager.h"
 
 #include <core/nc_client_connection.h>
+#include <core/nc_config.h>
 #include <core/nc_connection.h>
 #include <core/nc_packet.h>
 #include <core/nc_virtual_stream.h>
@@ -27,8 +28,8 @@ void nc_stream_manager_init(struct nc_stream_manager_context* ctx, struct np_pla
 {
     ctx->pl = pl;
     ctx->logger = logger;
-    ctx->maxSegments = 1000000;
-    ctx->maxStreams = SIZE_MAX;
+    ctx->maxSegments = NC_DEFAULT_MAX_STREAM_SEGMENTS;
+    ctx->maxStreams = NC_DEFAULT_MAX_STREAMS;
     ctx->nonceCounter = 0;
     nn_llist_init(&ctx->listeners);
     nn_llist_init(&ctx->streams);

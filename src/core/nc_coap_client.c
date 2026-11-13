@@ -1,6 +1,7 @@
 #include "nc_coap_client.h"
 
 #include <core/nc_coap.h>
+#include <core/nc_config.h>
 
 #include <platform/np_allocator.h>
 #include <platform/np_event_queue_wrapper.h>
@@ -48,6 +49,7 @@ np_error_code nc_coap_client_init(struct np_platform* pl, struct nc_coap_client_
     if (err != NABTO_COAP_ERROR_OK) {
         return nc_coap_error_to_core(err);
     }
+    nabto_coap_client_limit_response_size(&ctx->client, NC_DEFAULT_MAX_COAP_CLIENT_RESPONSE_SIZE);
     nc_coap_client_set_infinite_stamp(ctx);
 
     return NABTO_EC_OK;

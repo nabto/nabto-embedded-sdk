@@ -99,6 +99,8 @@ void nc_coap_server_remove_connection(struct nc_coap_server_context* ctx, struct
 
 void nc_coap_server_limit_requests(struct nc_coap_server_context* ctx, size_t limit);
 
+void nc_coap_server_limit_request_size(struct nc_coap_server_context* ctx, size_t limit);
+
 
 nabto_coap_error nc_coap_server_add_resource(struct nc_coap_server_context* server, nabto_coap_method method, const char** segments, nc_coap_server_resource_handler handler, void* userData, struct nc_coap_server_resource** resource);
 

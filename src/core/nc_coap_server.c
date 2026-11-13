@@ -6,6 +6,7 @@
 #include "nc_device.h"
 #include "nc_virtual_connection.h"
 
+#include <core/nc_config.h>
 #include <platform/np_allocator.h>
 #include <platform/np_event_queue_wrapper.h>
 #include <platform/np_logging.h>
@@ -41,6 +42,8 @@ np_error_code nc_coap_server_init(struct np_platform* pl, struct nc_device_conte
     if (err != NABTO_COAP_ERROR_OK) {
         return nc_coap_error_to_core(err);
     }
+    nabto_coap_server_limit_requests(&ctx->requests, NC_DEFAULT_MAX_COAP_SERVER_REQUESTS);
+    nabto_coap_server_limit_request_size(&ctx->requests, NC_DEFAULT_MAX_COAP_SERVER_REQUEST_SIZE);
     ctx->pl = pl;
     ctx->device = device;
     nc_coap_server_set_infinite_stamp(ctx);
@@ -256,6 +259,13 @@ void nc_coap_server_limit_requests(struct nc_coap_server_context* ctx, size_t li
 {
     // TODO: virtual
     nabto_coap_server_limit_requests(&ctx->requests, limit);
+}
+
+void nc_coap_server_limit_request_size(struct nc_coap_server_context* ctx, size_t limit)
+{
+    // Virtual requests are made by the application itself, so they are not
+    // limited.
+    nabto_coap_server_limit_request_size(&ctx->requests, limit);
 }
 
 
