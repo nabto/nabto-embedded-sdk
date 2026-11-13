@@ -1,0 +1,32 @@
+name: vcpkg binary cache
+description: >
+  Keep the vcpkg binary packages between runs in the GitHub Actions cache.
+  Run it after the checkout and before the build.
+
+inputs:
+  name:
+    description: Separates the caches, normally the preset or target name.
+    required: true
+
+runs:
+  using: composite
+  steps:
+    # The nabto-common port builds the nabto-common submodule, and its vcpkg
+    # ABI hash does not change when the submodule does. The submodule commit
+    # is therefore part of the restore prefix, so an old nabto-common is never
+    # restored.
+    - name: Compute vcpkg cache key
+      id: key
+      shell: bash
+      run: |
+        mkdir -p vcpkg-binary-cache
+        echo "prefix=vcpkg-${{ runner.os }}-${{ inputs.name }}-$(git -C 3rdparty/vcpkg rev-parse HEAD)-$(git -C nabto-common rev-parse HEAD)" >> "$GITHUB_OUTPUT"
+        echo "VCPKG_BINARY_SOURCES=clear;files,${{ github.workspace }}/vcpkg-binary-cache,readwrite" >> "$GITHUB_ENV"
+
+    - name: Restore vcpkg binary cache
+      uses: actions/cache@v4
+      with:
+        path: ${{ github.workspace }}/vcpkg-binary-cache
+        key: ${{ steps.key.outputs.prefix }}-${{ hashFiles('vcpkg.json', 'vcpkg-configuration.json', 'build-scripts/vcpkg/**') }}
+        restore-keys: |
+          ${{ steps.key.outputs.prefix }}-
