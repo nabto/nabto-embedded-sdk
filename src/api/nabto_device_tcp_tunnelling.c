@@ -22,6 +22,9 @@ nabto_device_add_tcp_tunnel_service(NabtoDevice* device, const char* serviceId, 
         ec = NABTO_EC_OUT_OF_MEMORY;
     } else {
         ec = nm_tcp_tunnel_service_init(service, serviceId, serviceType, &address, port);
+        if (ec != NABTO_EC_OK) {
+            nm_tcp_tunnel_service_free(service);
+        }
     }
     nabto_device_threads_mutex_unlock(dev->eventMutex);
     return nabto_device_error_core_to_api(ec);

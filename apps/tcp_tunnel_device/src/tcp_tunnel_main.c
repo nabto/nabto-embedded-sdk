@@ -583,7 +583,7 @@ bool handle_main(struct args* args, struct tcp_tunnel* tunnel)
     {
         ec = nabto_device_add_tcp_tunnel_service(tunnel->device, service->id, service->type, service->host, service->port);
         if (ec != NABTO_DEVICE_EC_OK) {
-            printf("Cannot add tcp tunnel service id: %s, type: %s, host: %s, port: %d. One reason could be if '%s' is not an ipv4 address." NEWLINE, service->id, service->type, service->host, service->port, service->host);
+            printf("Cannot add tcp tunnel service id: %s, type: %s, host: %s, port: %d. %s. One reason could be if '%s' is not an ipv4 address or the id is used by another service." NEWLINE, service->id, service->type, service->host, service->port, nabto_device_error_get_message(ec), service->host);
             return false;
         }
 
