@@ -76,7 +76,9 @@ np_error_code nc_client_connection_init(struct np_platform* pl, struct nc_client
                                             &nc_client_connection_handle_data,
                                             &nc_client_connection_handle_event, conn);
 #else
-    ec = pl->dtlsS.create_connection(device->dtlsServer, &conn->dtls,
+    uint8_t clientId[NC_CLIENT_CONNECTION_CLIENT_ID_MAX_SIZE];
+    size_t clientIdSize = nc_client_connection_client_id(ep, buffer, clientId);
+    ec = pl->dtlsS.create_connection(device->dtlsServer, clientId, clientIdSize, &conn->dtls,
                                      &nc_client_connection_async_send_to_udp,
                                      &nc_client_connection_handle_data,
                                      &nc_client_connection_handle_event, conn);
@@ -86,6 +88,21 @@ np_error_code nc_client_connection_init(struct np_platform* pl, struct nc_client
         return ec;
     }
     return ec;
+}
+
+size_t nc_client_connection_client_id(const struct np_udp_endpoint* ep, const uint8_t* header, uint8_t* out)
+{
+    uint8_t* ptr = out;
+    *ptr = (uint8_t)ep->ip.type; ptr++;
+    if (ep->ip.type == NABTO_IPV4) {
+        memcpy(ptr, ep->ip.ip.v4, 4); ptr += 4;
+    } else {
+        memcpy(ptr, ep->ip.ip.v6, 16); ptr += 16;
+    }
+    *ptr = (uint8_t)(ep->port >> 8); ptr++;
+    *ptr = (uint8_t)ep->port; ptr++;
+    memcpy(ptr, header, 15); ptr += 15;
+    return (size_t)(ptr - out);
 }
 
 np_error_code nc_client_connection_start(struct nc_client_connection* connection, uint8_t* buffer, size_t bufferSize)
