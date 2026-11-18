@@ -46,7 +46,7 @@ void handle_request(struct nm_iam_coap_handler* handler, NabtoDeviceCoapRequest*
     enum nm_iam_cbor_error err = nm_iam_cbor_init_parser(request, &parser, &value);
     if ( err != IAM_CBOR_OK ) {
         nm_iam_cbor_send_error_response(request, err);
-        nm_iam_free(fingerprint);
+        nabto_device_string_free(fingerprint);
         return;
     }
 
@@ -55,12 +55,12 @@ void handle_request(struct nm_iam_coap_handler* handler, NabtoDeviceCoapRequest*
 
     if (!nm_iam_cbor_decode_kv_string(&value, "Username", &username)) {
         nabto_device_coap_error_response(request, 400, "Invalid CBOR data for Username");
-        nm_iam_free(fingerprint);
+        nabto_device_string_free(fingerprint);
         return;
     }
     if (username == NULL) {
         nabto_device_coap_error_response(request, 400, "Username missing");
-        nm_iam_free(fingerprint);
+        nabto_device_string_free(fingerprint);
         return;
     }
     nm_iam_cbor_decode_kv_string(&value, "FingerprintName", &fpName); // FingerprintName is optional
@@ -82,7 +82,7 @@ void handle_request(struct nm_iam_coap_handler* handler, NabtoDeviceCoapRequest*
         nabto_device_coap_error_response(request, 500, "Server error");
     }
 
-    nm_iam_free(fingerprint);
+    nabto_device_string_free(fingerprint);
     nm_iam_free(fpName);
     nm_iam_free(username);
 }

@@ -651,6 +651,28 @@ BOOST_AUTO_TEST_CASE(pwd_open_pairing, *boost::unit_test::timeout(180))
     }
 }
 
+// A 5.1 client sends the password in the request. The request is rejected,
+// before the fix the client fingerprint leaked, which LeakSanitizer reports.
+BOOST_AUTO_TEST_CASE(pwd_open_pairing_password_in_request, *boost::unit_test::timeout(180))
+{
+    nabto::test::IamVirtualConnTester ctx(nabto::test::c2, nabto::test::s2);
+    const std::string username = "";
+    const std::string clientFp = "1234567890123456789012345678901212345678901234567890123456789012";
+    std::string pwd(ctx.iam_.state->passwordOpenPassword);
+
+    ctx.doPwdAuth(username, clientFp, pwd);
+
+    ctx.createCoapRequest(NABTO_DEVICE_COAP_POST, "/iam/pairing/password-open");
+    nlohmann::json root;
+    root["Username"] = "newuser";
+    root["Password"] = pwd;
+    ctx.setCborPayload(root);
+    ctx.executeCoap(400);
+
+    auto usr = ctx.findStateUser("newuser");
+    BOOST_TEST((usr == NULL));
+}
+
 BOOST_AUTO_TEST_CASE(pwd_open_pairing_max_users, *boost::unit_test::timeout(180))
 {
     nabto::test::IamVirtualConnTester ctx(nabto::test::c2, nabto::test::s2);
