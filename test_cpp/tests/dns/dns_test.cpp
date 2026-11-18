@@ -12,6 +12,13 @@
 #include <test_platform_libevent.hpp>
 #endif
 
+#ifdef HAVE_SELECT_UNIX
+#include <test_platform_select_unix.hpp>
+#include <modules/dns/unix/nm_unix_dns.h>
+#endif
+
+#include <future>
+
 namespace {
 
 class DnsTest {
@@ -149,6 +156,29 @@ class DnsTestNoSuchDomain : public DnsTest {
     const char* dnsName_ = "no-such-domain.dev.nabto.com";
 };
 
+class CompletionWaiter {
+ public:
+    CompletionWaiter(struct np_platform* pl)
+    {
+        np_completion_event_init(&pl->eq, &completionEvent_, &CompletionWaiter::callback, this);
+    }
+    ~CompletionWaiter()
+    {
+        np_completion_event_deinit(&completionEvent_);
+    }
+    static void callback(const np_error_code ec, void* data)
+    {
+        CompletionWaiter* self = (CompletionWaiter*)data;
+        self->promise_.set_value(ec);
+    }
+    np_error_code wait()
+    {
+        return promise_.get_future().get();
+    }
+    struct np_completion_event completionEvent_;
+ private:
+    std::promise<np_error_code> promise_;
+};
 
 }
 
@@ -186,5 +216,35 @@ BOOST_DATA_TEST_CASE(resolve_not_found, nabto::test::TestPlatformFactory::multi(
     }
 }
 
+#ifdef HAVE_SELECT_UNIX
+// Stopping the unix resolver while requests are still queued has to fail the
+// queued requests with NABTO_EC_STOPPED.
+BOOST_AUTO_TEST_CASE(unix_resolver_stop_with_queued_requests)
+{
+    auto tp = std::make_unique<nabto::test::TestPlatformSelectUnix>();
+    struct np_platform* pl = tp->getPlatform();
+
+    struct nm_unix_dns_resolver resolver;
+    BOOST_TEST(nm_unix_dns_resolver_init(&resolver) == NABTO_EC_OK);
+    struct np_dns dns = nm_unix_dns_resolver_get_impl(&resolver);
+    {
+        CompletionWaiter v4(pl);
+        CompletionWaiter v6(pl);
+        struct np_ip_address v4Ips[4];
+        struct np_ip_address v6Ips[4];
+        size_t v4Resolved = 0;
+        size_t v6Resolved = 0;
+
+        // The resolver thread is not started, so the requests stay queued.
+        np_dns_async_resolve_v4(&dns, "localhost", v4Ips, 4, &v4Resolved, &v4.completionEvent_);
+        np_dns_async_resolve_v6(&dns, "localhost", v6Ips, 4, &v6Resolved, &v6.completionEvent_);
+
+        nm_unix_dns_resolver_deinit(&resolver);
+
+        BOOST_TEST(v4.wait() == NABTO_EC_STOPPED);
+        BOOST_TEST(v6.wait() == NABTO_EC_STOPPED);
+    }
+}
+#endif
 
 BOOST_AUTO_TEST_SUITE_END()

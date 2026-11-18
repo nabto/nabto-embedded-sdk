@@ -161,8 +161,8 @@ void stop_resolver(struct nm_unix_dns_resolver* resolver)
 
     while (!nn_llist_empty(&resolver->events)) {
         struct nn_llist_iterator first = nn_llist_begin(&resolver->events);
-        nn_llist_erase(&first);
         struct nm_dns_resolve_event* event = nn_llist_get_item(&first);
+        nn_llist_erase(&first);
         np_completion_event_resolve(event->completionEvent, NABTO_EC_STOPPED);
         np_free(event);
     }
