@@ -65,7 +65,7 @@ static int password_to_mpi_2(const char* password, mp_int* w, WC_RNG* rng, wc_Sh
     uint8_t hash[32];
     if (password == NULL) {
         ret = wc_RNG_GenerateBlock(rng, hash, sizeof(hash));
-        if (ret != sizeof(hash)) {
+        if (ret != 0) {
             return ret;
         }
     } else {
