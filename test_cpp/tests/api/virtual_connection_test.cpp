@@ -629,6 +629,37 @@ BOOST_AUTO_TEST_CASE(free_conn_with_coap)
     nabto_device_virtual_coap_request_free(req);
 }
 
+// A request queued on a CoAP listener which is stopped before the application
+// takes the request gets a 503 response. Before the fix the request was never
+// freed by the server, which LeakSanitizer reports.
+BOOST_AUTO_TEST_CASE(coap_listener_stopped_with_queued_request)
+{
+    const char* path = "/hello/world";
+
+    nabto::test::TestDevice td;
+    NabtoDeviceListener* listener = nabto_device_listener_new(td.device_);
+    BOOST_TEST(nabto_device_coap_init_listener(td.device_, listener, NABTO_DEVICE_COAP_GET, nabto::test::coapPath) == NABTO_DEVICE_EC_OK);
+
+    NabtoDeviceVirtualConnection* conn = td.makeConnection();
+    NabtoDeviceVirtualCoapRequest* req = nabto_device_virtual_coap_request_new(conn, NABTO_DEVICE_COAP_GET, path);
+    BOOST_TEST((req != NULL));
+
+    NabtoDeviceFuture* fut = nabto_device_future_new(td.device_);
+    // No future is waiting on the listener, so the request is queued.
+    nabto_device_virtual_coap_request_execute(req, fut);
+
+    BOOST_TEST(nabto_device_listener_stop(listener) == NABTO_DEVICE_EC_OK);
+
+    BOOST_TEST(nabto_device_future_wait(fut) == NABTO_DEVICE_EC_OK);
+    uint16_t status = 0;
+    BOOST_TEST(nabto_device_virtual_coap_request_get_response_status_code(req, &status) == NABTO_DEVICE_EC_OK);
+    BOOST_TEST(status == 503);
+
+    nabto_device_future_free(fut);
+    nabto_device_virtual_coap_request_free(req);
+    nabto_device_listener_free(listener);
+}
+
 BOOST_AUTO_TEST_CASE(coap_404)
 {
     const char* coapPath = "/not/found";
