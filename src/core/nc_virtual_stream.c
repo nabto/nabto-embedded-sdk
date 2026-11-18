@@ -25,8 +25,6 @@ np_error_code nc_virtual_stream_init(struct np_platform* pl, struct nc_stream_co
     ctx->virt.openedEv = openedEv;
     ctx->virt.stopped = false;
     ctx->virt.closed = false;
-
-    nc_stream_manager_ready_for_accept(ctx->streamManager, ctx);
     return NABTO_EC_OK;
 }
 

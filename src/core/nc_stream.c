@@ -647,6 +647,11 @@ void nc_stream_stop(struct nc_stream_context* stream)
 
         struct np_platform* pl = stream->pl;
         np_event_queue_cancel_event(&pl->eq, stream->timer);
+    } else if (stream->virt.openedEv) {
+        // The stream was stopped before it was accepted, e.g. because no
+        // listener exists or the application freed it without accepting it.
+        np_completion_event_resolve(stream->virt.openedEv, NABTO_EC_STOPPED);
+        stream->virt.openedEv = NULL;
     }
     if (stream->acceptEv) {
         np_completion_event_resolve(stream->acceptEv, NABTO_EC_ABORTED);

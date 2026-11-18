@@ -724,4 +724,51 @@ BOOST_AUTO_TEST_CASE(read_all_while_reading, *boost::unit_test::timeout(60))
     nabto_device_future_free(fut2);
 }
 
+BOOST_AUTO_TEST_CASE(open_stream_no_listener, *boost::unit_test::timeout(60))
+{
+    // Opening a virtual stream on a port without a listener must fail
+    // without touching freed memory, and the stream must be freeable.
+    nabto::test::TestStreamDevice td;
+
+    NabtoDeviceVirtualConnection* conn = td.makeConnection();
+    NabtoDeviceVirtualStream* virStream = nabto_device_virtual_stream_new(conn);
+
+    NabtoDeviceFuture* fut = nabto_device_future_new(td.device_);
+    nabto_device_virtual_stream_open(virStream, fut, 4242);
+    NabtoDeviceError ec = nabto_device_future_timed_wait(fut, 5000);
+    BOOST_TEST(ec == NABTO_DEVICE_EC_STOPPED);
+    nabto_device_future_free(fut);
+
+    nabto_device_virtual_stream_free(virStream);
+}
+
+BOOST_AUTO_TEST_CASE(open_stream_server_frees_without_accept, *boost::unit_test::timeout(60))
+{
+    // If the application frees the new stream without accepting it, the
+    // virtual stream open future resolves with STOPPED.
+    nabto::test::TestStreamDevice td;
+
+    td.streamListen([&](NabtoDeviceError ec, NabtoDeviceStream* stream) {
+        if (ec == NABTO_DEVICE_EC_OK) {
+            nabto_device_stream_free(stream);
+        }
+    });
+
+    NabtoDeviceVirtualConnection* conn = td.makeConnection();
+    NabtoDeviceVirtualStream* virStream = nabto_device_virtual_stream_new(conn);
+
+    NabtoDeviceFuture* fut = nabto_device_future_new(td.device_);
+    nabto_device_virtual_stream_open(virStream, fut, td.streamPort_);
+    NabtoDeviceError ec = nabto_device_future_timed_wait(fut, 5000);
+    BOOST_TEST(ec == NABTO_DEVICE_EC_STOPPED);
+    if (ec == NABTO_DEVICE_EC_FUTURE_NOT_RESOLVED) {
+        // avoid freeing a future the device still references
+        nabto_device_virtual_stream_abort(virStream);
+        nabto_device_future_wait(fut);
+    }
+    nabto_device_future_free(fut);
+
+    nabto_device_virtual_stream_free(virStream);
+}
+
 BOOST_AUTO_TEST_SUITE_END()
