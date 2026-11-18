@@ -724,4 +724,28 @@ BOOST_AUTO_TEST_CASE(read_all_while_reading, *boost::unit_test::timeout(60))
     nabto_device_future_free(fut2);
 }
 
+BOOST_AUTO_TEST_CASE(free_stream_while_reading, *boost::unit_test::timeout(60))
+{
+    // Freeing a stream with an outstanding read must not leave a pending
+    // completion event pointing into the freed stream.
+    nabto::test::TestStreamDevice td;
+    nabto::test::TestStream ts(&td);
+
+    td.streamListen([&](NabtoDeviceError ec, NabtoDeviceStream* stream) {
+        if (ec == NABTO_DEVICE_EC_OK) {
+            ts.acceptStream(stream);
+        }
+    });
+
+    td.makeConnection();
+    td.virtualStreamOpen();
+
+    ts.futureWait(NABTO_DEVICE_EC_OK); // wait for accept
+    ts.doRead();
+
+    nabto_device_stream_free(ts.stream_);
+    ts.stream_ = NULL;
+    ts.futureWait(NABTO_DEVICE_EC_ABORTED);
+}
+
 BOOST_AUTO_TEST_SUITE_END()

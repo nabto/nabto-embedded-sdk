@@ -331,8 +331,30 @@ void NABTO_DEVICE_API nabto_device_stream_close(NabtoDeviceStream* stream, Nabto
     nabto_device_threads_mutex_unlock(str->dev->eventMutex);
 }
 
+/**
+ * A completion event is initialized while its operation is outstanding, and
+ * deinitialized by its callback. Once the core stream is destroyed, every
+ * outstanding operation has been resolved by nc_stream_stop, but the callback
+ * is still queued and references the stream structure which is about to be
+ * freed. Cancel the event and resolve the future directly.
+ */
+static void resolve_pending_operation(struct np_completion_event* ev, struct nabto_device_future* fut)
+{
+    if (ev->initialized) {
+        np_error_code ec = ev->ec;
+        np_completion_event_deinit(ev);
+        if (fut != NULL) {
+            nabto_device_future_resolve(fut, nabto_device_error_core_to_api(ec));
+        }
+    }
+}
+
 void nabto_device_stream_free_internal(struct nabto_device_stream* str) {
     nc_stream_destroy(str->stream);
+    resolve_pending_operation(&str->acceptEv, str->acceptFut);
+    resolve_pending_operation(&str->readEv, str->readFut);
+    resolve_pending_operation(&str->writeEv, str->writeFut);
+    resolve_pending_operation(&str->closeEv, str->closeFut);
     np_free(str);
 }
 
