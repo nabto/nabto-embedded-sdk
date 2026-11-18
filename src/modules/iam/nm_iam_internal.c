@@ -2,8 +2,8 @@
 #include "nm_iam_user.h"
 #include "policies/nm_policy.h"
 #include <nn/llist.h>
-#include <nn/string_map.h>
 #include <nn/string.h>
+#include <nn/string_map.h>
 
 #include <nabto/nabto_device_virtual.h>
 
