@@ -216,6 +216,7 @@ np_error_code nabto_device_coap_listener_callback(const np_error_code ec, struct
             retEc = NABTO_EC_UNKNOWN;
             // If this fails we should just keep cleaning up
             nc_coap_server_send_error_response(req->req, (nabto_coap_code)(NABTO_COAP_CODE(5,03)), "Handler unavailable");
+            nc_coap_server_request_free(req->req);
             np_free(req);
         }
         // using the coap request structure as event structure means it will be freed when user sends the response
@@ -228,6 +229,7 @@ np_error_code nabto_device_coap_listener_callback(const np_error_code ec, struct
         struct nabto_device_coap_request* req = (struct nabto_device_coap_request*)eventData;
         // if this fails we should just keep cleaning up
         nc_coap_server_send_error_response(req->req, (nabto_coap_code)(NABTO_COAP_CODE(5,03)), "Handler unavailable");
+        nc_coap_server_request_free(req->req);
         np_free(req);
         retEc = ec;
     }
