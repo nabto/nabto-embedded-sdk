@@ -88,6 +88,7 @@ void nm_iam_deinit(struct nm_iam* iam)
     nm_iam_state_free(iam->state);
     nm_iam_configuration_free(iam->conf);
     nn_string_set_deinit(&iam->notificationCategories);
+    nm_iam_internal_clear_authorized_connections(iam);
     nn_vector_deinit(&iam->authorizedConnections);
     nm_iam_unlock(iam);
 

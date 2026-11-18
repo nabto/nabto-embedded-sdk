@@ -231,6 +231,62 @@ BOOST_AUTO_TEST_CASE(expire_auth_on_close, *boost::unit_test::timeout(180))
     nabto_device_free(d);
 }
 
+// A connection authorized with nm_iam_authorize_connection() must not keep
+// referring to the user after the user is deleted, or the user it referred to
+// is freed by loading a new state. Before the fix this was a use after free,
+// which AddressSanitizer reports.
+BOOST_AUTO_TEST_CASE(authorized_connection_user_deleted, *boost::unit_test::timeout(180))
+{
+    nabto::test::IamVirtualConnTester ctx(nabto::test::c2, nabto::test::s2);
+
+    BOOST_TEST(nm_iam_authorize_connection(&ctx.iam_, ctx.ref_, "testuser") == NM_IAM_ERROR_OK);
+    BOOST_TEST(nm_iam_check_access(&ctx.iam_, ctx.ref_, "Admin:foo", NULL));
+
+    BOOST_TEST(nm_iam_delete_user(&ctx.iam_, "testuser") == NM_IAM_ERROR_OK);
+
+    BOOST_TEST(!nm_iam_check_access(&ctx.iam_, ctx.ref_, "Admin:foo", NULL));
+
+    ctx.createCoapRequest(NABTO_DEVICE_COAP_GET, "/iam/me");
+    ctx.executeCoap(404);
+}
+
+BOOST_AUTO_TEST_CASE(authorized_connection_load_state, *boost::unit_test::timeout(180))
+{
+    nabto::test::IamVirtualConnTester ctx(nabto::test::c2, nabto::test::s2);
+
+    BOOST_TEST(nm_iam_authorize_connection(&ctx.iam_, ctx.ref_, "otheruser") == NM_IAM_ERROR_OK);
+    BOOST_TEST(nm_iam_check_access(&ctx.iam_, ctx.ref_, "Admin:foo", NULL));
+
+    // The same users in a new state, the authorization follows the username.
+    {
+        struct nm_iam_state* state = nm_iam_state_new();
+        BOOST_TEST(nm_iam_serializer_state_load_json(state, nabto::test::s2.c_str(), NULL) == true);
+        BOOST_TEST(nm_iam_load_state(&ctx.iam_, state));
+    }
+    BOOST_TEST(nm_iam_check_access(&ctx.iam_, ctx.ref_, "Admin:foo", NULL));
+
+    ctx.createCoapRequest(NABTO_DEVICE_COAP_GET, "/iam/me");
+    ctx.executeCoap(205);
+
+    // A state without the user removes the authorization.
+    {
+        struct nm_iam_state* state = nm_iam_state_new();
+        BOOST_TEST(nm_iam_serializer_state_load_json(state, nabto::test::s2.c_str(), NULL) == true);
+        struct nm_iam_user* user = NULL;
+        void* u;
+        NN_LLIST_FOREACH(u, &state->users) {
+            if (strcmp(((struct nm_iam_user*)u)->username, "otheruser") == 0) {
+                user = (struct nm_iam_user*)u;
+            }
+        }
+        BOOST_REQUIRE(user != NULL);
+        nn_llist_erase_node(&user->listNode);
+        nm_iam_user_free(user);
+        BOOST_TEST(nm_iam_load_state(&ctx.iam_, state));
+    }
+    BOOST_TEST(!nm_iam_check_access(&ctx.iam_, ctx.ref_, "Admin:foo", NULL));
+}
+
 BOOST_AUTO_TEST_CASE(user_multi_fingerprint, *boost::unit_test::timeout(180))
 {
     nabto::test::IamVirtualConnTester ctx(nabto::test::c2, nabto::test::s2);
