@@ -74,7 +74,7 @@ NabtoDevice* NABTO_DEVICE_API nabto_device_new(void)
 {
     struct nabto_device_context* dev = np_calloc(1, sizeof(struct nabto_device_context));
     if (dev == NULL) {
-        NABTO_LOG_ERROR(LOG, "Could not allocate %d bytes for the device context", sizeof(struct nabto_device_context));
+        NABTO_LOG_ERROR(LOG, "Could not allocate %d bytes for the device context", (int)sizeof(struct nabto_device_context));
         return NULL;
     }
 

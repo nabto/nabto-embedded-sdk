@@ -136,7 +136,7 @@ void nc_stream_manager_handle_packet(struct nc_stream_manager_context* ctx, stru
         nc_stream_handle_packet(stream, ptr, (uint16_t)(bufferSize-(ptr-start)));
         nc_stream_ref_count_dec(stream);
     } else {
-        NABTO_LOG_TRACE(LOG, "unable to handle packet of type %s, for stream ID %u no such stream", nabto_stream_flags_to_string(flags), streamId);
+        NABTO_LOG_TRACE(LOG, "unable to handle packet of type %s, for stream ID %" NABTO_LOG_PRIu64 " no such stream", nabto_stream_flags_to_string(flags), streamId);
     }
 
 }
@@ -261,7 +261,7 @@ void nc_stream_manager_send_rst(struct nc_stream_manager_context* ctx, struct nc
     uint8_t* start = NULL;
     uint8_t* ptr = NULL;
     size_t ret = 0;
-    NABTO_LOG_TRACE(LOG, "Sending RST to streamId: %u", streamId);
+    NABTO_LOG_TRACE(LOG, "Sending RST to streamId: %" NABTO_LOG_PRIu64, streamId);
     if (ctx->rstBuf != NULL) {
         NABTO_LOG_INFO(LOG, "RST is sending dropping to send a new rst");
         return;

@@ -122,7 +122,7 @@ void async_recv_wait_complete(const np_error_code ec, void* userData)
     if (recvEc == NABTO_EC_OK || recvEc == NABTO_EC_AGAIN) {
         start_recv(ctx);
     } else {
-        NABTO_LOG_ERROR(LOG, "udp recv from returned unexpected error: %d" )
+        NABTO_LOG_ERROR(LOG, "udp recv from returned unexpected error: %s", np_error_code_to_string(recvEc));
         ctx->listener(NC_DEVICE_EVENT_PLATFORM_FAILURE, ctx->listenerData);
         return;
     }

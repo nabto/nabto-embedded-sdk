@@ -13,8 +13,8 @@ void NABTO_DEVICE_API nabto_device_test_local_ip(NabtoDevice* device)
     size_t localIpsSize = 0;
     struct np_ip_address ips[4];
     localIpsSize = np_local_ip_get_local_ips(&dev->pl.localIp, ips, 4);
-    NABTO_LOG_INFO(LOG, "Found %d local ips", localIpsSize);
+    NABTO_LOG_INFO(LOG, "Found %d local ips", (int)localIpsSize);
     for (size_t i = 0; i < localIpsSize; i++) {
-        NABTO_LOG_INFO(LOG, "Local ip %d: %s", i, np_ip_address_to_string(&ips[i]));
+        NABTO_LOG_INFO(LOG, "Local ip %d: %s", (int)i, np_ip_address_to_string(&ips[i]));
     }
 }
