@@ -171,6 +171,41 @@ BOOST_AUTO_TEST_CASE(no_listener)
     nabto_device_free(device);
 }
 
+// A stopped and freed authorization listener must not be used for later
+// authorization requests, and a new listener must be able to take its place.
+// Before the fix the device kept the pointer to the freed listener, which
+// AddressSanitizer reports as a use after free.
+BOOST_AUTO_TEST_CASE(listener_stopped_and_freed)
+{
+    NabtoDevice* device = nabto_device_new();
+
+    {
+        NabtoDeviceListener* listener = nabto_device_listener_new(device);
+        BOOST_TEST(nabto_device_authorization_request_init_listener(device, listener) == NABTO_DEVICE_EC_OK);
+        BOOST_TEST(nabto_device_listener_stop(listener) == NABTO_DEVICE_EC_OK);
+        nabto_device_listener_free(listener);
+    }
+
+    {
+        AuthCallback authCallback;
+        checkAccess(device, "Custom:AllowThis", authCallback);
+        BOOST_TEST(authCallback.waitForCallback() == false);
+    }
+
+    {
+        auto authDecider = AuthorizationDecider::create(device);
+        {
+            AuthCallback authCallback;
+            checkAccess(device, "Custom:AllowThis", authCallback);
+            BOOST_TEST(authCallback.waitForCallback() == true);
+        }
+        authDecider->stop();
+    }
+
+    nabto_device_stop(device);
+    nabto_device_free(device);
+}
+
 BOOST_AUTO_TEST_CASE(no_verdict)
 {
     NabtoDevice* device = nabto_device_new();

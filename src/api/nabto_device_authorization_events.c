@@ -48,6 +48,12 @@ np_error_code nabto_device_authorization_listener_callback(const np_error_code e
         // We are handling some error, if eventData is present do a false verdict.
         struct nabto_device_authorization_request* authReq = (struct nabto_device_authorization_request*)eventData;
         nabto_device_authorization_do_verdict(authReq, false);
+    } else if (ec == NABTO_EC_ABORTED) {
+        // The listener is stopped and can be freed by the application. Forget
+        // it such that new authorization requests are not added to it and a
+        // new listener can be initialized.
+        ctx->listener = NULL;
+        ctx->request = NULL;
     }
     return retEc;
 }
