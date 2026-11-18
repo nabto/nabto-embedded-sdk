@@ -724,4 +724,44 @@ BOOST_AUTO_TEST_CASE(read_all_while_reading, *boost::unit_test::timeout(60))
     nabto_device_future_free(fut2);
 }
 
+BOOST_AUTO_TEST_CASE(close_twice_while_closing, *boost::unit_test::timeout(60))
+{
+    // A second close while the first is outstanding must be rejected
+    // without disturbing the first close.
+    const char* writeBuffer = "Hello world";
+    nabto::test::TestStreamDevice td;
+    nabto::test::TestStream ts(&td);
+
+    td.streamListen([&](NabtoDeviceError ec, NabtoDeviceStream* stream) {
+        if (ec == NABTO_DEVICE_EC_OK) {
+            ts.acceptStream(stream);
+        }
+    });
+
+    td.makeConnection();
+    td.virtualStreamOpen();
+
+    ts.futureWait(NABTO_DEVICE_EC_OK); // wait for accept
+
+    // The client does not read, so the server write stays outstanding and
+    // the first close waits for it.
+    NabtoDeviceFuture* writeFut = nabto_device_future_new(td.device_);
+    nabto_device_stream_write(ts.stream_, writeFut, writeBuffer, strlen(writeBuffer));
+
+    NabtoDeviceFuture* closeFut1 = nabto_device_future_new(td.device_);
+    NabtoDeviceFuture* closeFut2 = nabto_device_future_new(td.device_);
+    nabto_device_stream_close(ts.stream_, closeFut1);
+    nabto_device_stream_close(ts.stream_, closeFut2);
+    BOOST_TEST(nabto_device_future_wait(closeFut2) == NABTO_DEVICE_EC_OPERATION_IN_PROGRESS);
+
+    // The first close is still outstanding and is resolved by the abort.
+    nabto_device_stream_abort(ts.stream_);
+    BOOST_TEST(nabto_device_future_wait(writeFut) == NABTO_DEVICE_EC_ABORTED);
+    BOOST_TEST(nabto_device_future_wait(closeFut1) == NABTO_DEVICE_EC_ABORTED);
+
+    nabto_device_future_free(writeFut);
+    nabto_device_future_free(closeFut1);
+    nabto_device_future_free(closeFut2);
+}
+
 BOOST_AUTO_TEST_SUITE_END()
