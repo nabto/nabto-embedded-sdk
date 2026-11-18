@@ -58,7 +58,7 @@ void sha256_speed_test(struct nabto_device_context* dev) {
     uint32_t end = np_timestamp_now_ms(&dev->pl.timestamp);
 
     int32_t elapsed = np_timestamp_difference(end, start);
-    NABTO_LOG_INFO(LOG, "SHA256 took %d ms for %d rounds of size %d each", elapsed, iterations, sizeof(data));
+    NABTO_LOG_INFO(LOG, "SHA256 took %d ms for %d rounds of size %d each", elapsed, (int)iterations, (int)sizeof(data));
 }
 
 void p256r1_multiplication_speed_test(struct nabto_device_context* dev) {

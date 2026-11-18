@@ -90,7 +90,7 @@ void sct_request_handler(struct nabto_coap_client_request* request, void* userDa
     if (nc_coap_is_status_ok(resCode)) {
         status = NABTO_EC_OK;
         sctCtx->synchronizedVersion = sctCtx->uploadingVersion;
-        NABTO_LOG_TRACE(LOG, "SCT version %u successfully uploaded", sctCtx->synchronizedVersion);
+        NABTO_LOG_TRACE(LOG, "SCT version %" NABTO_LOG_PRIu64 " successfully uploaded", sctCtx->synchronizedVersion);
     } else {
         NABTO_LOG_TRACE(LOG, "SCT uploaded failed: %u", resCode);
         status = NABTO_EC_UNKNOWN;

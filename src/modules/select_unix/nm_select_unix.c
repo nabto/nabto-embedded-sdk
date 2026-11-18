@@ -38,7 +38,7 @@ np_error_code nm_select_unix_init(struct nm_select_unix* ctx)
     ctx->thread = 0;
     pthread_mutex_init(&ctx->mutex, NULL);
     if (pipe(ctx->pipefd) == -1) {
-        NABTO_LOG_ERROR(LOG, "Failed to create pipe %s", errno);
+        NABTO_LOG_ERROR(LOG, "Failed to create pipe %s", strerror(errno));
         return NABTO_EC_UNKNOWN;
     }
 
