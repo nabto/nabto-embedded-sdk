@@ -68,6 +68,15 @@ enum nm_iam_error nm_iam_internal_delete_user(struct nm_iam* iam, const char* us
 
 enum nm_iam_error nm_iam_internal_authorize_connection(struct nm_iam* iam, NabtoDeviceConnectionRef ref, const char* username);
 
+/**
+ * Find the user a connection has been authorized as with
+ * nm_iam_internal_authorize_connection(). NULL if the connection is not
+ * authorized or the user no longer exists.
+ */
+struct nm_iam_user* nm_iam_internal_find_authorized_user(struct nm_iam* iam, NabtoDeviceConnectionRef ref);
+void nm_iam_internal_remove_authorized_connection(struct nm_iam* iam, NabtoDeviceConnectionRef ref);
+void nm_iam_internal_clear_authorized_connections(struct nm_iam* iam);
+
 #ifdef __cplusplus
 } //extern "C"
 #endif

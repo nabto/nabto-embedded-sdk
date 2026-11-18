@@ -2,6 +2,7 @@
 #include "nm_iam_user.h"
 #include "policies/nm_policy.h"
 #include <nn/llist.h>
+#include <nn/string.h>
 #include <nn/string_map.h>
 
 #include <nabto/nabto_device_virtual.h>
@@ -54,14 +55,7 @@ bool nm_iam_internal_check_access(struct nm_iam* iam, NabtoDeviceConnectionRef r
     }
 
     if (!user) {
-        struct nm_iam_authorized_connection conn;
-        NN_VECTOR_FOREACH(&conn, &iam->authorizedConnections)
-        {
-            if (conn.ref == ref) {
-                user = conn.user;
-                break;
-            }
-        }
+        user = nm_iam_internal_find_authorized_user(iam, ref);
     }
 
     const char* roleStr = iam->conf->unpairedRole; // default if no user is found.
@@ -814,8 +808,60 @@ enum nm_iam_error nm_iam_internal_authorize_connection(struct nm_iam* iam, Nabto
     if (user == NULL) {
         return NM_IAM_ERROR_NO_SUCH_USER;
     }
-    struct nm_iam_authorized_connection conn = { ref, user };
-    nn_vector_push_back(&iam->authorizedConnections, &conn);
+    char* usernameCopy = nn_strdup(username, nm_iam_allocator_get());
+    if (usernameCopy == NULL) {
+        return NM_IAM_ERROR_INTERNAL;
+    }
+
+    struct nm_iam_authorized_connection* existing = NULL;
+    NN_VECTOR_FOREACH_REFERENCE(existing, &iam->authorizedConnections)
+    {
+        if (existing->ref == ref) {
+            nm_iam_free(existing->username);
+            existing->username = usernameCopy;
+            return NM_IAM_ERROR_OK;
+        }
+    }
+
+    struct nm_iam_authorized_connection conn = { ref, usernameCopy };
+    if (!nn_vector_push_back(&iam->authorizedConnections, &conn)) {
+        nm_iam_free(usernameCopy);
+        return NM_IAM_ERROR_INTERNAL;
+    }
 
     return NM_IAM_ERROR_OK;
+}
+
+struct nm_iam_user* nm_iam_internal_find_authorized_user(struct nm_iam* iam, NabtoDeviceConnectionRef ref)
+{
+    struct nm_iam_authorized_connection conn;
+    NN_VECTOR_FOREACH(&conn, &iam->authorizedConnections)
+    {
+        if (conn.ref == ref) {
+            return nm_iam_internal_find_user_by_username(iam, conn.username);
+        }
+    }
+    return NULL;
+}
+
+void nm_iam_internal_remove_authorized_connection(struct nm_iam* iam, NabtoDeviceConnectionRef ref)
+{
+    for (size_t i = 0; i < nn_vector_size(&iam->authorizedConnections); i++) {
+        struct nm_iam_authorized_connection* conn = nn_vector_reference(&iam->authorizedConnections, i);
+        if (conn->ref == ref) {
+            nm_iam_free(conn->username);
+            nn_vector_erase(&iam->authorizedConnections, i);
+            return;
+        }
+    }
+}
+
+void nm_iam_internal_clear_authorized_connections(struct nm_iam* iam)
+{
+    struct nm_iam_authorized_connection* conn = NULL;
+    NN_VECTOR_FOREACH_REFERENCE(conn, &iam->authorizedConnections)
+    {
+        nm_iam_free(conn->username);
+    }
+    nn_vector_clear(&iam->authorizedConnections);
 }
