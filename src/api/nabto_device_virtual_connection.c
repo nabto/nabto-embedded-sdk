@@ -417,7 +417,10 @@ nabto_device_virtual_stream_free(NabtoDeviceVirtualStream* stream)
     struct nabto_device_virtual_stream* str = (struct nabto_device_virtual_stream*)stream;
     struct nabto_device_context* dev = str->device;
     nabto_device_threads_mutex_lock(dev->eventMutex);
-    nc_virtual_stream_destroy(str->stream);
+    if (str->stream != NULL) {
+        nc_virtual_stream_destroy(str->stream);
+        str->stream = NULL;
+    }
     nabto_device_threads_mutex_unlock(dev->eventMutex);
     np_free(str);
 }

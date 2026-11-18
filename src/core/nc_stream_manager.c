@@ -240,13 +240,18 @@ struct nc_stream_context* nc_stream_manager_accept_virtual_stream(struct nc_stre
     if (stream == NULL) {
         return NULL;
     }
-    nn_llist_append(&streamManager->streams, &stream->streamsNode, stream);
     np_error_code ec = nc_virtual_stream_init(streamManager->pl, stream, connection, streamManager, port, openedEv);
-    nc_stream_ref_count_inc(stream);
     if (ec != NABTO_EC_OK) {
         nc_stream_manager_free_stream(stream);
         return NULL;
     }
+    // The reference owned by the streams list has to be taken before the
+    // stream is handed to a listener. If no listener exists the stream is
+    // destroyed immediately, which releases the list and application
+    // references, leaving only the reference owned by the caller.
+    nn_llist_append(&streamManager->streams, &stream->streamsNode, stream);
+    nc_stream_ref_count_inc(stream);
+    nc_stream_manager_ready_for_accept(streamManager, stream);
     return stream;
 }
 
