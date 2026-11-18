@@ -124,6 +124,16 @@ bool nm_event_queue_take_timed_event(struct nm_event_queue* queue, uint32_t now,
  * @return true iff an event exists and its assoicated timestamp is
  * copied to nextEvent
  */
+bool nm_event_queue_has_ready_event(struct nm_event_queue* queue, uint32_t now)
+{
+    if (!nn_llist_empty(&queue->events)) {
+        return true;
+    }
+    uint32_t nextTime = 0;
+    return nm_event_queue_next_timed_event(queue, &nextTime) &&
+           np_timestamp_less_or_equal(nextTime, now);
+}
+
 bool nm_event_queue_next_timed_event(struct nm_event_queue* queue, uint32_t* nextTime)
 {
     struct nn_llist_iterator it = nn_llist_begin(&queue->timedEvents);
