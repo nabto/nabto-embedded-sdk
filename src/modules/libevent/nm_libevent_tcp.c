@@ -219,6 +219,10 @@ void tcp_destroy(struct np_tcp_socket* sock)
 void tcp_async_connect(struct np_tcp_socket* sock, struct np_ip_address* address, uint16_t port, struct np_completion_event* completionEvent)
 {
     NABTO_LOG_TRACE(LOG, "tcp_async_connect");
+    if (sock->connect.completionEvent != NULL) {
+        np_completion_event_resolve(completionEvent, NABTO_EC_OPERATION_IN_PROGRESS);
+        return;
+    }
 
     bufferevent_setcb(sock->bev, &tcp_bufferevent_event_read, &tcp_bufferevent_event_write, &tcp_bufferevent_event, sock);
     sock->connect.completionEvent = completionEvent;
@@ -280,7 +284,7 @@ void tcp_async_read(struct np_tcp_socket* sock, void* buffer, size_t bufferLengt
 {
     NABTO_LOG_TRACE(LOG, "tcp_async_read");
     if (sock->read.completionEvent != NULL) {
-        np_completion_event_resolve(sock->read.completionEvent, NABTO_EC_OPERATION_IN_PROGRESS);
+        np_completion_event_resolve(completionEvent, NABTO_EC_OPERATION_IN_PROGRESS);
         return;
     }
 
