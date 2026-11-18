@@ -153,6 +153,16 @@ void nc_client_connection_destroy_connection(struct nc_client_connection* conn)
     nc_coap_server_remove_connection(&conn->device->coapServer, conn->parent);
     nc_stream_manager_remove_connection(conn->streamManager, conn->parent);
 
+    if (conn->sentCb != NULL) {
+        // A packet from the DTLS connection is still being sent. Its
+        // completion event is resolved from sendCompletionEvent which is
+        // deinitialized below, so resolve it now. Otherwise the DTLS connection
+        // never learns that the packet is done and cannot free itself.
+        struct np_completion_event* cb = conn->sentCb;
+        conn->sentCb = NULL;
+        np_completion_event_resolve(cb, NABTO_EC_ABORTED);
+    }
+
 #if defined(NABTO_DEVICE_DTLS_CLIENT_ONLY)
     pl->dtlsC.destroy_connection(conn->dtls);
 #else

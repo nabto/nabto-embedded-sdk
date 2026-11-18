@@ -676,6 +676,16 @@ void nm_dtls_udp_send_callback(const np_error_code ec, void* data)
         return;
     }
 
+    if (conn->destroyed) {
+        // The owner has destroyed the connection while the packet was being
+        // sent, the free was deferred until now. The owner must not be
+        // notified as it is gone.
+        conn->pl->buf.free(conn->sslSendBuffer);
+        conn->sslSendBuffer = NULL;
+        do_destroy_connection(conn);
+        return;
+    }
+
     conn->pl->buf.free(conn->sslSendBuffer);
 
     if (conn->state == CLOSING) {
