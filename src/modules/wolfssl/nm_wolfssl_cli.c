@@ -313,12 +313,14 @@ static np_error_code create_attach_connection(
     {
         NABTO_LOG_INFO(LOG,  "Failed to set SNI Hostname in the DTLS client");
         do_destroy_connection(*connection);
+        *connection = NULL;
         return NABTO_EC_UNKNOWN;
     }
 
     if (wolfSSL_check_domain_name((*connection)->ssl, sni) != WOLFSSL_SUCCESS ) {
         NABTO_LOG_INFO(LOG,  "Failed to set check domain name in the DTLS client");
         do_destroy_connection(*connection);
+        *connection = NULL;
         return NABTO_EC_UNKNOWN;
     }
 
