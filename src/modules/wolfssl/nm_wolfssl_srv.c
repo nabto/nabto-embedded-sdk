@@ -658,7 +658,10 @@ void nm_wolfssl_srv_connection_send_callback(const np_error_code ec, void* data)
     ctx->pl->buf.free(ctx->sslSendBuffer);
     ctx->sslSendBuffer = NULL;
 
-    if(ctx->state == CLOSING && ctx->destroyed) {
+    if (ctx->destroyed) {
+        // The owner has destroyed the connection while the packet was being
+        // sent, the free was deferred until now. The connection must not be
+        // used further as the owner is gone.
         nm_wolfssl_srv_do_free_connection(ctx);
         return;
     }
