@@ -580,29 +580,32 @@ void start_send_deferred(void* data)
 
     if (ctx->state != DATA) {
         np_completion_event_resolve(&next->ev, NABTO_EC_INVALID_STATE);
-        return;
-    }
-
-    if (next->bufferSize > DTLS_get_data_mtu(ctx->ssl)) {
+    } else if (next->bufferSize > DTLS_get_data_mtu(ctx->ssl)) {
         // The record would be larger than a communication buffer.
         NABTO_LOG_ERROR(LOG, "ssl_write failed (Packet too large)");
         np_completion_event_resolve(&next->ev, NABTO_EC_MALFORMED_PACKET);
-        return;
+    } else {
+        ERR_clear_error();
+        ctx->channelId = next->channelId;
+        int ret = SSL_write(ctx->ssl, next->buffer, (int)next->bufferSize);
+        ctx->channelId = NP_DTLS_DEFAULT_CHANNEL_ID;
+
+        if (ret <= 0) {
+            int err = SSL_get_error(ctx->ssl, ret);
+            NABTO_LOG_ERROR(LOG, "ssl_write failed with: %i", err);
+            nm_openssl_util_log_errors(LOG);
+            np_completion_event_resolve(&next->ev, NABTO_EC_UNKNOWN);
+        } else {
+            ctx->sentCount++;
+            np_completion_event_resolve(&next->ev, NABTO_EC_OK);
+        }
     }
 
-    ERR_clear_error();
-    ctx->channelId = next->channelId;
-    int ret = SSL_write(ctx->ssl, next->buffer, (int)next->bufferSize);
-    ctx->channelId = NP_DTLS_DEFAULT_CHANNEL_ID;
-
-    if (ret <= 0) {
-        int err = SSL_get_error(ctx->ssl, ret);
-        NABTO_LOG_ERROR(LOG, "ssl_write failed with: %i", err);
-        nm_openssl_util_log_errors(LOG);
-        np_completion_event_resolve(&next->ev, NABTO_EC_UNKNOWN);
-    } else {
-        ctx->sentCount++;
-        np_completion_event_resolve(&next->ev, NABTO_EC_OK);
+    // If a datagram is being sent its send callback continues with the queue.
+    // Otherwise nothing else does, so continue here until the queue is empty
+    // and a pending close can complete.
+    if (ctx->sslSendBuffer == NULL) {
+        start_send(ctx);
     }
 }
 
