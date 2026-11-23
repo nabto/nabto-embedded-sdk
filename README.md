@@ -182,6 +182,22 @@ When installing WolfSSL, the following build options can be used:
 ./configure --prefix=/usr --enable-ecc --enable-dsa --enable-dtls --enable-dtls-mtu --enable-aesccm --enable-alpn --enable-debug --enable-certgen --enable-keygen --enable-harden --enable-sni --enable-sp-math-all=small CFLAGS="-DKEEP_PEER_CERT -DWOLFSSL_PUBLIC_MP -DWOLFSSL_PUBLIC_ECC_ADD_DBL"
 ```
 
+### OpenSSL
+
+The Embedded SDK also comes with a module using OpenSSL 3.5 or newer. Switching to the OpenSSL module is done with the CMake option `NABTO_DEVICE_OPENSSL`:
+
+```
+cmake -DNABTO_DEVICE_OPENSSL=ON -DCMAKE_INSTALL_PREFIX=../_install ..
+```
+
+OpenSSL is found with CMake's `find_package(OpenSSL)`. With vcpkg, enable the `openssl` manifest feature, as the `linux_vcpkg_openssl` preset does:
+
+```
+cmake --workflow --preset linux_vcpkg_openssl
+```
+
+The device fingerprint, certificate and private keys are the same as with the MbedTLS module.
+
 ## Using Nabto Embedded SDK as a library
 
 Nabto Embedded SDK can be used as a library for Linux, Windows and Mac if it is

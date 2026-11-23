@@ -45,6 +45,27 @@
             }
         },
         {
+            "name": "linux_vcpkg_openssl",
+            "inherits": ["base", "unix_base", "vcpkg_base"],
+            "cacheVariables": {
+                "CMAKE_BUILD_TYPE": "Release",
+                "DEVICE_BUILD_TESTS": "ON",
+                "NABTO_DEVICE_OPENSSL": "ON",
+                "VCPKG_MANIFEST_FEATURES": "openssl"
+            }
+        },
+        {
+            "name": "linux_vcpkg_openssl_dtls_client_only",
+            "inherits": ["base", "unix_base", "vcpkg_base"],
+            "cacheVariables": {
+                "CMAKE_BUILD_TYPE": "Release",
+                "DEVICE_BUILD_TESTS": "ON",
+                "NABTO_DEVICE_OPENSSL": "ON",
+                "NABTO_DEVICE_DTLS_CLIENT_ONLY": "ON",
+                "VCPKG_MANIFEST_FEATURES": "openssl"
+            }
+        },
+        {
             "name": "_linux_bootlin",
             "hidden": true,
             "inherits": ["base", "unix_base", "vcpkg_base"],
@@ -221,6 +242,16 @@
         {
             "name": "linux_vcpkg_dtls_client_only",
             "configurePreset": "linux_vcpkg_dtls_client_only",
+            "targets": ["install"]
+        },
+        {
+            "name": "linux_vcpkg_openssl",
+            "configurePreset": "linux_vcpkg_openssl",
+            "targets": ["install"]
+        },
+        {
+            "name": "linux_vcpkg_openssl_dtls_client_only",
+            "configurePreset": "linux_vcpkg_openssl_dtls_client_only",
             "targets": ["install"]
         },
         {
@@ -479,6 +510,32 @@
                 {
                     "type": "build",
                     "name": "linux_vcpkg_dtls_client_only"
+                }
+            ]
+        },
+        {
+            "name": "linux_vcpkg_openssl",
+            "steps": [
+                {
+                    "type": "configure",
+                    "name": "linux_vcpkg_openssl"
+                },
+                {
+                    "type": "build",
+                    "name": "linux_vcpkg_openssl"
+                }
+            ]
+        },
+        {
+            "name": "linux_vcpkg_openssl_dtls_client_only",
+            "steps": [
+                {
+                    "type": "configure",
+                    "name": "linux_vcpkg_openssl_dtls_client_only"
+                },
+                {
+                    "type": "build",
+                    "name": "linux_vcpkg_openssl_dtls_client_only"
                 }
             ]
         },

@@ -55,6 +55,16 @@ if(NABTO_DEVICE_WOLFSSL)
   )
 endif()
 
+if(NABTO_DEVICE_OPENSSL)
+  list(APPEND nabto_device_dependencies
+    $<TARGET_OBJECTS:nm_openssl_cli>
+    $<TARGET_OBJECTS:nm_openssl_srv>
+    $<TARGET_OBJECTS:nm_openssl_random>
+    $<TARGET_OBJECTS:nm_openssl_spake2>
+    $<TARGET_OBJECTS:nm_openssl_common>
+  )
+endif()
+
 if (NABTO_DEVICE_BUILD_SHARED_LIBRARY)
   add_library( nabto_device SHARED "${src}" "${ne_api_src}" "${ne_api_future_queue_src}" "${ne_api_test_src}" "${nabto_device_dependencies}")
 else()
@@ -86,6 +96,11 @@ endif()
 
 if (NABTO_DEVICE_WOLFSSL)
   target_link_libraries(nabto_device PRIVATE wolfssl)
+endif()
+
+if (NABTO_DEVICE_OPENSSL)
+  find_package(OpenSSL 3.5 REQUIRED)
+  target_link_libraries(nabto_device PRIVATE OpenSSL::SSL OpenSSL::Crypto)
 endif()
 
 target_link_libraries( nabto_device PRIVATE ${CMAKE_THREAD_LIBS_INIT} )

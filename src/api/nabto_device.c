@@ -35,6 +35,14 @@
 #ifndef NABTO_DEVICE_DTLS_CLIENT_ONLY
 #include <modules/wolfssl/nm_wolfssl_srv.h>
 #endif
+#elif defined(NABTO_DEVICE_OPENSSL)
+#include <modules/openssl/nm_openssl_cli.h>
+#include <modules/openssl/nm_openssl_random.h>
+#include <modules/openssl/nm_openssl_spake2.h>
+#include <modules/openssl/nm_openssl_util.h>
+#ifndef NABTO_DEVICE_DTLS_CLIENT_ONLY
+#include <modules/openssl/nm_openssl_srv.h>
+#endif
 #else
 #error Missing DTLS implementation
 #endif
@@ -109,6 +117,16 @@ NabtoDevice* NABTO_DEVICE_API nabto_device_new(void)
 #endif
 #ifndef NABTO_DEVICE_DTLS_CLIENT_ONLY
     nm_wolfssl_srv_init(pl);
+#endif
+#endif
+#ifdef NABTO_DEVICE_OPENSSL
+    nm_openssl_cli_init(pl);
+    nm_openssl_random_init(pl);
+#if defined(NABTO_DEVICE_PASSWORD_AUTHENTICATION)
+    nm_openssl_spake2_init(pl);
+#endif
+#ifndef NABTO_DEVICE_DTLS_CLIENT_ONLY
+    nm_openssl_srv_init(pl);
 #endif
 #endif
 
@@ -250,6 +268,13 @@ void NABTO_DEVICE_API nabto_device_free(NabtoDevice* device)
 #endif
     nm_wolfssl_cli_deinit(&dev->pl);
 #endif
+#ifdef NABTO_DEVICE_OPENSSL
+    nm_openssl_random_deinit(&dev->pl);
+#if defined(NABTO_DEVICE_PASSWORD_AUTHENTICATION)
+    nm_openssl_spake2_deinit(&dev->pl);
+#endif
+    nm_openssl_cli_deinit(&dev->pl);
+#endif
 
 #if defined(NABTO_DEVICE_FUTURE_QUEUE)
     nabto_device_future_queue_deinit(&dev->futureQueue);
@@ -339,6 +364,8 @@ NabtoDeviceError NABTO_DEVICE_API nabto_device_set_private_key(NabtoDevice* devi
         ec = nm_mbedtls_create_crt_from_private_key(dev->privateKey, &crt);
 #elif defined(NABTO_DEVICE_WOLFSSL)
         ec = nm_wolfssl_create_crt_from_private_key(dev->privateKey, &crt);
+#elif defined(NABTO_DEVICE_OPENSSL)
+        ec = nm_openssl_create_crt_from_private_key(dev->privateKey, &crt);
 #else
 #error Missing implementation to create a crt from a private key.
 #endif
@@ -353,6 +380,8 @@ NabtoDeviceError NABTO_DEVICE_API nabto_device_set_private_key(NabtoDevice* devi
             ec = nm_mbedtls_get_fingerprint_from_private_key(dev->privateKey, dev->fingerprint);
 #elif defined(NABTO_DEVICE_WOLFSSL)
             ec = nm_wolfssl_get_fingerprint_from_private_key(dev->privateKey, dev->fingerprint);
+#elif defined(NABTO_DEVICE_OPENSSL)
+            ec = nm_openssl_get_fingerprint_from_private_key(dev->privateKey, dev->fingerprint);
 #else
 #error Missing implementation to create a crt from a private key.
 #endif

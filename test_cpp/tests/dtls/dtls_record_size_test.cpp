@@ -90,6 +90,10 @@ class DtlsPair {
     size_t serverReceived_ = 0;
     // Largest datagram either side has given to its send callback.
     size_t maxDatagram_ = 0;
+    // Sequence number of the last application packet delivered to the client
+    // and the server respectively.
+    uint64_t clientSeq_ = 0;
+    uint64_t serverSeq_ = 0;
 
  private:
     np_error_code send(size_t size, bool fromClient)
@@ -198,14 +202,16 @@ class DtlsPair {
 
     static void clientData(uint8_t channelId, uint64_t seq, uint8_t* buffer, uint16_t bufferSize, void* data)
     {
-        (void)channelId; (void)seq; (void)buffer;
+        (void)channelId; (void)buffer;
         ((DtlsPair*)data)->clientReceived_ = bufferSize;
+        ((DtlsPair*)data)->clientSeq_ = seq;
     }
 
     static void serverData(uint8_t channelId, uint64_t seq, uint8_t* buffer, uint16_t bufferSize, void* data)
     {
-        (void)channelId; (void)seq; (void)buffer;
+        (void)channelId; (void)buffer;
         ((DtlsPair*)data)->serverReceived_ = bufferSize;
+        ((DtlsPair*)data)->serverSeq_ = seq;
     }
 
     struct np_platform* pl_;
@@ -307,6 +313,30 @@ BOOST_AUTO_TEST_CASE(datagrams_leave_room_for_connection_id_header)
         pair.serverSend(size);
     }
     BOOST_TEST(pair.maxDatagram_ <= bufferSize - NP_DTLS_CONNECTION_ID_HEADER_SIZE);
+}
+
+BOOST_AUTO_TEST_CASE(data_handler_gets_the_record_sequence_number)
+{
+    auto tp = nabto::test::TestPlatform::create();
+    nabto::test::DtlsPair pair(*tp);
+    pair.connect();
+
+    // The sequence number given to the data handler is the 2 byte epoch and
+    // the 6 byte sequence number of the record, as mbedtls reports it. The
+    // application data is in epoch 1 and each record has the next number.
+    BOOST_TEST(pair.clientSend(10) == NABTO_EC_OK);
+    uint64_t first = pair.serverSeq_;
+    BOOST_TEST((first >> 48) == 1u);
+    BOOST_TEST(pair.clientSend(10) == NABTO_EC_OK);
+    BOOST_TEST(pair.serverSeq_ == first + 1);
+    BOOST_TEST(pair.clientSend(10) == NABTO_EC_OK);
+    BOOST_TEST(pair.serverSeq_ == first + 2);
+
+    BOOST_TEST(pair.serverSend(10) == NABTO_EC_OK);
+    first = pair.clientSeq_;
+    BOOST_TEST((first >> 48) == 1u);
+    BOOST_TEST(pair.serverSend(10) == NABTO_EC_OK);
+    BOOST_TEST(pair.clientSeq_ == first + 1);
 }
 
 BOOST_AUTO_TEST_SUITE_END()
