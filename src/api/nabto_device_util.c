@@ -13,6 +13,8 @@
 #include <modules/mbedtls/nm_mbedtls_util.h>
 #elif defined(NABTO_DEVICE_WOLFSSL)
 #include <modules/wolfssl/nm_wolfssl_util.h>
+#elif defined(NABTO_DEVICE_OPENSSL)
+#include <modules/openssl/nm_openssl_util.h>
 #else
 #error Missing DTLS implementation
 #endif
@@ -33,6 +35,8 @@ NabtoDeviceError NABTO_DEVICE_API nabto_device_create_private_key(NabtoDevice* d
     ec = nm_mbedtls_util_create_private_key(privateKey);
 #elif defined(NABTO_DEVICE_WOLFSSL)
     ec = nm_wolfssl_util_create_private_key(privateKey);
+#elif defined(NABTO_DEVICE_OPENSSL)
+    ec = nm_openssl_util_create_private_key(privateKey);
 #else
     ec = NABTO_EC_NOT_IMPLEMENTED;
 #endif

@@ -26,6 +26,15 @@
 #include <modules/wolfssl/nm_wolfssl_srv.h>
 #endif
 #endif
+#ifdef NABTO_DEVICE_OPENSSL
+#include <modules/openssl/nm_openssl_util.h>
+#include <modules/openssl/nm_openssl_cli.h>
+#include <modules/openssl/nm_openssl_random.h>
+#include <modules/openssl/nm_openssl_spake2.h>
+#ifndef NABTO_DEVICE_DTLS_CLIENT_ONLY
+#include <modules/openssl/nm_openssl_srv.h>
+#endif
+#endif
 
 #include <modules/communication_buffer/nm_communication_buffer.h>
 
@@ -101,6 +110,26 @@ NabtoDevice* NABTO_DEVICE_API nabto_device_test_new(void)
         return NULL;
     }
 #endif
+#elif defined(NABTO_DEVICE_OPENSSL)
+    ec = nm_openssl_cli_init(pl);
+    if (ec != NABTO_EC_OK) {
+        return NULL;
+    }
+    if (!nm_openssl_random_init(pl)) {
+        return NULL;
+    }
+#if defined(NABTO_DEVICE_PASSWORD_AUTHENTICATION)
+    ec = nm_openssl_spake2_init(pl);
+    if (ec != NABTO_EC_OK) {
+        return NULL;
+    }
+#endif
+#ifndef NABTO_DEVICE_DTLS_CLIENT_ONLY
+    ec = nm_openssl_srv_init(pl);
+    if (ec != NABTO_EC_OK) {
+        return NULL;
+    }
+#endif
 #else
 #error Missing DTLS implementation
 #endif
@@ -156,6 +185,13 @@ void NABTO_DEVICE_API nabto_device_test_free(NabtoDevice* device)
 #if defined(NABTO_DEVICE_PASSWORD_AUTHENTICATION)
     nm_wolfssl_spake2_deinit(&dev->pl);
 #endif
+#endif
+#ifdef NABTO_DEVICE_OPENSSL
+    nm_openssl_random_deinit(&dev->pl);
+#if defined(NABTO_DEVICE_PASSWORD_AUTHENTICATION)
+    nm_openssl_spake2_deinit(&dev->pl);
+#endif
+    nm_openssl_cli_deinit(&dev->pl);
 #endif
 
 #if defined(NABTO_DEVICE_FUTURE_QUEUE)

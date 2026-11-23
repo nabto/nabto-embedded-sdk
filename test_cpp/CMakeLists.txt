@@ -65,8 +65,10 @@ set(test_src
   tests/spake2/spake2_test.cpp
   tests/spake2/spake2_mbedtls_test.cpp
   tests/spake2/spake2_wolfssl_test.cpp
+  tests/spake2/spake2_openssl_test.cpp
   tests/dtls/dtls_record_size_test.cpp
   tests/dtls/dtls_wolfssl_mtu_test.cpp
+  tests/dtls/dtls_openssl_test.cpp
   ../src/api_test/nabto_device_test_logging.c
   )
 
@@ -112,6 +114,11 @@ if (HAVE_SELECT_UNIX)
 endif()
 
 target_link_libraries(embedded_unit_test nm_libevent nlohmann_json::nlohmann_json)
+
+if (NABTO_DEVICE_OPENSSL)
+  find_package(OpenSSL 3.5 REQUIRED)
+  target_link_libraries(embedded_unit_test OpenSSL::SSL OpenSSL::Crypto)
+endif()
 
 target_include_directories(embedded_unit_test PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
 target_include_directories(embedded_unit_test PRIVATE platform)

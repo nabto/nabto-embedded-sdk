@@ -272,6 +272,7 @@ set(test_runner_src
 add_subdirectory(src/modules/communication_buffer)
 
 option(NABTO_DEVICE_WOLFSSL "Use wolfssl as DTLS module instead of Mbedtls" OFF)
+option(NABTO_DEVICE_OPENSSL "Use OpenSSL (3.5 or newer) as DTLS module instead of Mbedtls" OFF)
 option(NABTO_DEVICE_DTLS_LOG "Enable logging for 3rd party DTLS module" OFF)
 option(NABTO_DEVICE_DTLS_CLIENT_ONLY "Make device be dtls client for client connections" OFF)
 
@@ -284,9 +285,16 @@ if (NABTO_DEVICE_DTLS_CLIENT_ONLY)
   add_definitions(-DNABTO_DEVICE_DTLS_CLIENT_ONLY)
 endif()
 
+if (NABTO_DEVICE_WOLFSSL AND NABTO_DEVICE_OPENSSL)
+    message(FATAL_ERROR "NABTO_DEVICE_WOLFSSL and NABTO_DEVICE_OPENSSL cannot both be enabled")
+endif()
+
 if (NABTO_DEVICE_WOLFSSL)
     add_definitions(-DNABTO_DEVICE_WOLFSSL)
     add_subdirectory(src/modules/wolfssl)
+elseif (NABTO_DEVICE_OPENSSL)
+    add_definitions(-DNABTO_DEVICE_OPENSSL)
+    add_subdirectory(src/modules/openssl)
 else()
     set(NABTO_DEVICE_MBEDTLS TRUE)
     add_subdirectory(src/modules/mbedtls)
