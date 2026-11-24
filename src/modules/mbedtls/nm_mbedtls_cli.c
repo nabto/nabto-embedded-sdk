@@ -419,7 +419,7 @@ np_error_code get_certificate_expiration(struct np_dtls_cli_connection* conn, ui
 
     time_t t = timegm(&tm);
     if (t < 0) {
-        NABTO_LOG_ERROR(LOG, "timegm returned %ul", t);
+        NABTO_LOG_ERROR(LOG, "timegm returned %ld", (long)t);
         return NABTO_EC_UNKNOWN;
     }
 

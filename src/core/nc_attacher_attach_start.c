@@ -284,7 +284,7 @@ enum nc_attacher_status handle_redirect(struct nc_attach_context* ctx,
         if (hostLength < 1 || hostLength > 256) {
             NABTO_LOG_ERROR(LOG,
                             "Redirect response had invalid hostname length: %u",
-                            hostLength);
+                            (unsigned int)hostLength);
             return NC_ATTACHER_STATUS_ERROR;
         }
         if (ctx->dns != NULL) {

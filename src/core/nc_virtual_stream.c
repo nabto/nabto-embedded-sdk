@@ -118,7 +118,7 @@ void nc_virtual_stream_do_write(struct nc_stream_context* stream)
         size_t written = stream->virt.writeBufferLength > stream->readBufferLength ? stream->readBufferLength : stream->virt.writeBufferLength;
         memcpy(stream->readBuffer, stream->virt.writeBuffer, written);
         *stream->readLength += written;
-        NABTO_LOG_TRACE(LOG, "Virtually written %u Bytes to read buffer", written);
+        NABTO_LOG_TRACE(LOG, "Virtually written %u Bytes to read buffer", (unsigned int)written);
 
         if (stream->virt.writeBufferLength > stream->readBufferLength) {
             // store writeEv and resolve read
