@@ -17,6 +17,12 @@
 #ifndef NABTO_DEVICE_DTLS_CLIENT_ONLY
 #include <modules/wolfssl/nm_wolfssl_srv.h>
 #endif
+#elif defined(NABTO_DEVICE_OPENSSL)
+#include <modules/openssl/nm_openssl_cli.h>
+#include <modules/openssl/nm_openssl_spake2.h>
+#ifndef NABTO_DEVICE_DTLS_CLIENT_ONLY
+#include <modules/openssl/nm_openssl_srv.h>
+#endif
 #else
 #error Missing DTLS implementation
 #endif
@@ -94,6 +100,14 @@ class TestPlatformLibevent : public TestPlatform {
 #endif
 #endif
 
+#ifdef NABTO_DEVICE_OPENSSL
+        nm_openssl_cli_init(&pl_);
+        nm_openssl_spake2_init(&pl_);
+#ifndef NABTO_DEVICE_DTLS_CLIENT_ONLY
+        nm_openssl_srv_init(&pl_);
+#endif
+#endif
+
         thread_event_queue_run(&eventQueue_);
 
         libeventThread_ =
@@ -132,6 +146,14 @@ class TestPlatformLibevent : public TestPlatform {
 #endif
 #endif
 
+#ifdef NABTO_DEVICE_OPENSSL
+        nm_openssl_cli_init(&pl_);
+        nm_openssl_spake2_init(&pl_);
+#ifndef NABTO_DEVICE_DTLS_CLIENT_ONLY
+        nm_openssl_srv_init(&pl_);
+#endif
+#endif
+
         thread_event_queue_run(&eventQueue_);
 
         libeventThread_ =
@@ -146,6 +168,9 @@ class TestPlatformLibevent : public TestPlatform {
 #endif
 #ifdef NABTO_DEVICE_WOLFSSL
         nm_wolfssl_cli_deinit(&pl_);
+#endif
+#ifdef NABTO_DEVICE_OPENSSL
+        nm_openssl_cli_deinit(&pl_);
 #endif
         nm_libevent_dns_deinit(&libeventDns_);
         nm_libevent_deinit(&libeventContext_);

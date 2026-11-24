@@ -35,6 +35,14 @@ if (NABTO_DEVICE_WOLFSSL)
     nm_wolfssl_random
     nm_wolfssl_spake2
   )
+elseif (NABTO_DEVICE_OPENSSL)
+  target_link_libraries(nabto_device_select_unix
+    nm_openssl_cli
+    nm_openssl_srv
+    nm_openssl_random
+    nm_openssl_spake2
+    nm_openssl_common
+  )
 else()
   target_link_libraries(nabto_device_select_unix
     nm_mbedtls_cli

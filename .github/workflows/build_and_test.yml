@@ -28,6 +28,10 @@ jobs:
             name: "linux_vcpkg"
           - os: ubuntu-24.04
             name: "linux_vcpkg_dtls_client_only"
+          - os: ubuntu-24.04
+            name: "linux_vcpkg_openssl"
+          - os: ubuntu-24.04
+            name: "linux_vcpkg_openssl_dtls_client_only"
 
           - os: windows-2022
             name: "windows_vcpkg_static"
