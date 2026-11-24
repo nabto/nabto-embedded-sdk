@@ -9,12 +9,16 @@
 #include <platform/np_platform.h>
 
 #include <future>
+#include <string>
+#include <vector>
 
 namespace {
 
 // DNS mock which captures the resolve requests such that the test controls
 // when and how they are resolved.
 struct MockDns {
+    const char* v4Host = NULL;
+    const char* v6Host = NULL;
     struct np_ip_address* v4Ips = NULL;
     size_t* v4IpsResolved = NULL;
     struct np_completion_event* v4CompletionEvent = NULL;
@@ -23,8 +27,9 @@ struct MockDns {
 
 void mock_async_resolve_v4(struct np_dns* obj, const char* host, struct np_ip_address* ips, size_t ipsSize, size_t* ipsResolved, struct np_completion_event* completionEvent)
 {
-    (void)host; (void)ipsSize;
+    (void)ipsSize;
     MockDns* mock = (MockDns*)obj->data;
+    mock->v4Host = host;
     mock->v4Ips = ips;
     mock->v4IpsResolved = ipsResolved;
     mock->v4CompletionEvent = completionEvent;
@@ -32,8 +37,9 @@ void mock_async_resolve_v4(struct np_dns* obj, const char* host, struct np_ip_ad
 
 void mock_async_resolve_v6(struct np_dns* obj, const char* host, struct np_ip_address* ips, size_t ipsSize, size_t* ipsResolved, struct np_completion_event* completionEvent)
 {
-    (void)host; (void)ips; (void)ipsSize; (void)ipsResolved;
+    (void)ips; (void)ipsSize; (void)ipsResolved;
     MockDns* mock = (MockDns*)obj->data;
+    mock->v6Host = host;
     mock->v6CompletionEvent = completionEvent;
 }
 
@@ -143,6 +149,46 @@ BOOST_AUTO_TEST_CASE(host_copy_allocation_failure_fails_the_resolve)
         BOOST_TEST(waiter.wait() == NABTO_EC_OUT_OF_MEMORY);
         // No resolve was started.
         BOOST_TEST(mock.v4CompletionEvent == (struct np_completion_event*)NULL);
+        BOOST_TEST(ctx.host == (char*)NULL);
+    }
+    nc_dns_multi_resolver_deinit(&ctx);
+}
+
+// DNS implementations may keep the host pointer until the resolve completes,
+// e.g. the unix resolver uses it later on its own thread. The caller's string
+// may be freed as soon as the resolve has been started, so the resolver must
+// hand its own copy to the DNS implementation.
+BOOST_AUTO_TEST_CASE(host_outlives_the_callers_string)
+{
+    auto tp = std::make_unique<nabto::test::TestPlatformLibevent>();
+    struct np_platform* pl = tp->getPlatform();
+
+    MockDns mock;
+    pl->dns.mptr = &mockDnsModule;
+    pl->dns.data = &mock;
+
+    struct nc_dns_multi_resolver_context ctx;
+    BOOST_TEST(nc_dns_multi_resolver_init(pl, &ctx) == NABTO_EC_OK);
+    {
+        CompletionWaiter waiter(pl);
+        struct np_ip_address ips[NC_DNS_MULTI_RESOLVER_MAX_IPS];
+        size_t ipsResolved = 0;
+
+        std::vector<char> host = { 'e', 'x', 'a', 'm', 'p', 'l', 'e', '.', 'c', 'o', 'm', 0 };
+        nc_dns_multi_resolver_resolve(&ctx, host.data(), ips, NC_DNS_MULTI_RESOLVER_MAX_IPS, &ipsResolved, &waiter.completionEvent_);
+        BOOST_TEST((const void*)mock.v4Host != (const void*)host.data());
+        BOOST_TEST((const void*)mock.v6Host != (const void*)host.data());
+        // Free the caller's string while the resolve is in progress.
+        host.clear();
+        host.shrink_to_fit();
+        BOOST_TEST(std::string(mock.v4Host) == "example.com");
+        BOOST_TEST(std::string(mock.v6Host) == "example.com");
+
+        // The host has to stay valid until both resolves have completed.
+        np_completion_event_resolve(mock.v4CompletionEvent, NABTO_EC_UNKNOWN);
+        BOOST_TEST(std::string(mock.v6Host) == "example.com");
+        np_completion_event_resolve(mock.v6CompletionEvent, NABTO_EC_UNKNOWN);
+        BOOST_TEST(waiter.wait() == NABTO_EC_UNKNOWN);
         BOOST_TEST(ctx.host == (char*)NULL);
     }
     nc_dns_multi_resolver_deinit(&ctx);

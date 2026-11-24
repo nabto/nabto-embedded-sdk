@@ -65,8 +65,8 @@ void nc_dns_multi_resolver_resolve(struct nc_dns_multi_resolver_context* ctx, co
     ctx->v4Ec = NABTO_EC_OPERATION_IN_PROGRESS;
     ctx->v6Ec = NABTO_EC_OPERATION_IN_PROGRESS;
     ctx->host = hostCopy;
-    np_dns_async_resolve_v4(&pl->dns, host, ctx->v4Ips, NC_DNS_MULTI_RESOLVER_MAX_IPS, &ctx->v4IpsSize, &ctx->v4CompletionEvent);
-    np_dns_async_resolve_v6(&pl->dns, host, ctx->v6Ips, NC_DNS_MULTI_RESOLVER_MAX_IPS, &ctx->v6IpsSize, &ctx->v6CompletionEvent);
+    np_dns_async_resolve_v4(&pl->dns, ctx->host, ctx->v4Ips, NC_DNS_MULTI_RESOLVER_MAX_IPS, &ctx->v4IpsSize, &ctx->v4CompletionEvent);
+    np_dns_async_resolve_v6(&pl->dns, ctx->host, ctx->v6Ips, NC_DNS_MULTI_RESOLVER_MAX_IPS, &ctx->v6IpsSize, &ctx->v6CompletionEvent);
 }
 
 void dns_resolved_callback_v4(const np_error_code ec, void* data)
