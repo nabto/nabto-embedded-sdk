@@ -66,6 +66,48 @@ BOOST_AUTO_TEST_CASE(calculate_key, * boost::unit_test::timeout(120))
     nc_spake2_password_request_free(req);
 }
 
+BOOST_AUTO_TEST_CASE(calculate_key_without_password, * boost::unit_test::timeout(120))
+{
+    auto tp = nabto::test::TestPlatform::create();
+    np_platform* pl = tp->getPlatform();
+
+    uint8_t clientFp[32];
+    uint8_t deviceFp[32];
+    memset(clientFp, 0xcf, sizeof(clientFp));
+    memset(deviceFp, 0x73, sizeof(deviceFp));
+
+    // Without a password, e.g. for an unknown username, the device uses a
+    // random password. A client which guesses w = 0 must not be able to
+    // calculate the key.
+    nabto::test::Spake2Client cli("", clientFp, deviceFp);
+    BOOST_REQUIRE(mbedtls_mpi_lset(&cli.w_, 0) == 0);
+
+    for (int i = 0; i < 4; i++) {
+        auto req = nc_spake2_password_request_new();
+        std::vector<uint8_t> T;
+        BOOST_TEST(cli.calculateT(T) == 0);
+
+        memcpy(req->clientFingerprint, clientFp, 32);
+        memcpy(req->deviceFingerprint, deviceFp, 32);
+        req->T = (uint8_t*)calloc(1, T.size());
+        memcpy(req->T, T.data(), T.size());
+        req->Tlen = T.size();
+
+        uint8_t S[256];
+        size_t SLen = sizeof(S);
+        uint8_t key[32];
+
+        BOOST_TEST(pl->spake2.calculate_key(req, NULL, S, &SLen, key) == NABTO_EC_OK);
+        BOOST_TEST(SLen == (size_t)65);
+        BOOST_TEST(cli.calculateK(S, SLen) == 0);
+        BOOST_TEST(cli.calculateKey());
+
+        BOOST_TEST(memcmp(key, cli.key_.data(), cli.key_.size()) != 0);
+
+        nc_spake2_password_request_free(req);
+    }
+}
+
 BOOST_AUTO_TEST_CASE(key_confirmation, * boost::unit_test::timeout(120))
 {
     auto tp = nabto::test::TestPlatform::create();
