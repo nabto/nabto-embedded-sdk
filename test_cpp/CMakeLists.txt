@@ -68,6 +68,7 @@ set(test_src
   tests/spake2/spake2_openssl_test.cpp
   tests/dtls/dtls_record_size_test.cpp
   tests/dtls/dtls_wolfssl_mtu_test.cpp
+  tests/dtls/dtls_wolfssl_cli_test.cpp
   tests/dtls/dtls_openssl_test.cpp
   ../src/api_test/nabto_device_test_logging.c
   )
