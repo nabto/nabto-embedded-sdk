@@ -53,17 +53,17 @@ static np_error_code instance_init(struct nm_mdns_server_instance* instance, str
     if (ec != NABTO_EC_OK) {
         return ec;
     }
-    ec = np_completion_event_init(&instance->server->eq, &instance->openedCompletionEvent, nm_mdns_socket_opened, instance);
+    ec = np_completion_event_init(&instance->server->eq, &instance->openedCompletionEvent, nm_mdns_socket_opened, instance, NULL);
     if (ec != NABTO_EC_OK) {
         return ec;
     }
 
-    ec = np_completion_event_init(&instance->server->eq, &instance->recvWaitCompletionEvent, nm_mdns_packet_recv_wait_completed, instance);
+    ec = np_completion_event_init(&instance->server->eq, &instance->recvWaitCompletionEvent, nm_mdns_packet_recv_wait_completed, instance, NULL);
     if (ec != NABTO_EC_OK) {
         return ec;
     }
 
-    ec = np_completion_event_init(&instance->server->eq, &instance->sendCompletionEvent, nm_mdns_packet_sent, instance);
+    ec = np_completion_event_init(&instance->server->eq, &instance->sendCompletionEvent, nm_mdns_packet_sent, instance, NULL);
     if (ec != NABTO_EC_OK) {
         return ec;
     }
@@ -101,7 +101,7 @@ np_error_code nm_mdns_server_init(struct nm_mdns_server* server, struct np_event
     server->mdnsUdpBind = *mdnsUdpBind;
     server->localIp = *localIp;
 
-    np_error_code ec = np_completion_event_init(eq, &server->instanceCloseCompletionEvent, NULL, NULL);
+    np_error_code ec = np_completion_event_init(eq, &server->instanceCloseCompletionEvent, NULL, NULL, NULL);
     if (ec != NABTO_EC_OK) {
         return ec;
     }
@@ -168,6 +168,7 @@ void nm_mnds_server_close_instance_udp_sent_callback(const np_error_code ec, voi
 
 void nm_mdns_server_close_instance(struct nm_mdns_server_instance* instance, struct np_completion_event* completionEvent)
 {
+    np_completion_event_arm(completionEvent);
     if (instance->sendBuffer != NULL) {
         NABTO_LOG_INFO(LOG, "Tried to send mDNS goodbye but is already sending");
         np_completion_event_resolve(completionEvent, NABTO_EC_OPERATION_IN_PROGRESS);
@@ -390,10 +391,12 @@ void nm_mdns_packet_sent(const np_error_code ec, void* userData)
 
 void nm_mdns_udp_bind_async_ipv4(struct nm_mdns_udp_bind* udp, struct np_udp_socket* sock, struct np_completion_event* completionEvent)
 {
+    np_completion_event_arm(completionEvent);
     udp->mptr->async_bind_mdns_ipv4(sock, completionEvent);
 }
 
 void nm_mdns_udp_bind_async_ipv6(struct nm_mdns_udp_bind* udp, struct np_udp_socket* sock, struct np_completion_event* completionEvent)
 {
+    np_completion_event_arm(completionEvent);
     udp->mptr->async_bind_mdns_ipv6(sock, completionEvent);
 }

@@ -141,15 +141,15 @@ np_error_code nc_attacher_init(struct nc_attach_context* ctx, struct np_platform
         return ec;
     }
 
-    ec = np_completion_event_init(eq, &ctx->senderCompletionEvent, NULL, NULL);
+    ec = np_completion_event_init(eq, &ctx->senderCompletionEvent, NULL, NULL, NULL);
     if (ec != NABTO_EC_OK) {
         return ec;
     }
-    ec = np_completion_event_init(eq, &ctx->resolveCompletionEvent, &dns_resolved_callback, ctx);
+    ec = np_completion_event_init(eq, &ctx->resolveCompletionEvent, &dns_resolved_callback, ctx, NULL);
     if (ec != NABTO_EC_OK) {
         return ec;
     }
-    ec = np_completion_event_init(eq, &ctx->keepAliveSendCtx.ev, &nc_keep_alive_packet_sent, &ctx->keepAlive);
+    ec = np_completion_event_init(eq, &ctx->keepAliveSendCtx.ev, &nc_keep_alive_packet_sent, &ctx->keepAlive, NULL);
     if (ec != NABTO_EC_OK) {
         return ec;
     }
@@ -799,6 +799,7 @@ void start_send_initial_packet(struct nc_attach_context* ctx,
                                struct np_completion_event* cb)
 {
     // send the packet to all the endpoints
+    np_completion_event_arm(cb);
     ctx->initialPacket.cb = cb;
     ctx->initialPacket.buffer = buffer;
     ctx->initialPacket.bufferSize = bufferSize;

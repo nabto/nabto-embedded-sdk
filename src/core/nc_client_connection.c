@@ -60,12 +60,12 @@ np_error_code nc_client_connection_init(struct np_platform* pl, struct nc_client
         return ec;
     }
 
-    ec = np_completion_event_init(&pl->eq, &conn->sendCompletionEvent, &nc_client_connection_send_to_udp_cb, conn);
+    ec = np_completion_event_init(&pl->eq, &conn->sendCompletionEvent, &nc_client_connection_send_to_udp_cb, conn, NULL);
     if (ec != NABTO_EC_OK) {
         return ec;
     }
 
-    ec = np_completion_event_init(&pl->eq, &conn->keepAliveSendCtx.ev, &nc_keep_alive_packet_sent, &conn->keepAlive);
+    ec = np_completion_event_init(&pl->eq, &conn->keepAliveSendCtx.ev, &nc_keep_alive_packet_sent, &conn->keepAlive, NULL);
     if (ec != NABTO_EC_OK) {
         return ec;
     }
@@ -349,6 +349,7 @@ np_error_code nc_client_connection_async_send_to_udp(uint8_t channel,
     if (conn->sentCb != NULL) {
         return NABTO_EC_OPERATION_IN_PROGRESS;
     }
+    np_completion_event_arm(cb);
     conn->sentCb = cb;
 
     uint8_t* start = buffer;

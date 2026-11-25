@@ -20,7 +20,7 @@ np_error_code nc_client_connection_dispatch_init(struct nc_client_connection_dis
     ctx->connections = &dev->connections;
     ctx->closing = false;
     ctx->sendingInternalError = false;
-    np_error_code ec = np_completion_event_init(&pl->eq, &ctx->sendCompletionEvent, &nc_client_connection_dispatch_send_internal_error_cb, ctx);
+    np_error_code ec = np_completion_event_init(&pl->eq, &ctx->sendCompletionEvent, &nc_client_connection_dispatch_send_internal_error_cb, ctx, NULL);
     if (ec != NABTO_EC_OK) {
         return ec;
     }

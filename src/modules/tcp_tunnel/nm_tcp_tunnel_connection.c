@@ -81,32 +81,32 @@ np_error_code nm_tcp_tunnel_connection_init(struct nm_tcp_tunnel_service* servic
     connection->port = service->port;
 
     struct np_event_queue* eq = &pl->eq;
-    ec = np_completion_event_init(eq, &connection->connectCompletionEvent, &connect_callback, connection);
+    ec = np_completion_event_init(eq, &connection->connectCompletionEvent, &connect_callback, connection, NULL);
     if (ec != NABTO_EC_OK) {
         return ec;
     }
 
-    ec = np_completion_event_init(eq, &connection->readCompletionEvent, &tcp_readen, connection);
+    ec = np_completion_event_init(eq, &connection->readCompletionEvent, &tcp_readen, connection, NULL);
     if (ec != NABTO_EC_OK) {
         return ec;
     }
 
-    ec = np_completion_event_init(eq, &connection->writeCompletionEvent, &tcp_written, connection);
+    ec = np_completion_event_init(eq, &connection->writeCompletionEvent, &tcp_written, connection, NULL);
     if (ec != NABTO_EC_OK) {
         return ec;
     }
 
-    ec = np_completion_event_init(eq, &connection->streamReadCompletionEvent, &stream_readen, connection);
+    ec = np_completion_event_init(eq, &connection->streamReadCompletionEvent, &stream_readen, connection, NULL);
     if (ec != NABTO_EC_OK) {
         return ec;
     }
 
-    ec = np_completion_event_init(eq, &connection->streamWriteCompletionEvent, &stream_written, connection);
+    ec = np_completion_event_init(eq, &connection->streamWriteCompletionEvent, &stream_written, connection, NULL);
     if (ec != NABTO_EC_OK) {
         return ec;
     }
 
-    ec = np_completion_event_init(eq, &connection->streamCloseCompletionEvent, &stream_closed, connection);
+    ec = np_completion_event_init(eq, &connection->streamCloseCompletionEvent, &stream_closed, connection, NULL);
     if (ec != NABTO_EC_OK) {
         return ec;
     }

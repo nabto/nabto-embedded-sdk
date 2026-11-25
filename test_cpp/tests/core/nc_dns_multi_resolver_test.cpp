@@ -52,7 +52,7 @@ class CompletionWaiter {
  public:
     CompletionWaiter(struct np_platform* pl)
     {
-        np_completion_event_init(&pl->eq, &completionEvent_, &CompletionWaiter::callback, this);
+        np_completion_event_init(&pl->eq, &completionEvent_, &CompletionWaiter::callback, this, NULL);
     }
     ~CompletionWaiter()
     {

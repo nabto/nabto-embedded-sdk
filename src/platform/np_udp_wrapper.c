@@ -1,5 +1,7 @@
 #include "np_udp_wrapper.h"
 
+#include <platform/np_completion_event.h>
+
 // Wrapper functions for the functionality. See above struct for documentation for the functions.
 np_error_code np_udp_create(struct np_udp* udp, struct np_udp_socket** sock)
 {
@@ -18,6 +20,7 @@ void np_udp_abort(struct np_udp* udp, struct np_udp_socket* sock)
 
 void np_udp_async_bind_port(struct np_udp* udp, struct np_udp_socket* sock, uint16_t port, struct np_completion_event* completionEvent)
 {
+    np_completion_event_arm(completionEvent);
     udp->mptr->async_bind_port(sock, port, completionEvent);
 }
 
@@ -26,11 +29,13 @@ void np_udp_async_send_to(struct np_udp* udp,
                                  uint8_t* buffer, uint16_t bufferSize,
                                  struct np_completion_event* completionEvent)
 {
+    np_completion_event_arm(completionEvent);
     udp->mptr->async_send_to(sock, ep, buffer, bufferSize, completionEvent);
 }
 
 void np_udp_async_recv_wait(struct np_udp* udp, struct np_udp_socket* sock, struct np_completion_event* completionEvent)
 {
+    np_completion_event_arm(completionEvent);
     udp->mptr->async_recv_wait(sock, completionEvent);
 }
 

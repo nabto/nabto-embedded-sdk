@@ -275,6 +275,11 @@ option(NABTO_DEVICE_WOLFSSL "Use wolfssl as DTLS module instead of Mbedtls" OFF)
 option(NABTO_DEVICE_OPENSSL "Use OpenSSL (3.5 or newer) as DTLS module instead of Mbedtls" OFF)
 option(NABTO_DEVICE_DTLS_LOG "Enable logging for 3rd party DTLS module" OFF)
 option(NABTO_DEVICE_DTLS_CLIENT_ONLY "Make device be dtls client for client connections" OFF)
+option(NABTO_DEVICE_LIFETIME_CHECKS "Abort when a lifetime contract violation is detected, e.g. a completion event resolved twice" OFF)
+
+if (NABTO_DEVICE_LIFETIME_CHECKS)
+  add_definitions(-DNABTO_DEVICE_LIFETIME_CHECKS)
+endif()
 
 
 if (NABTO_DEVICE_DTLS_LOG)

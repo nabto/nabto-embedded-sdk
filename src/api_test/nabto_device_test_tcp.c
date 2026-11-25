@@ -78,7 +78,7 @@ nabto_device_test_tcp(NabtoDevice* device, const char* ip, uint16_t port, NabtoD
     t->tcp = dev->pl.tcp;
     t->eq = dev->pl.eq;
 
-    np_error_code ec = np_completion_event_init(&dev->pl.eq, &t->completionEvent, NULL, NULL);
+    np_error_code ec = np_completion_event_init(&dev->pl.eq, &t->completionEvent, NULL, NULL, NULL);
     if (ec != NABTO_EC_OK) {
         resolve_and_free_test(t, ec);
         return;

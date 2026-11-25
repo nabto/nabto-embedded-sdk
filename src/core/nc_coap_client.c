@@ -38,7 +38,7 @@ np_error_code nc_coap_client_init(struct np_platform* pl, struct nc_coap_client_
     }
 
     ec = np_completion_event_init(&ctx->pl->eq, &ctx->sendCtx.ev,
-                                  &nc_coap_client_send_to_callback, ctx);
+                                  &nc_coap_client_send_to_callback, ctx, NULL);
     if (ec != NABTO_EC_OK)
     {
         return ec;

@@ -26,7 +26,7 @@ class UdpEchoClientTest {
     UdpEchoClientTest(TestPlatform& tp)
         : pl_(tp.getPlatform()), eq_(pl_->eq)
     {
-        np_completion_event_init(&eq_, &completionEvent_, NULL, NULL);
+        np_completion_event_init(&eq_, &completionEvent_, NULL, NULL, NULL);
     }
 
     ~UdpEchoClientTest()
@@ -123,7 +123,7 @@ class UdpBindFailureTest {
     UdpBindFailureTest(TestPlatform& tp)
         : pl_(tp.getPlatform())
     {
-        np_completion_event_init(&pl_->eq, &completionEvent_, &UdpBindFailureTest::bound, this);
+        np_completion_event_init(&pl_->eq, &completionEvent_, &UdpBindFailureTest::bound, this, NULL);
     }
 
     ~UdpBindFailureTest()

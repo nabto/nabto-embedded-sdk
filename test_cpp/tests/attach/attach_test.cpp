@@ -25,7 +25,7 @@ class AttachTest {
         : tp_(tp), hostname_(hostname), serverPort_(port), rootCerts_(rcs)
     {
         struct np_platform* pl = tp_.getPlatform();
-        np_completion_event_init(&pl->eq, &boundCompletionEvent, &AttachTest::udpDispatchCb, this);
+        np_completion_event_init(&pl->eq, &boundCompletionEvent, &AttachTest::udpDispatchCb, this, NULL);
         memset(&device_, 0, sizeof(device_));
     }
 

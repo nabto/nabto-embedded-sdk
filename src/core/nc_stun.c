@@ -73,11 +73,11 @@ np_error_code nc_stun_init(struct nc_stun_context* ctx,
     if (ec != NABTO_EC_OK) {
         return ec;
     }
-    ec = np_completion_event_init(eq, &ctx->dnsCompletionEvent, &nc_stun_dns_cb, ctx);
+    ec = np_completion_event_init(eq, &ctx->dnsCompletionEvent, &nc_stun_dns_cb, ctx, NULL);
     if (ec != NABTO_EC_OK) {
         return ec;
     }
-    ec = np_completion_event_init(eq, &ctx->sendCompletionEvent, &nc_stun_send_to_cb, ctx);
+    ec = np_completion_event_init(eq, &ctx->sendCompletionEvent, &nc_stun_send_to_cb, ctx, NULL);
     if (ec != NABTO_EC_OK) {
         return ec;
     }

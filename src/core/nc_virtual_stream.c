@@ -11,6 +11,7 @@
 
 np_error_code nc_virtual_stream_init(struct np_platform* pl, struct nc_stream_context* ctx, struct nc_connection* conn, struct nc_stream_manager_context* streamManager, uint32_t port, struct np_completion_event* openedEv)
 {
+    np_completion_event_arm(openedEv);
     // Start refCount at 1 to ensure stream is not freed until user freed the virtual stream
     ctx->refCount = 1;
     ctx->stopped = false;
@@ -157,6 +158,7 @@ void nc_virtual_stream_server_read(struct nc_stream_context* stream)
 
 void nc_virtual_stream_client_async_write(struct nc_stream_context* stream, const void* buffer, size_t bufferLength, struct np_completion_event* writeEv)
 {
+    np_completion_event_arm(writeEv);
     NABTO_LOG_TRACE(LOG, "nc_virtual_stream_client_async_write");
     if (stream->stopped || stream->virt.stopped) {
         np_completion_event_resolve(writeEv, NABTO_EC_STOPPED);
@@ -242,6 +244,7 @@ void nc_virtual_stream_server_write(struct nc_stream_context* stream)
 
 void nc_virtual_stream_client_async_read_all(struct nc_stream_context* stream, void* buffer, size_t bufferLength, size_t* readLength, struct np_completion_event* readEv)
 {
+    np_completion_event_arm(readEv);
     NABTO_LOG_TRACE(LOG, "nc_virtual_stream_client_async_read_all");
     if (stream->virt.readAllEv != NULL || stream->virt.readSomeEv != NULL) {
         np_completion_event_resolve(readEv, NABTO_EC_OPERATION_IN_PROGRESS);
@@ -262,6 +265,7 @@ void nc_virtual_stream_client_async_read_all(struct nc_stream_context* stream, v
 
 void nc_virtual_stream_client_async_read_some(struct nc_stream_context* stream, void* buffer, size_t bufferLength, size_t* readLength, struct np_completion_event* readEv)
 {
+    np_completion_event_arm(readEv);
     NABTO_LOG_TRACE(LOG, "nc_virtual_stream_client_async_read_some");
     if (stream->virt.readAllEv != NULL || stream->virt.readSomeEv != NULL) {
         np_completion_event_resolve(readEv, NABTO_EC_OPERATION_IN_PROGRESS);
@@ -282,6 +286,7 @@ void nc_virtual_stream_client_async_read_some(struct nc_stream_context* stream, 
 
 void nc_virtual_stream_client_async_close(struct nc_stream_context* stream, struct np_completion_event* closeEv)
 {
+    np_completion_event_arm(closeEv);
     stream->virt.closed = true;
     if (stream->virt.writeEv != NULL) {
         // Wait for outstanding write to finish before closing

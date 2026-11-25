@@ -143,7 +143,7 @@ np_error_code nc_device_init(struct nc_device_context* device, struct np_platfor
     nc_stream_manager_init(&device->streamManager, pl, &device->moduleLogger);
 
 
-    ec = np_completion_event_init(&pl->eq, &device->socketBoundCompletionEvent, NULL, NULL);
+    ec = np_completion_event_init(&pl->eq, &device->socketBoundCompletionEvent, NULL, NULL, NULL);
     if (ec != NABTO_EC_OK) {
         nc_device_deinit(device);
         return ec;

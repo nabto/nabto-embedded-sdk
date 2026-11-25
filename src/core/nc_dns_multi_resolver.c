@@ -21,11 +21,11 @@ np_error_code nc_dns_multi_resolver_init(struct np_platform* pl, struct nc_dns_m
     ctx->v4Ec = NABTO_EC_OK;
     ctx->v6Ec = NABTO_EC_OK;
     struct np_event_queue* eq = &pl->eq;
-    np_error_code ec = np_completion_event_init(eq, &ctx->v4CompletionEvent, &dns_resolved_callback_v4, ctx);
+    np_error_code ec = np_completion_event_init(eq, &ctx->v4CompletionEvent, &dns_resolved_callback_v4, ctx, NULL);
     if (ec != NABTO_EC_OK) {
         return ec;
     }
-    ec = np_completion_event_init(eq, &ctx->v6CompletionEvent, &dns_resolved_callback_v6, ctx);
+    ec = np_completion_event_init(eq, &ctx->v6CompletionEvent, &dns_resolved_callback_v6, ctx, NULL);
     if (ec != NABTO_EC_OK) {
         return ec;
     }
@@ -41,6 +41,7 @@ void nc_dns_multi_resolver_deinit(struct nc_dns_multi_resolver_context* ctx)
 void nc_dns_multi_resolver_resolve(struct nc_dns_multi_resolver_context* ctx, const char* host, struct np_ip_address* ips, size_t ipsSize, size_t* ipsResolved, struct np_completion_event* completionEvent)
 {
     struct np_platform* pl = ctx->pl;
+    np_completion_event_arm(completionEvent);
     if (ctx->v4Ec == NABTO_EC_OPERATION_IN_PROGRESS ||
         ctx->v6Ec == NABTO_EC_OPERATION_IN_PROGRESS)
     {

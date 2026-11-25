@@ -192,7 +192,7 @@ NabtoDevice* NABTO_DEVICE_API nabto_device_new(void)
     }
 #endif
 
-    ec = np_completion_event_init(&dev->pl.eq, &dev->platformCloseEvent, nabto_device_platform_closed_cb, dev);
+    ec = np_completion_event_init(&dev->pl.eq, &dev->platformCloseEvent, nabto_device_platform_closed_cb, dev, NULL);
     if (ec != NABTO_EC_OK) {
         nabto_device_new_resolve_failure(dev);
         return NULL;
@@ -685,6 +685,8 @@ void nabto_device_core_closed_cb(const np_error_code ec, void* data)
     if (ec != NABTO_EC_OK) {
         nabto_device_closed(dev, ec);
     } else {
+        // The platform integration resolves the event, so it is armed here.
+        np_completion_event_arm(&dev->platformCloseEvent);
         nabto_device_platform_close(dev, &dev->platformCloseEvent);
     }
 }

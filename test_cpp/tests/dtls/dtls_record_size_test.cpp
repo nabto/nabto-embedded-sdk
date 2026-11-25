@@ -31,7 +31,7 @@ class DtlsPair {
     DtlsPair(TestPlatform& tp) : pl_(tp.getPlatform())
     {
         np_event_queue_create_event(&pl_->eq, &DtlsPair::deliver, this, &deliverEvent_);
-        np_completion_event_init(&pl_->eq, &sendCtx_.ev, &DtlsPair::sent, this);
+        np_completion_event_init(&pl_->eq, &sendCtx_.ev, &DtlsPair::sent, this, NULL);
     }
 
     ~DtlsPair()
@@ -66,7 +66,7 @@ class DtlsPair {
         queuedPayload_.assign(10, 0x42);
         for (size_t i = 0; i < count; i++) {
             auto q = std::make_unique<struct np_dtls_send_context>();
-            np_completion_event_init(&pl_->eq, &q->ev, [](np_error_code ec, void* d) { (void)ec; (void)d; }, NULL);
+            np_completion_event_init(&pl_->eq, &q->ev, [](np_error_code ec, void* d) { (void)ec; (void)d; }, NULL, NULL);
             q->buffer = queuedPayload_.data();
             q->bufferSize = (uint16_t)queuedPayload_.size();
             q->channelId = NP_DTLS_DEFAULT_CHANNEL_ID;
@@ -75,7 +75,7 @@ class DtlsPair {
         np_completion_event_init(&pl_->eq, &closeEv_, [](np_error_code ec, void* d) {
             (void)ec;
             ((std::promise<void>*)d)->set_value();
-        }, &closed_);
+        }, &closed_, NULL);
         runOnEventThread([&]() {
             for (auto& q : queued_) {
                 BOOST_TEST(pl_->dtlsS.async_send_data(pl_, srvConn_, q.get()) == NABTO_EC_OK);
@@ -145,6 +145,8 @@ class DtlsPair {
                 ec = pl_->dtlsS.async_send_data(pl_, srvConn_, &sendCtx_);
             }
             if (ec != NABTO_EC_OK) {
+                // The send context was not taken, so it is not armed.
+                np_completion_event_arm(&sendCtx_.ev);
                 np_completion_event_resolve(&sendCtx_.ev, ec);
             }
         });
@@ -178,7 +180,8 @@ class DtlsPair {
         DtlsPair* self = (DtlsPair*)data;
         self->toServer_.emplace_back(buffer, buffer + bufferSize);
         self->maxDatagram_ = std::max(self->maxDatagram_, (size_t)bufferSize);
-        np_event_queue_post(&self->pl_->eq, self->deliverEvent_);
+        np_event_queue_post_maybe_double(&self->pl_->eq, self->deliverEvent_);
+        np_completion_event_arm(cb);
         np_completion_event_resolve(cb, NABTO_EC_OK);
         return NABTO_EC_OK;
     }
@@ -189,7 +192,8 @@ class DtlsPair {
         DtlsPair* self = (DtlsPair*)data;
         self->toClient_.emplace_back(buffer, buffer + bufferSize);
         self->maxDatagram_ = std::max(self->maxDatagram_, (size_t)bufferSize);
-        np_event_queue_post(&self->pl_->eq, self->deliverEvent_);
+        np_event_queue_post_maybe_double(&self->pl_->eq, self->deliverEvent_);
+        np_completion_event_arm(cb);
         np_completion_event_resolve(cb, NABTO_EC_OK);
         return NABTO_EC_OK;
     }

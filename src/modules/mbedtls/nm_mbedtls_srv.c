@@ -246,7 +246,7 @@ np_error_code nm_mbedtls_srv_create_connection(struct np_dtls_srv* server,
     }
 
     ec = np_completion_event_init(&pl->eq, &ctx->senderEvent,
-                                  &nm_mbedtls_srv_connection_send_callback, ctx);
+                                  &nm_mbedtls_srv_connection_send_callback, ctx, NULL);
     if (ec != NABTO_EC_OK) {
         return ec;
     }
@@ -467,6 +467,7 @@ np_error_code nm_mbedtls_srv_async_send_data(struct np_platform* pl, struct np_d
     if (ctx->state == CLOSING) {
         return NABTO_EC_CONNECTION_CLOSING;
     }
+    np_completion_event_arm(&sendCtx->ev);
     nn_llist_append(&ctx->sendList, &sendCtx->sendListNode, sendCtx);
     nm_mbedtls_srv_start_send(ctx);
     return NABTO_EC_OK;
@@ -504,6 +505,9 @@ np_error_code nm_mbedtls_srv_async_close(struct np_platform* pl, struct np_dtls_
     }
     if (ctx->state == CLOSING) {
         return NABTO_EC_OK;
+    }
+    if (completionEvent != NULL) {
+        np_completion_event_arm(completionEvent);
     }
     ctx->closeCompletionEvent = completionEvent;
     ctx->state = CLOSING;
