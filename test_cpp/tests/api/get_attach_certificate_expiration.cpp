@@ -11,6 +11,23 @@
 #include <thread>
 #include <future>
 
+BOOST_AUTO_TEST_SUITE(get_attach_certificate_expiration)
+
+BOOST_AUTO_TEST_CASE(not_attached)
+{
+    // The attacher has no DTLS connection before the device has attached,
+    // which was passed to the DTLS module as NULL.
+    NabtoDevice* dev = nabto_device_new();
+    BOOST_REQUIRE(dev);
+    uint64_t expiration = 42;
+    BOOST_TEST(nabto_device_get_attach_certificate_expiration(dev, &expiration) == NABTO_DEVICE_EC_NOT_ATTACHED);
+    BOOST_TEST(expiration == (uint64_t)42);
+    nabto_device_stop(dev);
+    nabto_device_free(dev);
+}
+
+BOOST_AUTO_TEST_SUITE_END()
+
 BOOST_FIXTURE_TEST_SUITE(get_attach_certificate_expiration, nabto::test::BasestationFixture, *boost::unit_test::timeout(10))
 
 BOOST_AUTO_TEST_CASE(get_attach_certificate_expiration)
