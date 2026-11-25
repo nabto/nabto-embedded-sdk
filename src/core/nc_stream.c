@@ -65,15 +65,19 @@ np_error_code nc_stream_init(struct np_platform* pl, struct nc_stream_context* c
     }
     ec = np_event_queue_create_event(&pl->eq, &nc_stream_handle_timeout, ctx, &ctx->timer);
     if (ec != NABTO_EC_OK) {
+        np_event_queue_destroy_event(&pl->eq, ctx->ev);
         return ec;
     }
 
-    ec = np_completion_event_init(&pl->eq, &ctx->sendCtx.ev, &nc_stream_dtls_send_callback, ctx, NULL);
+    ec = np_completion_event_init(&pl->eq, &ctx->sendCtx.ev, &nc_stream_dtls_send_callback, ctx, &ctx->ref);
     if (ec != NABTO_EC_OK) {
+        np_event_queue_destroy_event(&pl->eq, ctx->ev);
+        np_event_queue_destroy_event(&pl->eq, ctx->timer);
         return ec;
     }
 
-    ctx->refCount = 0;
+    // The stream manager's list holds this reference.
+    np_ref_init(&ctx->ref, &pl->refTracker, &nc_stream_release);
     ctx->stopped = false;
     ctx->conn = conn;
     ctx->streamId = streamId;
@@ -233,7 +237,7 @@ void nc_stream_dtls_send_callback(const np_error_code ec, void* data)
         nabto_stream_event_handled(&ctx->stream, ctx->sendEventType);
         nc_stream_event(ctx);
     }
-    nc_stream_ref_count_dec(ctx);
+    // The reference held by sendCtx.ev is dropped when this callback returns.
 }
 
 void nc_stream_send_packet(struct nc_stream_context* ctx, enum nabto_stream_next_event_type eventType)
@@ -282,8 +286,6 @@ void nc_stream_send_packet(struct nc_stream_context* ctx, enum nabto_stream_next
         if(np_event_queue_post_maybe_double(&ctx->pl->eq, ctx->ev)) {
             nc_stream_ref_count_inc(ctx);
         }
-    } else {
-        nc_stream_ref_count_inc(ctx);
     }
 }
 
@@ -653,6 +655,12 @@ void nc_stream_stop(struct nc_stream_context* stream)
         struct np_platform* pl = stream->pl;
         np_event_queue_cancel_event(&pl->eq, stream->timer);
     }
+    if (stream->isVirtual && stream->virt.openedEv != NULL) {
+        // The stream is stopped before it was accepted, e.g. there is no
+        // listener or the application freed it without accepting it.
+        np_completion_event_resolve(stream->virt.openedEv, NABTO_EC_STOPPED);
+        stream->virt.openedEv = NULL;
+    }
     if (stream->acceptEv) {
         np_completion_event_resolve(stream->acceptEv, NABTO_EC_ABORTED);
         stream->acceptEv = NULL;
@@ -685,17 +693,19 @@ void nc_stream_stop(struct nc_stream_context* stream)
 
 void nc_stream_ref_count_inc(struct nc_stream_context* stream)
 {
-    stream->refCount++;
+    np_ref_get(&stream->ref);
 }
 
 void nc_stream_ref_count_dec(struct nc_stream_context* stream)
 {
-    // TODO: ref count in virtual stream
-    stream->refCount--;
-    if (stream->refCount == 0) {
-        if (!stream->isVirtual) {
-            nabto_stream_destroy(&stream->stream);
-        }
-        nc_stream_free(stream);
+    np_ref_put(&stream->ref);
+}
+
+void nc_stream_release(struct np_ref* ref)
+{
+    struct nc_stream_context* stream = np_ref_container(ref, struct nc_stream_context, ref);
+    if (!stream->isVirtual) {
+        nabto_stream_destroy(&stream->stream);
     }
+    nc_stream_free(stream);
 }

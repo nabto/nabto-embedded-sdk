@@ -764,4 +764,140 @@ BOOST_AUTO_TEST_CASE(close_twice_while_closing, *boost::unit_test::timeout(60))
     nabto_device_future_free(closeFut2);
 }
 
+BOOST_AUTO_TEST_CASE(open_stream_no_listener, *boost::unit_test::timeout(60))
+{
+    // Opening a virtual stream on a port without a listener must fail
+    // without touching freed memory, and the stream must be freeable.
+    nabto::test::TestStreamDevice td;
+
+    NabtoDeviceVirtualConnection* conn = td.makeConnection();
+    NabtoDeviceVirtualStream* virStream = nabto_device_virtual_stream_new(conn);
+
+    NabtoDeviceFuture* fut = nabto_device_future_new(td.device_);
+    nabto_device_virtual_stream_open(virStream, fut, 4242);
+    NabtoDeviceError ec = nabto_device_future_timed_wait(fut, 5000);
+    BOOST_TEST(ec == NABTO_DEVICE_EC_STOPPED);
+    nabto_device_future_free(fut);
+
+    nabto_device_virtual_stream_free(virStream);
+}
+
+BOOST_AUTO_TEST_CASE(open_stream_server_frees_without_accept, *boost::unit_test::timeout(60))
+{
+    // If the application frees the new stream without accepting it, the
+    // virtual stream open future resolves with STOPPED.
+    nabto::test::TestStreamDevice td;
+
+    td.streamListen([&](NabtoDeviceError ec, NabtoDeviceStream* stream) {
+        if (ec == NABTO_DEVICE_EC_OK) {
+            nabto_device_stream_free(stream);
+        }
+    });
+
+    NabtoDeviceVirtualConnection* conn = td.makeConnection();
+    NabtoDeviceVirtualStream* virStream = nabto_device_virtual_stream_new(conn);
+
+    NabtoDeviceFuture* fut = nabto_device_future_new(td.device_);
+    nabto_device_virtual_stream_open(virStream, fut, td.streamPort_);
+    NabtoDeviceError ec = nabto_device_future_timed_wait(fut, 5000);
+    BOOST_TEST(ec == NABTO_DEVICE_EC_STOPPED);
+    if (ec == NABTO_DEVICE_EC_FUTURE_NOT_RESOLVED) {
+        // avoid freeing a future the device still references
+        nabto_device_virtual_stream_abort(virStream);
+        nabto_device_future_wait(fut);
+    }
+    nabto_device_future_free(fut);
+
+    nabto_device_virtual_stream_free(virStream);
+}
+
+BOOST_AUTO_TEST_CASE(free_stream_while_reading, *boost::unit_test::timeout(60))
+{
+    // Freeing a stream with an outstanding read must not leave a pending
+    // completion event pointing into the freed stream.
+    nabto::test::TestStreamDevice td;
+    nabto::test::TestStream ts(&td);
+
+    td.streamListen([&](NabtoDeviceError ec, NabtoDeviceStream* stream) {
+        if (ec == NABTO_DEVICE_EC_OK) {
+            ts.acceptStream(stream);
+        }
+    });
+
+    td.makeConnection();
+    td.virtualStreamOpen();
+
+    ts.futureWait(NABTO_DEVICE_EC_OK); // wait for accept
+    ts.doRead();
+
+    nabto_device_stream_free(ts.stream_);
+    ts.stream_ = NULL;
+    ts.futureWait(NABTO_DEVICE_EC_ABORTED);
+}
+
+BOOST_AUTO_TEST_CASE(free_stream_while_writing_and_closing, *boost::unit_test::timeout(60))
+{
+    // The virtual client does not read, so the write stays outstanding and
+    // the close waits for it. Freeing the stream aborts both.
+    nabto::test::TestStreamDevice td;
+    nabto::test::TestStream ts(&td);
+
+    td.streamListen([&](NabtoDeviceError ec, NabtoDeviceStream* stream) {
+        if (ec == NABTO_DEVICE_EC_OK) {
+            ts.acceptStream(stream);
+        }
+    });
+
+    td.makeConnection();
+    td.virtualStreamOpen();
+
+    ts.futureWait(NABTO_DEVICE_EC_OK); // wait for accept
+    ts.readLen_ = 10;
+    ts.doWrite();
+
+    NabtoDeviceFuture* closeFut = nabto_device_future_new(td.device_);
+    nabto_device_stream_close(ts.stream_, closeFut);
+
+    nabto_device_stream_free(ts.stream_);
+    ts.stream_ = NULL;
+    ts.futureWait(NABTO_DEVICE_EC_ABORTED);
+    BOOST_TEST(nabto_device_future_wait(closeFut) == NABTO_DEVICE_EC_ABORTED);
+    nabto_device_future_free(closeFut);
+}
+
+BOOST_AUTO_TEST_CASE(free_virtual_stream_while_reading, *boost::unit_test::timeout(60))
+{
+    // The virtual client frees its stream with an outstanding read while
+    // the application still holds the stream. The read is aborted, and the
+    // application can still use and free its end of the stream.
+    nabto::test::TestStreamDevice td;
+    nabto::test::TestStream ts(&td);
+
+    td.streamListen([&](NabtoDeviceError ec, NabtoDeviceStream* stream) {
+        if (ec == NABTO_DEVICE_EC_OK) {
+            ts.acceptStream(stream);
+        }
+    });
+
+    td.makeConnection();
+    NabtoDeviceVirtualStream* virStream = td.virtualStreamOpen();
+    ts.futureWait(NABTO_DEVICE_EC_OK); // wait for accept
+
+    uint8_t buffer[10];
+    size_t readen = 0;
+    NabtoDeviceFuture* readFut = nabto_device_future_new(td.device_);
+    nabto_device_virtual_stream_read_some(virStream, readFut, buffer, sizeof(buffer), &readen);
+
+    nabto_device_virtual_stream_free(virStream);
+    td.virtStream_ = NULL;
+    BOOST_TEST(nabto_device_future_wait(readFut) == NABTO_DEVICE_EC_ABORTED);
+    nabto_device_future_free(readFut);
+
+    // The application's write fails as the client side is gone.
+    ts.readLen_ = 10;
+    ts.doWrite();
+    NabtoDeviceError ec = nabto_device_future_wait(ts.future_);
+    BOOST_TEST(ec != NABTO_DEVICE_EC_OK);
+}
+
 BOOST_AUTO_TEST_SUITE_END()

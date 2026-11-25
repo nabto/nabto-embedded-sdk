@@ -76,12 +76,27 @@ struct nc_stream_context {
     struct np_dtls_send_context sendCtx;
     uint8_t sendBuffer[NC_STREAM_SEND_BUFFER_SIZE];
     enum nabto_stream_next_event_type sendEventType;
-    size_t refCount;
+    /**
+     * References to the stream:
+     *  - the stream manager's list, from init until the stream is removed
+     *    from the list.
+     *  - the application, from nc_stream_manager_ready_for_accept until
+     *    nc_stream_destroy.
+     *  - for a virtual stream, the virtual client from
+     *    nc_stream_manager_accept_virtual_stream until
+     *    nc_virtual_stream_destroy.
+     *  - an outstanding DTLS send (sendCtx.ev) or a queued ev.
+     *  - short lived references while the stream is used.
+     */
+    struct np_ref ref;
     bool accepted;
 };
 
 void nc_stream_ref_count_inc(struct nc_stream_context* stream);
 void nc_stream_ref_count_dec(struct nc_stream_context* stream);
+
+// Release function for the stream reference, frees the stream.
+void nc_stream_release(struct np_ref* ref);
 
 // Initialize a new stream. Called by stream_manager.
 np_error_code nc_stream_init(struct np_platform* pl, struct nc_stream_context* ctx, uint64_t streamId, uint64_t nonce, struct nc_connection* conn, struct nc_stream_manager_context* streamManager, uint64_t connectionRef, struct nn_log* logger);

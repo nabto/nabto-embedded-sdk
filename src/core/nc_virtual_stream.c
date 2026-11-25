@@ -12,8 +12,8 @@
 np_error_code nc_virtual_stream_init(struct np_platform* pl, struct nc_stream_context* ctx, struct nc_connection* conn, struct nc_stream_manager_context* streamManager, uint32_t port, struct np_completion_event* openedEv)
 {
     np_completion_event_arm(openedEv);
-    // Start refCount at 1 to ensure stream is not freed until user freed the virtual stream
-    ctx->refCount = 1;
+    // The stream manager's list holds this reference.
+    np_ref_init(&ctx->ref, &pl->refTracker, &nc_stream_release);
     ctx->stopped = false;
     ctx->conn = conn;
     ctx->streamManager = streamManager;
@@ -26,8 +26,6 @@ np_error_code nc_virtual_stream_init(struct np_platform* pl, struct nc_stream_co
     ctx->virt.openedEv = openedEv;
     ctx->virt.stopped = false;
     ctx->virt.closed = false;
-
-    nc_stream_manager_ready_for_accept(ctx->streamManager, ctx);
     return NABTO_EC_OK;
 }
 
