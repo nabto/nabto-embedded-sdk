@@ -6,6 +6,7 @@
 #include <platform/np_completion_event.h>
 #include <platform/np_local_ip_wrapper.h>
 #include <platform/np_logging.h>
+#include <platform/np_ref.h>
 #include <platform/np_udp_wrapper.h>
 
 
@@ -57,6 +58,11 @@ struct nm_mdns_server {
     // This event is coming from the application calling close on the mdns
     // server.
     struct np_completion_event* closedCompletionEvent;
+
+    // Owner of the server's completion events. The server is embedded in the
+    // platform integration which frees it, so the release does nothing, but
+    // a deinit with outstanding operations is detected.
+    struct np_ref ref;
 };
 
 np_error_code nm_mdns_server_init(struct nm_mdns_server* server, struct np_event_queue* eq, struct np_udp* udp, struct nm_mdns_udp_bind* mdnsUdpBind, struct np_local_ip* localIp);

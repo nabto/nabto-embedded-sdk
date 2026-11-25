@@ -41,9 +41,14 @@ struct nm_dns_request {
     size_t ipsSize;
     size_t* ipsResolved;
     struct nn_llist_node requestsNode;
+
+    // Held by the request until its result is delivered, and by
+    // dnsCbDeZalgo while it is outstanding.
+    struct np_ref ref;
 };
 
 static void dns_cb(int result, struct evutil_addrinfo *res, void *arg);
+static void request_release(struct np_ref* ref);
 static void dns_cb_deferred(const np_error_code ec, void* userData);
 
 static void async_resolve_v4(struct np_dns* obj, const char* host, struct np_ip_address* ips, size_t ipsSize, size_t* ipsResolved, struct np_completion_event* completionEvent);
@@ -162,9 +167,10 @@ static void async_resolve_v4(struct np_dns* obj, const char* host, struct np_ip_
         np_completion_event_resolve(completionEvent, NABTO_EC_OUT_OF_MEMORY);
         return;
     }
-    np_error_code ec = np_completion_event_init(&ctx->eq, &dnsRequest->dnsCbDeZalgo, dns_cb_deferred, dnsRequest, NULL);
+    np_ref_init(&dnsRequest->ref, NULL, &request_release);
+    np_error_code ec = np_completion_event_init(&ctx->eq, &dnsRequest->dnsCbDeZalgo, dns_cb_deferred, dnsRequest, &dnsRequest->ref);
     if (ec != NABTO_EC_OK) {
-        np_free(dnsRequest);
+        np_ref_put(&dnsRequest->ref);
         np_completion_event_resolve(completionEvent, ec);
         return;
     }
@@ -226,9 +232,10 @@ static void async_resolve_v6(struct np_dns* obj, const char* host, struct np_ip_
         np_completion_event_resolve(completionEvent, NABTO_EC_OUT_OF_MEMORY);
         return;
     }
-    np_error_code ec = np_completion_event_init(&ctx->eq, &dnsRequest->dnsCbDeZalgo, dns_cb_deferred, dnsRequest, NULL);
+    np_ref_init(&dnsRequest->ref, NULL, &request_release);
+    np_error_code ec = np_completion_event_init(&ctx->eq, &dnsRequest->dnsCbDeZalgo, dns_cb_deferred, dnsRequest, &dnsRequest->ref);
     if (ec != NABTO_EC_OK) {
-        np_free(dnsRequest);
+        np_ref_put(&dnsRequest->ref);
         np_completion_event_resolve(completionEvent, ec);
         return;
     }
@@ -314,6 +321,13 @@ void dns_cb_deferred(const np_error_code cbec, void* userData)
     if (origRes != NULL) {
         evutil_freeaddrinfo(origRes);
     }
-    np_completion_event_deinit(&ctx->dnsCbDeZalgo);
-    np_free(ctx);
+    // The request is freed when this callback has returned.
+    np_ref_put(&ctx->ref);
+}
+
+void request_release(struct np_ref* ref)
+{
+    struct nm_dns_request* request = np_ref_container(ref, struct nm_dns_request, ref);
+    np_completion_event_deinit(&request->dnsCbDeZalgo);
+    np_free(request);
 }

@@ -157,8 +157,14 @@ np_error_code nc_coap_server_handle_send(struct nc_coap_server_context* ctx)
     sendCtx->bufferSize = (uint16_t)(sendEnd - sendBuffer);
     sendCtx->channelId = NP_DTLS_CLI_DEFAULT_CHANNEL_ID;
     nc_coap_packet_print("coap server send packet", sendCtx->buffer, sendCtx->bufferSize);
-    // TODO handle send errors.
-    nc_client_connection_async_send_data(clientConnection, sendCtx);
+    np_error_code ec = nc_client_connection_async_send_data(clientConnection, sendCtx);
+    if (ec != NABTO_EC_OK) {
+        // The send context was not taken, e.g. the connection is closing.
+        // The packet is dropped, the coap layer retransmits if needed.
+        pl->buf.free(ctx->sendBuffer);
+        ctx->sendBuffer = NULL;
+        return ec;
+    }
     return NABTO_EC_OPERATION_STARTED;
 }
 

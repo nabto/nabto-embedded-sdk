@@ -71,6 +71,9 @@ void nabto_device_platform_stop_blocking(struct nabto_device_context* device)
 {
     struct platform_data* platform = nabto_device_integration_get_platform_data(device);
 
+    // No DNS request is resolved after this.
+    nm_unix_dns_resolver_stop(&platform->dnsResolver);
+
     // The event queue needs to be stopped, but we need to wait for
     // outstanding events to be finished first, hence the blocking
     // nature of the call.

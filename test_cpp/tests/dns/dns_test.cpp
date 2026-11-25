@@ -245,6 +245,38 @@ BOOST_AUTO_TEST_CASE(unix_resolver_stop_with_queued_requests)
         BOOST_TEST(v6.wait() == NABTO_EC_STOPPED);
     }
 }
+
+// Stopping the resolver while the resolver thread is busy with a request
+// resolves it once, and the resolver thread does not write the result into
+// the caller's array after the stop. The caller frees the array as soon as
+// the request is resolved.
+BOOST_AUTO_TEST_CASE(unix_resolver_stop_with_request_in_progress)
+{
+    auto tp = std::make_unique<nabto::test::TestPlatformSelectUnix>();
+    struct np_platform* pl = tp->getPlatform();
+
+    for (int i = 0; i < 10; i++) {
+        struct nm_unix_dns_resolver resolver;
+        BOOST_TEST(nm_unix_dns_resolver_init(&resolver) == NABTO_EC_OK);
+        nm_unix_dns_resolver_run(&resolver);
+        struct np_dns dns = nm_unix_dns_resolver_get_impl(&resolver);
+        CompletionWaiter v4(pl);
+        auto ips = std::make_unique<struct np_ip_address[]>(4);
+        auto resolved = std::make_unique<size_t>(0);
+        std::string host = "localhost";
+
+        np_dns_async_resolve_v4(&dns, host.c_str(), ips.get(), 4, resolved.get(), &v4.completionEvent_);
+        nm_unix_dns_resolver_stop(&resolver);
+        np_error_code ec = v4.wait();
+        BOOST_TEST((ec == NABTO_EC_STOPPED || ec == NABTO_EC_OK));
+        ips.reset();
+        resolved.reset();
+        host = "freed";
+
+        // Waits for the resolver thread.
+        nm_unix_dns_resolver_deinit(&resolver);
+    }
+}
 #endif
 
 BOOST_AUTO_TEST_SUITE_END()

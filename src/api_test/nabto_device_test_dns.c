@@ -18,6 +18,8 @@ struct dns_test {
     struct np_completion_event completionEvent;
     struct np_ip_address dnsResults[4];
     size_t resolvedIps;
+    // Held until the test has ended, and by the outstanding resolve.
+    struct np_ref ref;
 };
 
 
@@ -32,11 +34,20 @@ uint8_t ipv6[16] = {0x20, 0x01, 0x0d, 0xb8,
 static void ipv6_resolved_callback(np_error_code ec, void* data);
 static void ipv4_resolved_callback(np_error_code ec, void* data);
 
+static void test_release(struct np_ref* ref)
+{
+    struct dns_test* t = np_ref_container(ref, struct dns_test, ref);
+    np_completion_event_deinit(&t->completionEvent);
+    np_free(t);
+}
+
+/**
+ * End the test, it is freed when the callback which ends it has returned.
+ */
 static void resolve_and_free_test(struct dns_test* t, np_error_code ec)
 {
     nabto_device_future_resolve(t->fut, nabto_device_error_core_to_api(ec));
-    np_completion_event_deinit(&t->completionEvent);
-    np_free(t);
+    np_ref_put(&t->ref);
 }
 
 static void start_ipv4_test(struct dns_test* t)
@@ -109,12 +120,15 @@ nabto_device_test_dns(NabtoDevice* device, NabtoDeviceFuture* future)
         return;
     }
 
+    nabto_device_threads_mutex_lock(dev->eventMutex);
+    np_ref_init(&t->ref, &dev->pl.refTracker, &test_release);
     t->fut = fut;
     t->dns = dev->pl.dns;
-    np_error_code ec = np_completion_event_init(&dev->pl.eq, &t->completionEvent, NULL, NULL, NULL);
+    np_error_code ec = np_completion_event_init(&dev->pl.eq, &t->completionEvent, NULL, NULL, &t->ref);
     if (ec != NABTO_EC_OK) {
         resolve_and_free_test(t, ec);
     } else {
         start_ipv4_test(t);
     }
+    nabto_device_threads_mutex_unlock(dev->eventMutex);
 }

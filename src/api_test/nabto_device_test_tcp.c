@@ -27,6 +27,8 @@ struct tcp_test {
     uint8_t readBuffer[4];
     size_t readLength;
     size_t bytesRead;
+    // Held until the test has ended, and by the outstanding operation.
+    struct np_ref ref;
 };
 
 static void create_destroy_test(struct tcp_test* t);
@@ -35,15 +37,34 @@ static void tcp_echo_init(struct tcp_test* t);
 static void echo_socket_connected(np_error_code ec, void* userData);
 
 
+static void test_release(struct np_ref* ref)
+{
+    struct tcp_test* t = np_ref_container(ref, struct tcp_test, ref);
+    np_completion_event_deinit(&t->completionEvent);
+    if (t->timeoutEvent != NULL) {
+        np_event_queue_destroy_event(&t->eq, t->timeoutEvent);
+    }
+    np_free(t);
+}
+
+/**
+ * End the test. Destroying the socket resolves an outstanding operation, the
+ * test is freed when its callback has run.
+ */
 static void resolve_and_free_test(struct tcp_test* t, np_error_code ec)
 {
     nabto_device_future_resolve(t->fut, nabto_device_error_core_to_api(ec));
-
-    np_completion_event_deinit(&t->completionEvent);
-    np_event_queue_destroy_event(&t->eq, t->timeoutEvent);
-    np_tcp_destroy(&t->tcp, t->sock);
-    np_free(t);
+    if (t->timeoutEvent != NULL) {
+        np_event_queue_cancel_event(&t->eq, t->timeoutEvent);
+    }
+    if (t->sock != NULL) {
+        np_tcp_destroy(&t->tcp, t->sock);
+        t->sock = NULL;
+    }
+    np_ref_put(&t->ref);
 }
+
+static void start_test(struct tcp_test* t, struct nabto_device_context* dev, const char* ip, uint16_t port);
 
 static void timeout(void* data)
 {
@@ -57,6 +78,7 @@ void NABTO_DEVICE_API
 nabto_device_test_tcp(NabtoDevice* device, const char* ip, uint16_t port, NabtoDeviceFuture* future)
 {
     struct nabto_device_future* fut = (struct nabto_device_future*)future;
+    struct nabto_device_context* dev = (struct nabto_device_context*)device;
     struct tcp_test* t = np_calloc(1, sizeof(struct tcp_test));
     nabto_device_future_reset(fut);
     if (t == NULL) {
@@ -64,6 +86,15 @@ nabto_device_test_tcp(NabtoDevice* device, const char* ip, uint16_t port, NabtoD
         return;
     }
 
+    nabto_device_threads_mutex_lock(dev->eventMutex);
+    np_ref_init(&t->ref, &dev->pl.refTracker, &test_release);
+    t->fut = fut;
+    start_test(t, dev, ip, port);
+    nabto_device_threads_mutex_unlock(dev->eventMutex);
+}
+
+void start_test(struct tcp_test* t, struct nabto_device_context* dev, const char* ip, uint16_t port)
+{
     if (!np_ip_address_read_v4(ip, &t->ip))
     {
         resolve_and_free_test(t, NABTO_EC_INVALID_ARGUMENT);
@@ -71,14 +102,10 @@ nabto_device_test_tcp(NabtoDevice* device, const char* ip, uint16_t port, NabtoD
     }
 
     t->port = port;
-
-    struct nabto_device_context* dev = (struct nabto_device_context*)device;
-
-    t->fut = fut;
     t->tcp = dev->pl.tcp;
     t->eq = dev->pl.eq;
 
-    np_error_code ec = np_completion_event_init(&dev->pl.eq, &t->completionEvent, NULL, NULL, NULL);
+    np_error_code ec = np_completion_event_init(&dev->pl.eq, &t->completionEvent, NULL, NULL, &t->ref);
     if (ec != NABTO_EC_OK) {
         resolve_and_free_test(t, ec);
         return;

@@ -288,7 +288,12 @@ void nc_stream_manager_send_rst(struct nc_stream_manager_context* ctx, struct nc
     ctx->sendRstCtx.buffer = start;
     ctx->sendRstCtx.bufferSize = (uint16_t)(ptr-start+ret);
     ctx->sendRstCtx.channelId = NP_DTLS_CLI_DEFAULT_CHANNEL_ID;
-    nc_client_connection_async_send_data(conn, &ctx->sendRstCtx);
+    if (nc_client_connection_async_send_data(conn, &ctx->sendRstCtx) != NABTO_EC_OK) {
+        // The send context was not taken, so the callback which frees the
+        // buffer is not called.
+        ctx->pl->buf.free(ctx->rstBuf);
+        ctx->rstBuf = NULL;
+    }
 }
 
 void nc_stream_manager_send_rst_callback(const np_error_code ec, void* data)

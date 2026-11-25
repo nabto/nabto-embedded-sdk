@@ -35,8 +35,13 @@ np_error_code nc_rendezvous_init(struct nc_rendezvous_context* ctx,
 void nc_rendezvous_deinit(struct nc_rendezvous_context* ctx)
 {
     if (ctx->pl != NULL) { // if init called
+        if (!np_completion_event_is_armed(&ctx->sendCompletionEvent)) {
+            // An outstanding send still uses the buffer. That is a lifetime
+            // violation reported when the event is deinitialized, the buffer
+            // is leaked rather than freed while in use.
+            ctx->pl->buf.free(ctx->sendBuffer);
+        }
         np_completion_event_deinit(&ctx->sendCompletionEvent);
-        ctx->pl->buf.free(ctx->sendBuffer);
     }
 }
 

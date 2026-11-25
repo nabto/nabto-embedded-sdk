@@ -139,8 +139,8 @@ void nm_select_unix_udp_async_send_to(struct np_udp_socket* sock, struct np_udp_
 }
 
 
-void nm_select_unix_udp_async_recv_wait(struct np_udp_socket* sock,
-                                        struct np_completion_event* completionEvent)
+static void async_recv_wait_locked(struct np_udp_socket* sock,
+                                   struct np_completion_event* completionEvent)
 {
     if (sock->aborted) {
         NABTO_LOG_ERROR(LOG, "recv from called on aborted socket");
@@ -173,7 +173,7 @@ uint16_t nm_select_unix_udp_get_local_port(struct np_udp_socket* sock)
     return get_local_port(sock);
 }
 
-void nm_select_unix_udp_abort(struct np_udp_socket* sock)
+static void abort_locked(struct np_udp_socket* sock)
 {
     if (!sock->aborted) {
         sock->aborted = true;
@@ -457,4 +457,23 @@ np_error_code create_socket_any(struct np_udp_socket* s)
     }
     s->sock = sock;
     return NABTO_EC_OK;
+}
+
+/**
+ * The network thread completes the receive with the select lock held, so
+ * the core takes it when it starts or aborts the receive.
+ */
+void nm_select_unix_udp_async_recv_wait(struct np_udp_socket* sock,
+                                        struct np_completion_event* completionEvent)
+{
+    nm_select_unix_lock(sock->selectCtx);
+    async_recv_wait_locked(sock, completionEvent);
+    nm_select_unix_unlock(sock->selectCtx);
+}
+
+void nm_select_unix_udp_abort(struct np_udp_socket* sock)
+{
+    nm_select_unix_lock(sock->selectCtx);
+    abort_locked(sock);
+    nm_select_unix_unlock(sock->selectCtx);
 }
