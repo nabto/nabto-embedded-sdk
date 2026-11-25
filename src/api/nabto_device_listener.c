@@ -37,6 +37,12 @@ np_error_code nabto_device_listener_init(struct nabto_device_context* dev,
                                          nabto_device_listener_resolve_event cb,
                                          void* listenerData)
 {
+    // A listener which is initialized and not stopped is registered with the
+    // module it belongs to. Initializing it again would leave that
+    // registration pointing at the listener after it is freed.
+    if (listener->isInitialized && listener->cb != NULL) {
+        return NABTO_EC_INVALID_STATE;
+    }
     listener->dev = dev;
     listener->cb = cb;
     listener->listenerData = listenerData;
