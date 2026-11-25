@@ -19,13 +19,22 @@ np_error_code nm_mbedtls_timer_init(struct nm_mbedtls_timer* timer, struct np_pl
     return np_event_queue_create_event(&pl->eq, timer_cb, timer, &timer->tEv);
 }
 
+// deinit and cancel are no-ops on a timer which was not initialized, so a
+// partially created connection can be freed.
 void nm_mbedtls_timer_deinit(struct nm_mbedtls_timer* timer)
 {
+    if (timer->tEv == NULL) {
+        return;
+    }
     np_event_queue_destroy_event(&timer->pl->eq, timer->tEv);
+    timer->tEv = NULL;
 }
 
 void nm_mbedtls_timer_cancel(struct nm_mbedtls_timer* timer)
 {
+    if (timer->tEv == NULL) {
+        return;
+    }
     np_event_queue_cancel_event(&timer->pl->eq, timer->tEv);
 }
 

@@ -112,7 +112,11 @@ struct nc_connection* nc_connections_alloc_virtual_connection(struct nc_connecti
 void nc_connections_free_connection(struct nc_connections_context* ctx, struct nc_connection* connection)
 {
     nn_llist_erase_node(&connection->connectionsNode);
-    np_free(connection->connectionImplCtx);
+    if (connection->isVirtual) {
+        np_free(connection->connectionImplCtx);
+    }
+    // A client connection is reference counted and frees itself, see
+    // nc_client_connection_destroy_connection.
 #if defined(NABTO_DEVICE_PASSWORD_AUTHENTICATION)
     np_free(connection->spake2Username);
     np_free(connection->username);

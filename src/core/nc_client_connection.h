@@ -48,12 +48,13 @@ struct nc_client_connection {
     struct nc_device_context* device;
     struct nc_connection* parent;
 
-    struct np_completion_event* sentCb;
-    struct np_completion_event sendCompletionEvent;
-    struct np_completion_event closeCompletionEvent;
-
     struct nc_keep_alive_context keepAlive;
     struct np_dtls_send_context keepAliveSendCtx;
+
+    // The connection list holds a reference until the connection is
+    // destroyed, an outstanding keep alive send holds one through
+    // keepAliveSendCtx.ev. parent is freed when the connection is destroyed.
+    struct np_ref ref;
 
 };
 
