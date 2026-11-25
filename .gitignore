@@ -18,4 +18,5 @@ build-scripts/vcpkg/ports/nabto-common/timestamp.txt
 test/distribution/vcpkg_example/ports/nabto-embedded-sdk/timestamp.txt
 CMakeUserPresets.json
 .claude.md
+.claude
 vcpkg-binary-cache
