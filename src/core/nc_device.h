@@ -42,6 +42,11 @@ typedef void (*nc_device_start_callback)(const np_error_code ec, void* data);
 struct nc_device_context {
     bool initialized;
     struct np_platform* pl;
+    // The owner of the completion events of the modules embedded in the
+    // device. The device is freed by nabto_device_free, so the release does
+    // nothing, but each outstanding operation of the modules is counted, and
+    // nabto_device_stop waits for them.
+    struct np_ref ref;
     enum nc_device_state state;
     bool clientConnsClosed;
     bool isDetached;

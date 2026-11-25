@@ -1,0 +1,3 @@
+# virtual_connection/execute_coap_no_free deliberately does not free the
+# coap request it executes.
+leak:execute_coap_no_free

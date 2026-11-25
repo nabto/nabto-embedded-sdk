@@ -11,6 +11,13 @@
 #include <coap/src/nabto_coap_server_impl.h>
 
 #include <nlohmann/json.hpp>
+#include <util/test_owner.hpp>
+
+namespace {
+// Owner of the completion events and modules created by the tests.
+nabto::test::TestOwner testOwner;
+}
+
 
 extern "C" {
 bool handle_rendezvous_payload(struct nc_rendezvous_coap_context* ctx, struct nc_coap_server_request* request, uint8_t* payload, size_t payloadLength);
@@ -32,7 +39,7 @@ public:
     RendezvousTestCtx(nlohmann::json jsonPay) {
         tp = nabto::test::TestPlatform::create();
 
-        nc_rendezvous_init(&rendezvous, tp->getPlatform());
+        nc_rendezvous_init(&rendezvous, tp->getPlatform(), &testOwner.ref);
         ctx.rendezvous = &rendezvous;
 
         for (uint8_t i = 0; i < 16; i++) {
@@ -66,7 +73,7 @@ public:
         tp = nabto::test::TestPlatform::create();
         struct np_platform* pl = tp->getPlatform();
 
-        nc_rendezvous_init(&rendezvous, pl);
+        nc_rendezvous_init(&rendezvous, pl, &testOwner.ref);
         // Pretend a send is in flight such that responses stay in the queue
         // where the test can inspect them instead of being sent.
         rendezvous.sendBuffer = pl->buf.allocate();

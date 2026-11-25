@@ -10,6 +10,13 @@
 #include <future>
 #include <thread>
 #include <chrono>
+#include <util/test_owner.hpp>
+
+namespace {
+// Owner of the completion events and modules created by the tests.
+nabto::test::TestOwner testOwner;
+}
+
 
 namespace nabto {
 namespace test {
@@ -34,9 +41,9 @@ class WatchdogTest {
         tp_ = std::unique_ptr<nabto::test::TestPlatform>(new nabto::test::TestPlatformLibevent(obj));
         struct np_platform* pl = tp_->getPlatform();
 
-        nc_coap_client_init(tp_->getPlatform(), &coapClient_);
+        nc_coap_client_init(tp_->getPlatform(), &coapClient_, &testOwner.ref);
 
-        nc_attacher_init(&attach_, tp_->getPlatform(), &device_, &coapClient_, NULL, NULL);
+        nc_attacher_init(&attach_, tp_->getPlatform(), &device_, &coapClient_, NULL, NULL, &testOwner.ref);
 
         np_error_code ec = nc_attacher_watchdog_init(&ctx_, pl, &attach_, &watchDogCallback, this);
         BOOST_TEST(ec == NABTO_EC_OK);

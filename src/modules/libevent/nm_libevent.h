@@ -1,6 +1,7 @@
 #ifndef NM_LIBEVENT_H_
 #define NM_LIBEVENT_H_
 
+#include <api/nabto_device_threads.h>
 #include <platform/np_communication_buffer.h>
 
 #ifdef __cplusplus
@@ -12,6 +13,11 @@ struct event_base;
 
 struct nm_libevent_context {
     struct event_base* eventBase;
+    // Taken while a completion event pointer of a socket is published or
+    // taken, since the core thread and the libevent thread both complete
+    // operations, e.g. when a socket is aborted. libevent functions are never
+    // called with it held.
+    struct nabto_device_mutex* mutex;
 };
 
 void nm_libevent_global_init(void);

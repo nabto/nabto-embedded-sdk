@@ -18,6 +18,13 @@
 #endif
 
 #include <future>
+#include <util/test_owner.hpp>
+
+namespace {
+// Owner of the completion events and modules created by the tests.
+nabto::test::TestOwner testOwner;
+}
+
 
 namespace {
 
@@ -26,7 +33,7 @@ class DnsTest {
     DnsTest(nabto::test::TestPlatform& tp)
         : tp_(tp), pl_(tp.getPlatform()), dns_(pl_->dns)
     {
-        np_completion_event_init(&pl_->eq, &completionEvent_, &DnsTest::dnsCallback, this, NULL);
+        np_completion_event_init(&pl_->eq, &completionEvent_, &DnsTest::dnsCallback, this, &testOwner.ref);
     }
     ~DnsTest()
     {
@@ -160,7 +167,7 @@ class CompletionWaiter {
  public:
     CompletionWaiter(struct np_platform* pl)
     {
-        np_completion_event_init(&pl->eq, &completionEvent_, &CompletionWaiter::callback, this, NULL);
+        np_completion_event_init(&pl->eq, &completionEvent_, &CompletionWaiter::callback, this, &testOwner.ref);
     }
     ~CompletionWaiter()
     {

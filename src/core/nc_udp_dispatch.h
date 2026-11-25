@@ -26,7 +26,7 @@ struct nc_udp_dispatch_context {
     void* listenerData;
 };
 
-np_error_code nc_udp_dispatch_init(struct nc_udp_dispatch_context* ctx, struct np_platform* pl, nc_udp_dispatch_event_listener listener, void* listenerData);
+np_error_code nc_udp_dispatch_init(struct nc_udp_dispatch_context* ctx, struct np_platform* pl, nc_udp_dispatch_event_listener listener, void* listenerData, struct np_ref* owner);
 void nc_udp_dispatch_deinit(struct nc_udp_dispatch_context* ctx);
 
 /**

@@ -22,7 +22,7 @@ struct nc_coap_client_context {
     struct np_communication_buffer* sendBuffer;
 };
 
-np_error_code nc_coap_client_init(struct np_platform* pl, struct nc_coap_client_context* ctx);
+np_error_code nc_coap_client_init(struct np_platform* pl, struct nc_coap_client_context* ctx, struct np_ref* owner);
 void nc_coap_client_deinit(struct nc_coap_client_context* ctx);
 void nc_coap_client_stop(struct nc_coap_client_context* ctx);
 void nc_coap_client_handle_packet(struct nc_coap_client_context* ctx,

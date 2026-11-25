@@ -10,6 +10,7 @@
 #include <util/io_service.hpp>
 #include <fixtures/udp_echo_server.hpp>
 #include <util/span.hpp>
+#include <util/test_owner.hpp>
 
 #include <boost/asio.hpp>
 
@@ -17,6 +18,11 @@
 #include <fcntl.h>
 #include <unistd.h>
 #endif
+
+namespace {
+// Owner of the completion events and modules created by the tests.
+nabto::test::TestOwner testOwner;
+}
 
 namespace nabto {
 namespace test {
@@ -26,7 +32,7 @@ class UdpEchoClientTest {
     UdpEchoClientTest(TestPlatform& tp)
         : pl_(tp.getPlatform()), eq_(pl_->eq)
     {
-        np_completion_event_init(&eq_, &completionEvent_, NULL, NULL, NULL);
+        np_completion_event_init(&eq_, &completionEvent_, NULL, NULL, &testOwner.ref);
     }
 
     ~UdpEchoClientTest()
@@ -123,7 +129,7 @@ class UdpBindFailureTest {
     UdpBindFailureTest(TestPlatform& tp)
         : pl_(tp.getPlatform())
     {
-        np_completion_event_init(&pl_->eq, &completionEvent_, &UdpBindFailureTest::bound, this, NULL);
+        np_completion_event_init(&pl_->eq, &completionEvent_, &UdpBindFailureTest::bound, this, &testOwner.ref);
     }
 
     ~UdpBindFailureTest()

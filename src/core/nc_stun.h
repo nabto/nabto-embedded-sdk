@@ -76,7 +76,7 @@ struct nc_stun_context {
 
 np_error_code nc_stun_init(struct nc_stun_context *ctx,
                            struct nc_device_context *device,
-                           struct np_platform *pl);
+                           struct np_platform *pl, struct np_ref* owner);
 
 void nc_stun_stop(struct nc_stun_context* ctx);
 

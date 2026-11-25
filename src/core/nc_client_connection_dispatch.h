@@ -27,7 +27,7 @@ struct nc_client_connection_dispatch_context {
 
 np_error_code nc_client_connection_dispatch_init(struct nc_client_connection_dispatch_context* ctx,
                                         struct np_platform* pl,
-                                        struct nc_device_context* device);
+                                        struct nc_device_context* device, struct np_ref* owner);
 
 void nc_client_connection_dispatch_deinit(struct nc_client_connection_dispatch_context* ctx);
 

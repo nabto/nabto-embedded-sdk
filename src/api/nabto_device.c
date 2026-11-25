@@ -13,6 +13,7 @@
 #include <nabto/nabto_device_experimental.h>
 #include <platform/np_allocator.h>
 #include <platform/np_error_code.h>
+#include <platform/np_timestamp_wrapper.h>
 
 #include <core/nc_client_connection.h>
 #include <core/nc_version.h>
@@ -62,6 +63,8 @@ void nabto_device_free_threads(struct nabto_device_context* dev);
 void nabto_device_do_stop(struct nabto_device_context* dev);
 
 static void nabto_device_platform_closed_cb(const np_error_code ec, void* userData);
+static void nabto_device_drained(void* userData);
+static void nabto_device_wait_for_outstanding_operations(struct nabto_device_context* dev);
 
 const char* NABTO_DEVICE_API nabto_device_version(void)
 {
@@ -93,6 +96,14 @@ NabtoDevice* NABTO_DEVICE_API nabto_device_new(void)
         nabto_device_new_resolve_failure(dev);
         return NULL;
     }
+    dev->drainCondition = nabto_device_threads_create_condition();
+    if (dev->drainCondition == NULL) {
+        NABTO_LOG_ERROR(LOG, "condition init has failed");
+        nabto_device_new_resolve_failure(dev);
+        return NULL;
+    }
+    dev->pl.refTracker.idle = &nabto_device_drained;
+    dev->pl.refTracker.idleUserData = dev;
 
     nabto_device_logging_init();
 
@@ -192,7 +203,7 @@ NabtoDevice* NABTO_DEVICE_API nabto_device_new(void)
     }
 #endif
 
-    ec = np_completion_event_init(&dev->pl.eq, &dev->platformCloseEvent, nabto_device_platform_closed_cb, dev, NULL);
+    ec = np_completion_event_init(&dev->pl.eq, &dev->platformCloseEvent, nabto_device_platform_closed_cb, dev, &dev->core.ref);
     if (ec != NABTO_EC_OK) {
         nabto_device_new_resolve_failure(dev);
         return NULL;
@@ -222,8 +233,40 @@ void NABTO_DEVICE_API nabto_device_stop(NabtoDevice* device)
     nc_device_stop(&dev->core);
 
     dev->closing = true;
+    nabto_device_wait_for_outstanding_operations(dev);
     nabto_device_threads_mutex_unlock(dev->eventMutex);
     nabto_device_do_stop(dev);
+}
+
+/**
+ * The connections, streams and tunnels which are closing finish the
+ * operations they have started while the platform is still running, e.g. a
+ * DTLS connection sends its last packet. Objects are never freed while an
+ * operation uses them, so an object which does not finish in time is leaked
+ * rather than freed.
+ *
+ * Called with the event mutex held, it is released while waiting.
+ */
+void nabto_device_wait_for_outstanding_operations(struct nabto_device_context* dev)
+{
+    struct np_ref_tracker* tracker = &dev->pl.refTracker;
+    uint32_t start = np_timestamp_now_ms(&dev->pl.timestamp);
+    while (tracker->outstanding > 0) {
+        uint32_t waited = np_timestamp_now_ms(&dev->pl.timestamp) - start;
+        if (waited >= NABTO_DEVICE_STOP_DRAIN_TIMEOUT_MS) {
+            NABTO_LOG_ERROR(LOG, "%u operations did not finish while the device was stopped, the objects using them are not freed.", (unsigned)tracker->outstanding);
+            return;
+        }
+        nabto_device_threads_cond_timed_wait(dev->drainCondition, dev->eventMutex, NABTO_DEVICE_STOP_DRAIN_TIMEOUT_MS - waited);
+    }
+}
+
+void nabto_device_drained(void* userData)
+{
+    struct nabto_device_context* dev = userData;
+    if (dev->closing) {
+        nabto_device_threads_cond_signal(dev->drainCondition);
+    }
 }
 
 void nabto_device_do_stop(struct nabto_device_context* dev)
@@ -783,6 +826,10 @@ void nabto_device_free_threads(struct nabto_device_context* dev)
     if (dev->eventMutex) {
         nabto_device_threads_free_mutex(dev->eventMutex);
         dev->eventMutex = NULL;
+    }
+    if (dev->drainCondition) {
+        nabto_device_threads_free_cond(dev->drainCondition);
+        dev->drainCondition = NULL;
     }
 }
 

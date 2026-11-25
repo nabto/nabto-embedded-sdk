@@ -15,6 +15,13 @@
 #include <future>
 
 #include "certificates.hpp"
+#include <util/test_owner.hpp>
+
+namespace {
+// Owner of the completion events and modules created by the tests.
+nabto::test::TestOwner testOwner;
+}
+
 
 namespace nabto {
 namespace test {
@@ -25,7 +32,7 @@ class AttachTest {
         : tp_(tp), hostname_(hostname), serverPort_(port), rootCerts_(rcs)
     {
         struct np_platform* pl = tp_.getPlatform();
-        np_completion_event_init(&pl->eq, &boundCompletionEvent, &AttachTest::udpDispatchCb, this, NULL);
+        np_completion_event_init(&pl->eq, &boundCompletionEvent, &AttachTest::udpDispatchCb, this, &testOwner.ref);
         memset(&device_, 0, sizeof(device_));
     }
 
@@ -54,15 +61,15 @@ class AttachTest {
     void start(std::function<void (AttachTest& at)> event, std::function<void (AttachTest& at)> state) {
         event_ = event;
         state_ = state;
-        BOOST_TEST(nc_udp_dispatch_init(&udpDispatch_, tp_.getPlatform(), &AttachTest::udpEvent, this) == NABTO_EC_OK);
+        BOOST_TEST(nc_udp_dispatch_init(&udpDispatch_, tp_.getPlatform(), &AttachTest::udpEvent, this, &testOwner.ref) == NABTO_EC_OK);
         nc_udp_dispatch_async_bind(&udpDispatch_, tp_.getPlatform(), 0,
                                    &boundCompletionEvent);
     }
 
     void startAttach() {
-        nc_stun_init(&device_.stun, &device_, tp_.getPlatform());
-        nc_coap_client_init(tp_.getPlatform(), &coapClient_);
-        nc_attacher_init(&attach_, tp_.getPlatform(), &device_, &coapClient_, &AttachTest::listener, this);
+        nc_stun_init(&device_.stun, &device_, tp_.getPlatform(), &testOwner.ref);
+        nc_coap_client_init(tp_.getPlatform(), &coapClient_, &testOwner.ref);
+        nc_attacher_init(&attach_, tp_.getPlatform(), &device_, &coapClient_, &AttachTest::listener, this, &testOwner.ref);
         nc_attacher_set_state_listener(&attach_, &AttachTest::stateListener, this);
         nc_attacher_set_keys(&attach_,
                              reinterpret_cast<const unsigned char*>(nabto::test::devicePublicKey.c_str()), nabto::test::devicePublicKey.size(),

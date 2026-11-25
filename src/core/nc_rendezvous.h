@@ -36,7 +36,7 @@ struct nc_rendezvous_context {
 
 
 np_error_code nc_rendezvous_init(struct nc_rendezvous_context* ctx,
-                                 struct np_platform* pl);
+                                 struct np_platform* pl, struct np_ref* owner);
 void nc_rendezvous_deinit(struct nc_rendezvous_context* ctx);
 
 void nc_rendezvous_set_udp_dispatch(struct nc_rendezvous_context* ctx, struct nc_udp_dispatch_context* udpDispatch);

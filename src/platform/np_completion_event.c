@@ -34,6 +34,9 @@ void np_completion_event_deinit(struct np_completion_event* completionEvent)
             // The owner reference is not dropped, it could free the memory
             // this event is in. The owner is leaked instead.
             completionEvent->armed = false;
+            if (completionEvent->owner != NULL && completionEvent->owner->tracker != NULL) {
+                np_ref_tracker_operation_ended(completionEvent->owner->tracker);
+            }
         }
         np_event_queue_destroy_event(&completionEvent->eq, completionEvent->event);
         completionEvent->initialized = false;
@@ -56,8 +59,13 @@ void np_completion_event_arm(struct np_completion_event* completionEvent)
         return;
     }
     completionEvent->armed = true;
-    if (completionEvent->owner != NULL) {
+    if (completionEvent->owner == NULL) {
+        np_lifetime_violation("completion event armed without an owner");
+    } else {
         np_ref_get(completionEvent->owner);
+        if (completionEvent->owner->tracker != NULL) {
+            np_ref_tracker_operation_started(completionEvent->owner->tracker);
+        }
     }
 }
 
@@ -69,7 +77,11 @@ void np_completion_event_disarm(struct np_completion_event* completionEvent)
     }
     completionEvent->armed = false;
     if (completionEvent->owner != NULL) {
+        struct np_ref_tracker* tracker = completionEvent->owner->tracker;
         np_ref_put(completionEvent->owner);
+        if (tracker != NULL) {
+            np_ref_tracker_operation_ended(tracker);
+        }
     }
 }
 
@@ -99,6 +111,12 @@ void resolve_event_callback(void* userData)
     struct np_ref* owner = completionEvent->owner;
     completionEvent->cb(completionEvent->ec, completionEvent->userData);
     if (owner != NULL) {
+        struct np_ref_tracker* tracker = owner->tracker;
         np_ref_put(owner);
+        if (tracker != NULL) {
+            // The callback may have started a new operation, so the count
+            // only reaches zero when nothing is outstanding.
+            np_ref_tracker_operation_ended(tracker);
+        }
     }
 }

@@ -66,6 +66,19 @@
             }
         },
         {
+            "name": "linux_vcpkg_sanitize",
+            "inherits": ["base", "unix_base", "vcpkg_base"],
+            "cacheVariables": {
+                "CMAKE_BUILD_TYPE": "Debug",
+                "DEVICE_BUILD_TESTS": "ON",
+                "NABTO_DEVICE_LIFETIME_CHECKS": "ON",
+                "CMAKE_C_FLAGS": "-fsanitize=address,undefined -fno-omit-frame-pointer",
+                "CMAKE_CXX_FLAGS": "-fsanitize=address,undefined -fno-omit-frame-pointer",
+                "CMAKE_EXE_LINKER_FLAGS": "-fsanitize=address,undefined",
+                "CMAKE_SHARED_LINKER_FLAGS": "-fsanitize=address,undefined"
+            }
+        },
+        {
             "name": "_linux_bootlin",
             "hidden": true,
             "inherits": ["base", "unix_base", "vcpkg_base"],
@@ -252,6 +265,11 @@
         {
             "name": "linux_vcpkg_openssl_dtls_client_only",
             "configurePreset": "linux_vcpkg_openssl_dtls_client_only",
+            "targets": ["install"]
+        },
+        {
+            "name": "linux_vcpkg_sanitize",
+            "configurePreset": "linux_vcpkg_sanitize",
             "targets": ["install"]
         },
         {
@@ -536,6 +554,19 @@
                 {
                     "type": "build",
                     "name": "linux_vcpkg_openssl_dtls_client_only"
+                }
+            ]
+        },
+        {
+            "name": "linux_vcpkg_sanitize",
+            "steps": [
+                {
+                    "type": "configure",
+                    "name": "linux_vcpkg_sanitize"
+                },
+                {
+                    "type": "build",
+                    "name": "linux_vcpkg_sanitize"
                 }
             ]
         },

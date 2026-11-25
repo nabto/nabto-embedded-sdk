@@ -14,18 +14,18 @@ static void dns_resolved_callback_v6(const np_error_code ec, void* data);
 static void dns_resolved(struct nc_dns_multi_resolver_context* ctx);
 void print_dns_results(struct nc_dns_multi_resolver_context* ctx, np_error_code ec);
 
-np_error_code nc_dns_multi_resolver_init(struct np_platform* pl, struct nc_dns_multi_resolver_context* ctx)
+np_error_code nc_dns_multi_resolver_init(struct np_platform* pl, struct nc_dns_multi_resolver_context* ctx, struct np_ref* owner)
 {
     ctx->pl = pl;
     ctx->host = NULL;
     ctx->v4Ec = NABTO_EC_OK;
     ctx->v6Ec = NABTO_EC_OK;
     struct np_event_queue* eq = &pl->eq;
-    np_error_code ec = np_completion_event_init(eq, &ctx->v4CompletionEvent, &dns_resolved_callback_v4, ctx, NULL);
+    np_error_code ec = np_completion_event_init(eq, &ctx->v4CompletionEvent, &dns_resolved_callback_v4, ctx, owner);
     if (ec != NABTO_EC_OK) {
         return ec;
     }
-    ec = np_completion_event_init(eq, &ctx->v6CompletionEvent, &dns_resolved_callback_v6, ctx, NULL);
+    ec = np_completion_event_init(eq, &ctx->v6CompletionEvent, &dns_resolved_callback_v6, ctx, owner);
     if (ec != NABTO_EC_OK) {
         return ec;
     }

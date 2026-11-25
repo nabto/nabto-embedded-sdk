@@ -8,6 +8,13 @@
 #include <cstdlib>
 #include <cstring>
 #include <vector>
+#include <util/test_owner.hpp>
+
+namespace {
+// Owner of the completion events and modules created by the tests.
+nabto::test::TestOwner testOwner;
+}
+
 
 namespace {
 
@@ -24,7 +31,7 @@ void handle_truncated_packet(const std::vector<uint8_t>& packet)
 {
     auto tp = nabto::test::TestPlatform::create();
     struct nc_stream_manager_context ctx;
-    nc_stream_manager_init(&ctx, tp->getPlatform(), NULL);
+    nc_stream_manager_init(&ctx, tp->getPlatform(), NULL, &testOwner.ref);
 
     uint8_t* buffer = exact_heap_copy(packet);
     // The packet ends right after the stream id, there are no flags. It is
