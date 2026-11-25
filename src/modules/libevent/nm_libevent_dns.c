@@ -48,6 +48,7 @@ struct nm_dns_request {
 };
 
 static void dns_cb(int result, struct evutil_addrinfo *res, void *arg);
+static void start_request(struct nm_libevent_dns* ctx, struct nm_dns_request* dnsRequest, const char* host, const char* service, struct evutil_addrinfo* hints);
 static void request_release(struct np_ref* ref);
 static void dns_cb_deferred(const np_error_code ec, void* userData);
 
@@ -115,7 +116,10 @@ void nm_libevent_dns_stop(struct nm_libevent_dns* ctx)
     nabto_device_threads_mutex_lock(ctx->cancelMutex);
     struct nm_dns_request* request = NULL;
     NN_LLIST_FOREACH(request, &ctx->requests) {
-        evdns_getaddrinfo_cancel(request->req);
+        // req is NULL while evdns_getaddrinfo has not returned yet.
+        if (request->req != NULL) {
+            evdns_getaddrinfo_cancel(request->req);
+        }
     }
     nabto_device_threads_mutex_unlock(ctx->cancelMutex);
 }
@@ -129,7 +133,6 @@ void nm_libevent_dns_deinit(struct nm_libevent_dns* ctx)
 static void async_resolve_v4(struct np_dns* obj, const char* host, struct np_ip_address* ips, size_t ipsSize, size_t* ipsResolved, struct np_completion_event* completionEvent)
 {
     struct nm_libevent_dns* ctx = obj->data;
-    struct evdns_base* dnsBase = ctx->dnsBase;
 
     if (ipsSize == 0) {
         np_completion_event_resolve(completionEvent, NABTO_EC_NO_DATA);
@@ -185,16 +188,12 @@ static void async_resolve_v4(struct np_dns* obj, const char* host, struct np_ip_
     hints.ai_flags = 0; //AI_PASSIVE | AI_CANONNAME | AI_NUMERICHOST;
     hints.ai_socktype = SOCK_DGRAM;
     const char* service = "443";
-    // dns_cb resolves the event exactly once, also if the request is cancelled.
-    np_completion_event_arm(&dnsRequest->dnsCbDeZalgo);
-    nn_llist_append(&ctx->requests, &dnsRequest->requestsNode, dnsRequest);
-    dnsRequest->req = evdns_getaddrinfo(dnsBase, host, service, &hints, dns_cb, dnsRequest);
+    start_request(ctx, dnsRequest, host, service, &hints);
 }
 
 static void async_resolve_v6(struct np_dns* obj, const char* host, struct np_ip_address* ips, size_t ipsSize, size_t* ipsResolved, struct np_completion_event* completionEvent)
 {
     struct nm_libevent_dns* ctx = obj->data;
-    struct evdns_base* dnsBase = ctx->dnsBase;
 
     if (ipsSize == 0) {
         np_completion_event_resolve(completionEvent, NABTO_EC_NO_DATA);
@@ -250,10 +249,31 @@ static void async_resolve_v6(struct np_dns* obj, const char* host, struct np_ip_
     hints.ai_flags = 0; //AI_PASSIVE | AI_CANONNAME | AI_NUMERICHOST;
     hints.ai_socktype = SOCK_DGRAM;
     const char* service = "443";
+    start_request(ctx, dnsRequest, host, service, &hints);
+}
+
+void start_request(struct nm_libevent_dns* ctx, struct nm_dns_request* dnsRequest, const char* host, const char* service, struct evutil_addrinfo* hints)
+{
     // dns_cb resolves the event exactly once, also if the request is cancelled.
     np_completion_event_arm(&dnsRequest->dnsCbDeZalgo);
+
+    // dns_cb removes the request from the list on the libevent thread, so the
+    // list is only changed while holding cancelMutex.
+    nabto_device_threads_mutex_lock(ctx->cancelMutex);
     nn_llist_append(&ctx->requests, &dnsRequest->requestsNode, dnsRequest);
-    dnsRequest->req = evdns_getaddrinfo(dnsBase, host, service, &hints, dns_cb, dnsRequest);
+    nabto_device_threads_mutex_unlock(ctx->cancelMutex);
+
+    // cancelMutex cannot be held here, as dns_cb is called before
+    // evdns_getaddrinfo returns if the request is answered right away.
+    // dnsRequest stays alive, as it is freed from the event queue, which
+    // needs the core mutex we are holding.
+    struct evdns_getaddrinfo_request* req = evdns_getaddrinfo(ctx->dnsBase, host, service, hints, dns_cb, dnsRequest);
+
+    nabto_device_threads_mutex_lock(ctx->cancelMutex);
+    if (nn_llist_node_in_list(&dnsRequest->requestsNode)) {
+        dnsRequest->req = req;
+    }
+    nabto_device_threads_mutex_unlock(ctx->cancelMutex);
 }
 
 void dns_cb(int result, struct evutil_addrinfo *res, void *arg)
