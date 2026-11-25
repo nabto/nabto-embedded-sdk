@@ -215,6 +215,12 @@ void nc_stun_event(struct nc_stun_context* ctx)
 {
     enum nabto_stun_next_event_type event = nabto_stun_next_event_to_handle(&ctx->stun);
     struct np_platform* pl = ctx->pl;
+    if ((event == STUN_ET_SEND_PRIMARY || event == STUN_ET_SEND_SECONDARY) &&
+        np_completion_event_is_armed(&ctx->sendCompletionEvent)) {
+        // sendBuf is still being sent, e.g. a packet arrived during the send.
+        // nc_stun_send_to_cb handles the next send when this one completes.
+        return;
+    }
     np_event_queue_cancel_event(&ctx->pl->eq, ctx->toEv);
     switch(event) {
         case STUN_ET_SEND_PRIMARY:
