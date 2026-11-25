@@ -7,23 +7,32 @@
 #include <iostream>
 #include <string>
 
-extern "C" {
-// Provided by the address sanitizer runtime, if it is linked in.
-void __sanitizer_print_stack_trace() __attribute__((weak));
-}
+// Print stack traces of violations when the test is built with the address
+// sanitizer.
+#if defined(__SANITIZE_ADDRESS__)
+#define NABTO_TEST_HAS_ASAN
+#elif defined(__has_feature)
+#if __has_feature(address_sanitizer)
+#define NABTO_TEST_HAS_ASAN
+#endif
+#endif
+
+#if defined(NABTO_TEST_HAS_ASAN)
+#include <sanitizer/common_interface_defs.h>
+#endif
 
 namespace {
 
 /**
- * Print each violation, with a stack trace if the test runs with a
- * sanitizer. Enabled with NABTO_TEST_TRACE_LIFETIME_VIOLATIONS=1.
+ * Print each violation, with a stack trace if the test is built with the
+ * address sanitizer. Enabled with NABTO_TEST_TRACE_LIFETIME_VIOLATIONS=1.
  */
 void traceViolation(const char* what)
 {
     std::cerr << "Lifetime contract violation: " << what << std::endl;
-    if (__sanitizer_print_stack_trace) {
-        __sanitizer_print_stack_trace();
-    }
+#if defined(NABTO_TEST_HAS_ASAN)
+    __sanitizer_print_stack_trace();
+#endif
 }
 
 /**
