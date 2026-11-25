@@ -227,29 +227,6 @@ BOOST_AUTO_TEST_CASE(new_device_after_free, *boost::unit_test::timeout(10))
 }
 
 
-// Listeners are created and freed from several threads. The device's list of
-// listeners was appended to without the device lock. Run with
-// ThreadSanitizer to see the race.
-BOOST_AUTO_TEST_CASE(listener_new_free_concurrently, *boost::unit_test::timeout(30))
-{
-    NabtoDevice* dev = nabto_device_new();
-    BOOST_REQUIRE(dev);
-
-    auto worker = [dev]() {
-        for (int i = 0; i < 1000; i++) {
-            NabtoDeviceListener* l = nabto_device_listener_new(dev);
-            nabto_device_listener_free(l);
-        }
-    };
-    std::thread t1(worker);
-    std::thread t2(worker);
-    t1.join();
-    t2.join();
-
-    nabto_device_stop(dev);
-    nabto_device_free(dev);
-}
-
 BOOST_AUTO_TEST_CASE(tcp_tunnel_service_duplicate_id, *boost::unit_test::timeout(30))
 {
     NabtoDevice* dev = nabto_device_new();
@@ -314,6 +291,29 @@ BOOST_AUTO_TEST_CASE(stream_listener_port_in_use, *boost::unit_test::timeout(30)
     nabto_device_stop(dev);
     nabto_device_listener_free(listener1);
     nabto_device_listener_free(listener2);
+    nabto_device_free(dev);
+}
+
+// Listeners are created and freed from several threads. The device's list of
+// listeners was appended to without the device lock. Run with
+// ThreadSanitizer to see the race.
+BOOST_AUTO_TEST_CASE(listener_new_free_concurrently, *boost::unit_test::timeout(30))
+{
+    NabtoDevice* dev = nabto_device_new();
+    BOOST_REQUIRE(dev);
+
+    auto worker = [dev]() {
+        for (int i = 0; i < 1000; i++) {
+            NabtoDeviceListener* l = nabto_device_listener_new(dev);
+            nabto_device_listener_free(l);
+        }
+    };
+    std::thread t1(worker);
+    std::thread t2(worker);
+    t1.join();
+    t2.join();
+
+    nabto_device_stop(dev);
     nabto_device_free(dev);
 }
 
