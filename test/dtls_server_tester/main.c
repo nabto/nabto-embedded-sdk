@@ -126,7 +126,8 @@ void created(const np_error_code ec, uint8_t channelId, void* data)
     struct test_context* ctx = (struct test_context*) data;
     NABTO_LOG_INFO(0, "Created, error code was: %i, and data: %i", ec, ctx->data);
     NABTO_LOG_TRACE(0, "ctx->dtls: %u", ctx->dtls);
-    np_error_code ec2 = pl->dtlsS.create_connection(ctx->dtlsServer, &ctx->dtls, &dtls_send_listener, &receivedCb, &eventCb, ctx);
+    const uint8_t clientId[] = { 0x42 };
+    np_error_code ec2 = pl->dtlsS.create_connection(ctx->dtlsServer, clientId, sizeof(clientId), &ctx->dtls, &dtls_send_listener, &receivedCb, &eventCb, ctx);
     NABTO_LOG_TRACE(0, "ctx->dtls: %u", ctx->dtls);
     if(ec2 != NABTO_EC_OK) {
         exit(1);

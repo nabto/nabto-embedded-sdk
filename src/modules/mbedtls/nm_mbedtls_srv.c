@@ -13,7 +13,7 @@
 #if !defined(DEVICE_MBEDTLS_2)
 #include <mbedtls/build_info.h>
 #endif
-//#include <mbedtls/ssl_cookie.h>
+#include <mbedtls/ssl_cookie.h>
 
 
 
@@ -22,12 +22,21 @@
 
 #define LOG NABTO_LOG_MODULE_DTLS_SRV
 
+#if defined(MBEDTLS_SSL_DTLS_HELLO_VERIFY) && defined(MBEDTLS_SSL_COOKIE_C)
+#define NM_MBEDTLS_SRV_COOKIES
+#endif
+
+#define NM_MBEDTLS_SRV_MAX_CLIENT_ID_SIZE 64
+
 static const int allowedCipherSuitesList[] = { MBEDTLS_TLS_ECDHE_ECDSA_WITH_AES_128_CCM, 0 };
 
 const char* nm_mbedtls_srv_alpnList[] = {NABTO_PROTOCOL_VERSION , NULL};
 
 struct np_dtls_srv_connection {
     struct np_platform* pl;
+    struct np_dtls_srv* server;
+    uint8_t clientId[NM_MBEDTLS_SRV_MAX_CLIENT_ID_SIZE];
+    size_t clientIdSize;
     enum sslState state;
     mbedtls_ssl_context ssl;
     uint8_t currentChannelId;
@@ -66,6 +75,9 @@ struct np_dtls_srv {
     mbedtls_ssl_config conf;
     mbedtls_x509_crt publicKey;
     mbedtls_pk_context privateKey;
+#if defined(NM_MBEDTLS_SRV_COOKIES)
+    mbedtls_ssl_cookie_ctx cookieCtx;
+#endif
     uint16_t mtu;
 };
 
@@ -81,7 +93,16 @@ static np_error_code nm_mbedtls_srv_set_keys(struct np_dtls_srv* server,
                                           const unsigned char* publicKeyL, size_t publicKeySize,
                                           const unsigned char* privateKeyL, size_t privateKeySize);
 
-static np_error_code nm_mbedtls_srv_create_connection(struct np_dtls_srv* server, struct np_dtls_srv_connection** dtls,
+#if defined(NM_MBEDTLS_SRV_COOKIES)
+static np_error_code nm_mbedtls_srv_verify_client_hello(struct np_dtls_srv* server,
+                                                        const uint8_t* clientId, size_t clientIdSize,
+                                                        const uint8_t* packet, size_t packetSize,
+                                                        uint8_t* response, size_t* responseSize);
+#endif
+
+static np_error_code nm_mbedtls_srv_create_connection(struct np_dtls_srv* server,
+                                                   const uint8_t* clientId, size_t clientIdSize,
+                                                   struct np_dtls_srv_connection** dtls,
                                                    np_dtls_sender sender,
                                                    np_dtls_data_handler dataHandler,
                                                    np_dtls_event_handler eventHandler, void* data);
@@ -103,6 +124,7 @@ void nm_mbedtls_srv_do_one(void* data);
 void nm_mbedtls_srv_start_send(struct np_dtls_srv_connection* ctx);
 void nm_mbedtls_srv_start_send_deferred(void* data);
 static void nm_mbedtls_srv_do_free_connection(struct np_dtls_srv_connection *conn);
+static int nm_mbedtls_srv_reset_ssl(struct np_dtls_srv_connection* ctx);
 
 // Function called by mbedtls when data should be sent to the network
 int nm_mbedtls_srv_mbedtls_send(void* data, const unsigned char* buffer, size_t bufferSize);
@@ -140,6 +162,12 @@ np_error_code nm_mbedtls_srv_init(struct np_platform* pl)
     pl->dtlsS.destroy = &nm_mbedtls_srv_destroy;
     pl->dtlsS.set_keys = &nm_mbedtls_srv_set_keys;
     pl->dtlsS.get_server_fingerprint = &nm_mbedtls_srv_get_server_fingerprint;
+#if defined(NM_MBEDTLS_SRV_COOKIES)
+    pl->dtlsS.verify_client_hello = &nm_mbedtls_srv_verify_client_hello;
+#else
+    NABTO_LOG_WARN(LOG, "mbedtls is built without MBEDTLS_SSL_DTLS_HELLO_VERIFY or MBEDTLS_SSL_COOKIE_C, the DTLS server cannot verify client addresses.");
+    pl->dtlsS.verify_client_hello = NULL;
+#endif
     pl->dtlsS.create_connection = &nm_mbedtls_srv_create_connection;
     pl->dtlsS.destroy_connection = &nm_mbedtls_srv_destroy_connection;
     pl->dtlsS.async_send_data = &nm_mbedtls_srv_async_send_data;
@@ -190,6 +218,9 @@ np_error_code nm_mbedtls_srv_create(struct np_platform* pl, struct np_dtls_srv**
     mbedtls_ctr_drbg_init( &(*server)->ctr_drbg );
     mbedtls_x509_crt_init( &(*server)->publicKey );
     mbedtls_pk_init( &(*server)->privateKey );
+#if defined(NM_MBEDTLS_SRV_COOKIES)
+    mbedtls_ssl_cookie_init( &(*server)->cookieCtx );
+#endif
     return NABTO_EC_OK;
 }
 
@@ -200,6 +231,9 @@ void nm_mbedtls_srv_destroy(struct np_dtls_srv* server)
     mbedtls_ctr_drbg_free( &server->ctr_drbg );
     mbedtls_x509_crt_free( &server->publicKey );
     mbedtls_pk_free( &server->privateKey );
+#if defined(NM_MBEDTLS_SRV_COOKIES)
+    mbedtls_ssl_cookie_free( &server->cookieCtx );
+#endif
 
     np_free(server);
 }
@@ -212,16 +246,23 @@ np_error_code nm_mbedtls_srv_set_keys(struct np_dtls_srv* server,
 }
 
 np_error_code nm_mbedtls_srv_create_connection(struct np_dtls_srv* server,
+                                            const uint8_t* clientId, size_t clientIdSize,
                                             struct np_dtls_srv_connection** dtls,
                                             np_dtls_sender sender,
                                             np_dtls_data_handler dataHandler,
                                             np_dtls_event_handler eventHandler, void* data)
 {
+    if (clientIdSize == 0 || clientIdSize > NM_MBEDTLS_SRV_MAX_CLIENT_ID_SIZE) {
+        return NABTO_EC_INVALID_ARGUMENT;
+    }
     struct np_dtls_srv_connection* ctx = (struct np_dtls_srv_connection*)np_calloc(1, sizeof(struct np_dtls_srv_connection));
     if(!ctx) {
         return NABTO_EC_OUT_OF_MEMORY;
     }
     ctx->pl = server->pl;
+    ctx->server = server;
+    memcpy(ctx->clientId, clientId, clientIdSize);
+    ctx->clientIdSize = clientIdSize;
     ctx->sender = sender;
     ctx->dataHandler = dataHandler;
     ctx->eventHandler = eventHandler;
@@ -266,23 +307,8 @@ np_error_code nm_mbedtls_srv_create_connection(struct np_dtls_srv* server,
     mbedtls_ssl_set_timer_cb(&ctx->ssl, &ctx->timer, &nm_mbedtls_timer_set_delay,
                               &nm_mbedtls_timer_get_delay );
 
-    ret = mbedtls_ssl_session_reset( &ctx->ssl );
-    if ( ret != 0) {
-        NABTO_LOG_ERROR(LOG, " failed ! mbedtls_ssl_session_reset returned %d", ret );
-        return NABTO_EC_UNKNOWN;
-    }
-
-//    ret = mbedtls_ssl_set_client_transport_id(&ctx->ssl, (const unsigned char*)conn, sizeof(np_connection));
-//    if (ret != 0) {
-//        NABTO_LOG_ERROR(LOG, "mbedtls_ssl_set_client_transport_id() returned -0x%x\n\n", -ret);
-//        return NABTO_EC_UNKNOWN;
-//    }
-
-    mbedtls_ssl_set_hs_authmode( &ctx->ssl, MBEDTLS_SSL_VERIFY_OPTIONAL );
-
-    ret = mbedtls_ssl_set_hs_own_cert(&ctx->ssl, &server->publicKey, &server->privateKey);
+    ret = nm_mbedtls_srv_reset_ssl(ctx);
     if (ret != 0) {
-        NABTO_LOG_ERROR(LOG, "failed ! mbedtls_ssl_set_hs_own_cert returned %d", ret);
         return NABTO_EC_UNKNOWN;
     }
 
@@ -294,6 +320,156 @@ np_error_code nm_mbedtls_srv_create_connection(struct np_dtls_srv* server,
     *dtls = ctx;
     return NABTO_EC_OK;
 }
+
+/**
+ * Prepare the ssl context for a new handshake. The handshake parameters and the
+ * client transport id are cleared by a session reset, so they are set again.
+ */
+int nm_mbedtls_srv_reset_ssl(struct np_dtls_srv_connection* ctx)
+{
+    int ret = mbedtls_ssl_session_reset( &ctx->ssl );
+    if ( ret != 0) {
+        NABTO_LOG_ERROR(LOG, " failed ! mbedtls_ssl_session_reset returned %d", ret );
+        return ret;
+    }
+
+#if defined(NM_MBEDTLS_SRV_COOKIES)
+    ret = mbedtls_ssl_set_client_transport_id(&ctx->ssl, ctx->clientId, ctx->clientIdSize);
+    if (ret != 0) {
+        NABTO_LOG_ERROR(LOG, "mbedtls_ssl_set_client_transport_id() returned -0x%x", -ret);
+        return ret;
+    }
+#endif
+
+    mbedtls_ssl_set_hs_authmode( &ctx->ssl, MBEDTLS_SSL_VERIFY_OPTIONAL );
+
+    ret = mbedtls_ssl_set_hs_own_cert(&ctx->ssl, &ctx->server->publicKey, &ctx->server->privateKey);
+    if (ret != 0) {
+        NABTO_LOG_ERROR(LOG, "failed ! mbedtls_ssl_set_hs_own_cert returned %d", ret);
+        return ret;
+    }
+    return 0;
+}
+
+#if defined(NM_MBEDTLS_SRV_COOKIES)
+
+#define DTLS_RECORD_HEADER_SIZE 13
+#define DTLS_HANDSHAKE_HEADER_SIZE 12
+#define DTLS_CONTENT_TYPE_HANDSHAKE 22
+#define DTLS_HANDSHAKE_CLIENT_HELLO 1
+#define DTLS_HANDSHAKE_HELLO_VERIFY_REQUEST 3
+
+static uint32_t uint24_from_bigendian(const uint8_t* bytes)
+{
+    return ((uint32_t)bytes[0] << 16) | ((uint32_t)bytes[1] << 8) | (uint32_t)bytes[2];
+}
+
+static void uint24_to_bigendian(uint8_t* bytes, size_t value)
+{
+    bytes[0] = (uint8_t)(value >> 16);
+    bytes[1] = (uint8_t)(value >> 8);
+    bytes[2] = (uint8_t)value;
+}
+
+/**
+ * Stateless version of the cookie exchange mbedtls does in
+ * ssl_parse_client_hello, so no ssl context has to be allocated for a peer
+ * before it has proven that it owns its source address.
+ */
+np_error_code nm_mbedtls_srv_verify_client_hello(struct np_dtls_srv* server,
+                                                 const uint8_t* clientId, size_t clientIdSize,
+                                                 const uint8_t* packet, size_t packetSize,
+                                                 uint8_t* response, size_t* responseSize)
+{
+    if (packetSize < DTLS_RECORD_HEADER_SIZE + DTLS_HANDSHAKE_HEADER_SIZE) {
+        return NABTO_EC_MALFORMED_PACKET;
+    }
+    const uint8_t* record = packet;
+    size_t recordLength = ((size_t)record[11] << 8) | record[12];
+    if (record[0] != DTLS_CONTENT_TYPE_HANDSHAKE ||
+        record[3] != 0 || record[4] != 0 || // epoch
+        recordLength > packetSize - DTLS_RECORD_HEADER_SIZE ||
+        recordLength < DTLS_HANDSHAKE_HEADER_SIZE)
+    {
+        return NABTO_EC_MALFORMED_PACKET;
+    }
+
+    const uint8_t* handshake = record + DTLS_RECORD_HEADER_SIZE;
+    size_t messageLength = uint24_from_bigendian(handshake + 1);
+    // Only unfragmented ClientHellos are accepted, a fragmented one is answered
+    // by mbedtls with an error anyway.
+    if (handshake[0] != DTLS_HANDSHAKE_CLIENT_HELLO ||
+        uint24_from_bigendian(handshake + 6) != 0 ||
+        uint24_from_bigendian(handshake + 9) != messageLength ||
+        messageLength > recordLength - DTLS_HANDSHAKE_HEADER_SIZE)
+    {
+        return NABTO_EC_MALFORMED_PACKET;
+    }
+
+    // client_version(2) random(32) session_id<0..32> cookie<0..2^8-1>
+    const uint8_t* body = handshake + DTLS_HANDSHAKE_HEADER_SIZE;
+    size_t offset = 2 + 32;
+    if (offset + 1 > messageLength) {
+        return NABTO_EC_MALFORMED_PACKET;
+    }
+    size_t sessionIdLength = body[offset];
+    if (sessionIdLength > 32) {
+        return NABTO_EC_MALFORMED_PACKET;
+    }
+    offset += 1 + sessionIdLength;
+    if (offset + 1 > messageLength) {
+        return NABTO_EC_MALFORMED_PACKET;
+    }
+    size_t cookieLength = body[offset];
+    offset += 1;
+    if (offset + cookieLength > messageLength) {
+        return NABTO_EC_MALFORMED_PACKET;
+    }
+    const uint8_t* cookie = body + offset;
+
+    if (cookieLength > 0 &&
+        mbedtls_ssl_cookie_check(&server->cookieCtx, cookie, cookieLength, clientId, clientIdSize) == 0)
+    {
+        return NABTO_EC_OK;
+    }
+
+    // Answer with a HelloVerifyRequest using the record and message sequence
+    // numbers of the ClientHello, as mbedtls does.
+    uint8_t* end = response + NP_DTLS_SRV_MAX_HELLO_VERIFY_SIZE;
+    uint8_t* hvrHandshake = response + DTLS_RECORD_HEADER_SIZE;
+    uint8_t* p = hvrHandshake + DTLS_HANDSHAKE_HEADER_SIZE;
+    // server_version, the version negotiated later is DTLS 1.2.
+    *p++ = 0xfe;
+    *p++ = 0xfd;
+    uint8_t* cookieLengthByte = p++;
+    int ret = mbedtls_ssl_cookie_write(&server->cookieCtx, &p, end, clientId, clientIdSize);
+    if (ret != 0) {
+        NABTO_LOG_ERROR(LOG, "mbedtls_ssl_cookie_write returned -0x%04x", -ret);
+        return NABTO_EC_UNKNOWN;
+    }
+    *cookieLengthByte = (uint8_t)(p - (cookieLengthByte + 1));
+    size_t hvrMessageLength = (size_t)(p - hvrHandshake) - DTLS_HANDSHAKE_HEADER_SIZE;
+    size_t hvrRecordLength = (size_t)(p - hvrHandshake);
+
+    hvrHandshake[0] = DTLS_HANDSHAKE_HELLO_VERIFY_REQUEST;
+    uint24_to_bigendian(hvrHandshake + 1, hvrMessageLength);
+    hvrHandshake[4] = handshake[4]; // message_seq
+    hvrHandshake[5] = handshake[5];
+    uint24_to_bigendian(hvrHandshake + 6, 0); // fragment_offset
+    uint24_to_bigendian(hvrHandshake + 9, hvrMessageLength); // fragment_length
+
+    response[0] = DTLS_CONTENT_TYPE_HANDSHAKE;
+    response[1] = 0xfe; // DTLS 1.2
+    response[2] = 0xfd;
+    memcpy(response + 3, record + 3, 8); // epoch and sequence number
+    response[11] = (uint8_t)(hvrRecordLength >> 8);
+    response[12] = (uint8_t)hvrRecordLength;
+
+    *responseSize = (size_t)(p - response);
+    return NABTO_EC_OPERATION_STARTED;
+}
+
+#endif
 
 void nm_mbedtls_srv_do_free_connection(struct np_dtls_srv_connection* conn)
 {
@@ -373,6 +549,16 @@ void nm_mbedtls_srv_do_one(void* data)
         } else if (ret == MBEDTLS_ERR_SSL_TIMEOUT) {
             nm_mbedtls_timer_cancel(&ctx->timer);
             event_callback(ctx, NP_DTLS_EVENT_CLOSED);
+#if defined(NM_MBEDTLS_SRV_COOKIES)
+        } else if (ret == MBEDTLS_ERR_SSL_HELLO_VERIFY_REQUIRED) {
+            // A HelloVerifyRequest has been sent, wait for the ClientHello
+            // with the cookie on a fresh session.
+            nm_mbedtls_timer_cancel(&ctx->timer);
+            if (nm_mbedtls_srv_reset_ssl(ctx) != 0) {
+                event_callback(ctx, NP_DTLS_EVENT_CLOSED);
+                return;
+            }
+#endif
         } else if (ret == 0) {
             NABTO_LOG_TRACE(LOG, "State changed to DATA");
 
@@ -544,6 +730,15 @@ np_error_code nm_mbedtls_srv_init_config(struct np_dtls_srv* server,
     }
     mbedtls_ssl_conf_rng( &server->conf, mbedtls_ctr_drbg_random, &server->ctr_drbg );
 
+#if defined(NM_MBEDTLS_SRV_COOKIES)
+    ret = mbedtls_ssl_cookie_setup( &server->cookieCtx, mbedtls_ctr_drbg_random, &server->ctr_drbg );
+    if( ret != 0 )
+    {
+        NABTO_LOG_ERROR(LOG, " failed ! mbedtls_ssl_cookie_setup returned %d", ret );
+        return NABTO_EC_UNKNOWN;
+    }
+#endif
+
     nm_mbedtls_util_check_logging(&server->conf);
 
     ret = mbedtls_x509_crt_parse( &server->publicKey, publicKeyL, publicKeySize+1);
@@ -572,8 +767,11 @@ np_error_code nm_mbedtls_srv_init_config(struct np_dtls_srv* server,
         NABTO_LOG_ERROR(LOG,"mbedtls_ssl_conf_own_cert returned %d", ret);
         return NABTO_EC_UNKNOWN;
     }
-#if defined(MBEDTLS_SSL_DTLS_HELLO_VERIFY)
-    mbedtls_ssl_conf_dtls_cookies(&server->conf, NULL, NULL, NULL);
+#if defined(NM_MBEDTLS_SRV_COOKIES)
+    // A peer has to prove that it owns its source address before it gets the
+    // much larger ServerHello flight, otherwise the device can be used to
+    // reflect and amplify traffic towards a spoofed address.
+    mbedtls_ssl_conf_dtls_cookies(&server->conf, mbedtls_ssl_cookie_write, mbedtls_ssl_cookie_check, &server->cookieCtx);
 #endif
 
     mbedtls_ssl_conf_handshake_timeout(&server->conf, 1000, 16000);

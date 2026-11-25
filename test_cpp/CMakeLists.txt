@@ -67,6 +67,7 @@ set(test_src
   tests/spake2/spake2_wolfssl_test.cpp
   tests/spake2/spake2_openssl_test.cpp
   tests/dtls/dtls_record_size_test.cpp
+  tests/dtls/dtls_hello_verify_test.cpp
   tests/dtls/dtls_wolfssl_mtu_test.cpp
   tests/dtls/dtls_wolfssl_cli_test.cpp
   tests/dtls/dtls_openssl_test.cpp

@@ -23,6 +23,11 @@ struct nc_client_connection_dispatch_context {
     bool closing;
     bool sendingInternalError;
     struct np_completion_event sendCompletionEvent;
+#if !defined(NABTO_DEVICE_DTLS_CLIENT_ONLY)
+    bool sendingHelloVerify;
+    struct np_completion_event helloVerifyCompletionEvent;
+    uint8_t helloVerifyBuffer[16 + NP_DTLS_SRV_MAX_HELLO_VERIFY_SIZE];
+#endif
 };
 
 np_error_code nc_client_connection_dispatch_init(struct nc_client_connection_dispatch_context* ctx,
