@@ -25,12 +25,8 @@ NabtoDeviceListener* NABTO_DEVICE_API nabto_device_listener_new(NabtoDevice* dev
     listener->dev = dev;
     listener->genericFutureResolverData = NULL;
 
-    nn_llist_append(&dev->listeners, &listener->listenersItem, listener);
-
     nabto_device_threads_mutex_lock(dev->eventMutex);
-
-    //add_listener_to_device(dev, listener);
-
+    nn_llist_append(&dev->listeners, &listener->listenersItem, listener);
     nabto_device_threads_mutex_unlock(dev->eventMutex);
     return (NabtoDeviceListener*)listener;
 }
@@ -144,15 +140,17 @@ np_error_code nabto_device_listener_get_status(struct nabto_device_listener* lis
 
 void nabto_device_listener_stop_all(struct nabto_device_context* dev)
 {
+    // The lock is held for the whole walk, as nabto_device_listener_free on
+    // another thread removes listeners from the list.
+    nabto_device_threads_mutex_lock(dev->eventMutex);
     struct nn_llist_iterator it = nn_llist_begin(&dev->listeners);
     while(!nn_llist_is_end(&it))
     {
         struct nabto_device_listener* l = nn_llist_get_item(&it);
-        nabto_device_threads_mutex_lock(l->dev->eventMutex);
         nabto_device_listener_stop_internal(l);
         nn_llist_next(&it);
-        nabto_device_threads_mutex_unlock(l->dev->eventMutex);
     }
+    nabto_device_threads_mutex_unlock(dev->eventMutex);
 }
 
 
