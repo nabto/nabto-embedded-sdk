@@ -425,6 +425,9 @@ void nc_coap_server_request_free(struct nc_coap_server_request* request)
 void nc_coap_server_virtual_request_free(struct nc_coap_server_request* request)
 {
     if (request->isVirtual) {
+        // The handler data is the client's request, which is freed after this
+        // call. Resolve it now so the handler is never called later.
+        nc_coap_server_resolve_virtual(NABTO_EC_STOPPED, request);
         request->virRequest->clientFreed = true;
         if (request->virRequest->serverFreed) {
             do_free_virtual_request(request);
