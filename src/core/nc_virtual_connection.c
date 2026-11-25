@@ -22,6 +22,8 @@ void nc_virtual_connection_destroy(struct nc_virtual_connection* conn)
 {
     nc_connection_events_listener_notify(conn->parent, NC_CONNECTION_EVENT_CLOSED);
     nc_coap_server_remove_connection(&conn->parent->device->coapServer, conn->parent);
+    // The streams on the connection are stopped and no longer point to it.
+    nc_stream_manager_remove_connection(&conn->parent->device->streamManager, conn->parent);
 
     nn_llist_deinit(&conn->coapRequests);
     np_free(conn->clientFingerprint);

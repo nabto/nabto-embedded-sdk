@@ -25,6 +25,9 @@ struct nabto_device_stream {
 
     struct nn_llist_node eventListNode;
 
+    // The application holds a reference until it frees the stream, each
+    // outstanding operation holds one through its completion event.
+    struct np_ref ref;
 };
 
 np_error_code nabto_device_stream_listener_callback(const np_error_code ec, struct nabto_device_future* future, void* eventData, void* listenerData);

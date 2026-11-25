@@ -17,6 +17,7 @@ struct nabto_device_stream_listener_context {
 };
 
 static void nabto_device_stream_free_internal(struct nabto_device_stream* stream);
+static void nabto_device_stream_release(struct np_ref* ref);
 
 /*******************************************
  * Streaming Api
@@ -142,7 +143,7 @@ void NABTO_DEVICE_API nabto_device_stream_accept(NabtoDeviceStream* stream, Nabt
         nabto_device_future_resolve(fut, NABTO_DEVICE_EC_OPERATION_IN_PROGRESS);
     } else {
         str->acceptFut = fut;
-        np_completion_event_init(&str->dev->pl.eq, &str->acceptEv, nabto_device_stream_accept_callback, str, NULL);
+        np_completion_event_init(&str->dev->pl.eq, &str->acceptEv, nabto_device_stream_accept_callback, str, &str->ref);
         nc_stream_async_accept(str->stream, &str->acceptEv);
     }
     nabto_device_threads_mutex_unlock(str->dev->eventMutex);
@@ -249,7 +250,7 @@ void NABTO_DEVICE_API nabto_device_stream_read_all(NabtoDeviceStream* stream,
         nabto_device_future_resolve(fut, NABTO_DEVICE_EC_OPERATION_IN_PROGRESS);
     } else {
         str->readFut = fut;
-        np_completion_event_init(&str->dev->pl.eq, &str->readEv, nabto_device_stream_read_callback, str, NULL);
+        np_completion_event_init(&str->dev->pl.eq, &str->readEv, nabto_device_stream_read_callback, str, &str->ref);
 
         nc_stream_async_read_all(str->stream, buffer, bufferLength, readLength, &str->readEv);
     }
@@ -270,7 +271,7 @@ void NABTO_DEVICE_API nabto_device_stream_read_some(NabtoDeviceStream* stream,
         nabto_device_future_resolve(fut, NABTO_DEVICE_EC_OPERATION_IN_PROGRESS);
     } else {
         str->readFut = fut;
-        np_completion_event_init(&str->dev->pl.eq, &str->readEv, nabto_device_stream_read_callback, str, NULL);
+        np_completion_event_init(&str->dev->pl.eq, &str->readEv, nabto_device_stream_read_callback, str, &str->ref);
 
         nc_stream_async_read_some(str->stream, buffer, bufferLength, readLength, &str->readEv);
     }
@@ -300,7 +301,7 @@ void NABTO_DEVICE_API nabto_device_stream_write(NabtoDeviceStream* stream,
         nabto_device_future_resolve(fut, NABTO_DEVICE_EC_OPERATION_IN_PROGRESS);
     } else {
         str->writeFut = fut;
-        np_completion_event_init(&str->dev->pl.eq, &str->writeEv, nabto_device_stream_write_callback, str, NULL);
+        np_completion_event_init(&str->dev->pl.eq, &str->writeEv, nabto_device_stream_write_callback, str, &str->ref);
 
         nc_stream_async_write(str->stream, buffer, bufferLength, &str->writeEv);
     }
@@ -330,7 +331,7 @@ void NABTO_DEVICE_API nabto_device_stream_close(NabtoDeviceStream* stream, Nabto
         nabto_device_future_resolve(fut, NABTO_DEVICE_EC_OPERATION_IN_PROGRESS);
     } else {
         str->closeFut = fut;
-        np_completion_event_init(&str->dev->pl.eq, &str->closeEv, nabto_device_stream_close_callback, str, NULL);
+        np_completion_event_init(&str->dev->pl.eq, &str->closeEv, nabto_device_stream_close_callback, str, &str->ref);
 
         nc_stream_async_close(str->stream, &str->closeEv);
     }
@@ -338,8 +339,17 @@ void NABTO_DEVICE_API nabto_device_stream_close(NabtoDeviceStream* stream, Nabto
 }
 
 void nabto_device_stream_free_internal(struct nabto_device_stream* str) {
+    // The core resolves outstanding operations with NABTO_EC_ABORTED, their
+    // callbacks resolve the futures. The stream is freed when the last
+    // callback has run.
     nc_stream_destroy(str->stream);
-    np_free(str);
+    str->stream = NULL;
+    np_ref_put(&str->ref);
+}
+
+void nabto_device_stream_release(struct np_ref* ref)
+{
+    np_free(np_ref_container(ref, struct nabto_device_stream, ref));
 }
 
 /*******************************************
@@ -389,6 +399,7 @@ void nabto_device_stream_core_callback(np_error_code ec, struct nc_stream_contex
             nc_stream_destroy(stream);
             return;
         }
+        np_ref_init(&str->ref, &dev->pl.refTracker, &nabto_device_stream_release);
         str->stream = stream;
         str->dev = dev;
         // using the stream structure directly as listener event, this means we dont free event untill user calls stream_free()

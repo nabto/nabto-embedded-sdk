@@ -34,6 +34,10 @@ struct nabto_device_virtual_stream {
 
     struct nabto_device_future* closeFuture;
     struct np_completion_event closeEv;
+
+    // The application holds a reference until it frees the stream, each
+    // outstanding operation holds one through its completion event.
+    struct np_ref ref;
 };
 
 struct nabto_device_virtual_coap_response {
@@ -65,6 +69,7 @@ struct nabto_device_virtual_connection {
 static void response_handler(np_error_code ec, struct nc_coap_server_request* request, void* userData);
 
 static void stream_opened(np_error_code ec, void* userdata);
+static void virtual_stream_release(struct np_ref* ref);
 void write_completed(np_error_code ec, void* userdata);
 void read_completed(np_error_code ec, void* userdata);
 void close_completed(np_error_code ec, void* userdata);
@@ -406,6 +411,9 @@ nabto_device_virtual_stream_new(NabtoDeviceVirtualConnection* connection)
     }
     virStream->connection = conn;
     virStream->device = conn->dev;
+    nabto_device_threads_mutex_lock(conn->dev->eventMutex);
+    np_ref_init(&virStream->ref, &conn->dev->pl.refTracker, &virtual_stream_release);
+    nabto_device_threads_mutex_unlock(conn->dev->eventMutex);
     return (NabtoDeviceVirtualStream*)virStream;
 }
 
@@ -417,9 +425,21 @@ nabto_device_virtual_stream_free(NabtoDeviceVirtualStream* stream)
     struct nabto_device_virtual_stream* str = (struct nabto_device_virtual_stream*)stream;
     struct nabto_device_context* dev = str->device;
     nabto_device_threads_mutex_lock(dev->eventMutex);
-    nc_virtual_stream_destroy(str->stream);
+    if (str->stream != NULL) {
+        // Outstanding operations are resolved with NABTO_EC_ABORTED, their
+        // callbacks resolve the futures.
+        nc_virtual_stream_client_stop(str->stream);
+        nc_virtual_stream_destroy(str->stream);
+        str->stream = NULL;
+    }
+    // The stream is freed when the last callback has run.
+    np_ref_put(&str->ref);
     nabto_device_threads_mutex_unlock(dev->eventMutex);
-    np_free(str);
+}
+
+void virtual_stream_release(struct np_ref* ref)
+{
+    np_free(np_ref_container(ref, struct nabto_device_virtual_stream, ref));
 }
 
 
@@ -432,10 +452,12 @@ nabto_device_virtual_stream_open(NabtoDeviceVirtualStream* stream, NabtoDeviceFu
     struct nabto_device_future* fut = (struct nabto_device_future*)future;
     nabto_device_future_reset(fut);
     str->openFuture = fut;
-    np_completion_event_init(&str->device->pl.eq, &str->openEv, &stream_opened, str, NULL);
+    np_completion_event_init(&str->device->pl.eq, &str->openEv, &stream_opened, str, &str->ref);
 
     str->stream = nc_stream_manager_accept_virtual_stream(&dev->core.streamManager, str->connection->connection, port, &str->openEv);
     if (str->stream == NULL) {
+        np_completion_event_deinit(&str->openEv);
+        str->openFuture = NULL;
         nabto_device_future_resolve(fut, NABTO_DEVICE_EC_OUT_OF_MEMORY);
     }
     nabto_device_threads_mutex_unlock(dev->eventMutex);
@@ -460,7 +482,7 @@ nabto_device_virtual_stream_read_all(NabtoDeviceVirtualStream* stream,
         return;
     }
     str->readFuture = fut;
-    np_completion_event_init(&str->device->pl.eq, &str->readEv, &read_completed, str, NULL);
+    np_completion_event_init(&str->device->pl.eq, &str->readEv, &read_completed, str, &str->ref);
     nc_virtual_stream_client_async_read_all(str->stream, buffer, bufferLength, readLength, &str->readEv);
 
     nabto_device_threads_mutex_unlock(dev->eventMutex);
@@ -486,7 +508,7 @@ nabto_device_virtual_stream_read_some(NabtoDeviceVirtualStream* stream,
         return;
     }
     str->readFuture = fut;
-    np_completion_event_init(&str->device->pl.eq, &str->readEv, &read_completed, str, NULL);
+    np_completion_event_init(&str->device->pl.eq, &str->readEv, &read_completed, str, &str->ref);
     nc_virtual_stream_client_async_read_some(str->stream, buffer, bufferLength, readLength, &str->readEv);
 
     nabto_device_threads_mutex_unlock(dev->eventMutex);
@@ -512,7 +534,7 @@ nabto_device_virtual_stream_write(NabtoDeviceVirtualStream* stream,
         return;
     }
     str->writeFuture = fut;
-    np_completion_event_init(&str->device->pl.eq, &str->writeEv, &write_completed, str, NULL);
+    np_completion_event_init(&str->device->pl.eq, &str->writeEv, &write_completed, str, &str->ref);
     nc_virtual_stream_client_async_write(str->stream, buffer, bufferLength, &str->writeEv);
 
     nabto_device_threads_mutex_unlock(dev->eventMutex);
@@ -532,7 +554,7 @@ nabto_device_virtual_stream_close(NabtoDeviceVirtualStream* stream, NabtoDeviceF
         return;
     }
     str->closeFuture = fut;
-    np_completion_event_init(&str->device->pl.eq, &str->closeEv, &close_completed, str, NULL);
+    np_completion_event_init(&str->device->pl.eq, &str->closeEv, &close_completed, str, &str->ref);
 
     nc_virtual_stream_client_async_close(str->stream, &str->closeEv);
     nabto_device_threads_mutex_unlock(dev->eventMutex);
