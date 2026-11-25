@@ -58,17 +58,7 @@ void request_callback(NabtoDeviceFuture* future, NabtoDeviceError ec, void* user
     if (ctx->ev == NABTO_DEVICE_CONNECTION_EVENT_CLOSED){
         NN_LOG_TRACE(iam->logger, LOGM, "IAM received connection closed event for ref: %d", ctx->ref);
         nm_iam_lock(iam);
-
-
-        for (size_t i = 0; i < nn_vector_size(&iam->authorizedConnections); i++) {
-            struct nm_iam_authorized_connection* conn = nn_vector_reference(&iam->authorizedConnections, i);
-            NN_LOG_TRACE(iam->logger, LOGM, "  Checking index: %d %d == %d ?", i, conn->ref, ctx->ref);
-            if (conn->ref == ctx->ref) {
-                nn_vector_erase(&iam->authorizedConnections, i);
-                break;
-            }
-
-        }
+        nm_iam_internal_remove_authorized_connection(iam, ctx->ref);
 
         nm_iam_unlock(iam);
     } else {

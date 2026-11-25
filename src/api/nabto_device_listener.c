@@ -75,6 +75,11 @@ void NABTO_DEVICE_API nabto_device_listener_free(NabtoDeviceListener* deviceList
     struct nabto_device_context* dev = listener->dev;
     nabto_device_threads_mutex_lock(dev->eventMutex);
 
+    // A listener which is freed without being stopped is stopped first, so
+    // the module it belongs to forgets it before it is freed.
+    if (listener->isInitialized && listener->cb != NULL) {
+        nabto_device_listener_stop_internal(listener);
+    }
     nn_llist_erase_node(&listener->listenersItem);
 
     np_free(listener);
