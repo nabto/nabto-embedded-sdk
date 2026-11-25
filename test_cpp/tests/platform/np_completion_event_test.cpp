@@ -89,7 +89,7 @@ BOOST_AUTO_TEST_CASE(arm_resolve_callback)
 {
     TestQueue q;
     Owner owner;
-    BOOST_REQUIRE(np_completion_event_init(q.eq(), &owner.ev, &owner_callback, &owner) == NABTO_EC_OK);
+    BOOST_REQUIRE(np_completion_event_init(q.eq(), &owner.ev, &owner_callback, &owner, NULL) == NABTO_EC_OK);
     size_t violations = np_lifetime_violation_count();
 
     np_completion_event_arm(&owner.ev);
@@ -118,8 +118,7 @@ BOOST_AUTO_TEST_CASE(disarm)
     TestQueue q;
     Owner owner;
     np_ref_init(&owner.ref, NULL, &owner_release);
-    BOOST_REQUIRE(np_completion_event_init(q.eq(), &owner.ev, &owner_callback, &owner) == NABTO_EC_OK);
-    np_completion_event_set_owner(&owner.ev, &owner.ref);
+    BOOST_REQUIRE(np_completion_event_init(q.eq(), &owner.ev, &owner_callback, &owner, &owner.ref) == NABTO_EC_OK);
     size_t violations = np_lifetime_violation_count();
 
     np_completion_event_arm(&owner.ev);
@@ -142,8 +141,7 @@ BOOST_AUTO_TEST_CASE(owner_is_released_after_the_last_callback)
     Owner owner;
     np_ref_init(&owner.ref, &tracker, &owner_release);
     BOOST_TEST(tracker.live == (size_t)1);
-    BOOST_REQUIRE(np_completion_event_init(q.eq(), &owner.ev, &owner_callback, &owner) == NABTO_EC_OK);
-    np_completion_event_set_owner(&owner.ev, &owner.ref);
+    BOOST_REQUIRE(np_completion_event_init(q.eq(), &owner.ev, &owner_callback, &owner, &owner.ref) == NABTO_EC_OK);
 
     np_completion_event_arm(&owner.ev);
     np_completion_event_resolve(&owner.ev, NABTO_EC_ABORTED);
@@ -184,7 +182,7 @@ BOOST_AUTO_TEST_CASE(resolve_twice_is_a_violation)
 {
     TestQueue q;
     Owner owner;
-    BOOST_REQUIRE(np_completion_event_init(q.eq(), &owner.ev, &owner_callback, &owner) == NABTO_EC_OK);
+    BOOST_REQUIRE(np_completion_event_init(q.eq(), &owner.ev, &owner_callback, &owner, NULL) == NABTO_EC_OK);
     size_t violations = np_lifetime_violation_count();
 
     np_completion_event_arm(&owner.ev);
@@ -200,7 +198,7 @@ BOOST_AUTO_TEST_CASE(resolve_without_arm_is_a_violation)
 {
     TestQueue q;
     Owner owner;
-    BOOST_REQUIRE(np_completion_event_init(q.eq(), &owner.ev, &owner_callback, &owner) == NABTO_EC_OK);
+    BOOST_REQUIRE(np_completion_event_init(q.eq(), &owner.ev, &owner_callback, &owner, NULL) == NABTO_EC_OK);
     size_t violations = np_lifetime_violation_count();
     np_completion_event_resolve(&owner.ev, NABTO_EC_OK);
     q.runAll();
@@ -214,8 +212,7 @@ BOOST_AUTO_TEST_CASE(arm_twice_is_a_violation)
     TestQueue q;
     Owner owner;
     np_ref_init(&owner.ref, NULL, &owner_release);
-    BOOST_REQUIRE(np_completion_event_init(q.eq(), &owner.ev, &owner_callback, &owner) == NABTO_EC_OK);
-    np_completion_event_set_owner(&owner.ev, &owner.ref);
+    BOOST_REQUIRE(np_completion_event_init(q.eq(), &owner.ev, &owner_callback, &owner, &owner.ref) == NABTO_EC_OK);
     size_t violations = np_lifetime_violation_count();
 
     np_completion_event_arm(&owner.ev);
@@ -236,8 +233,7 @@ BOOST_AUTO_TEST_CASE(deinit_while_armed_is_a_violation)
     TestQueue q;
     Owner owner;
     np_ref_init(&owner.ref, NULL, &owner_release);
-    BOOST_REQUIRE(np_completion_event_init(q.eq(), &owner.ev, &owner_callback, &owner) == NABTO_EC_OK);
-    np_completion_event_set_owner(&owner.ev, &owner.ref);
+    BOOST_REQUIRE(np_completion_event_init(q.eq(), &owner.ev, &owner_callback, &owner, &owner.ref) == NABTO_EC_OK);
     size_t violations = np_lifetime_violation_count();
 
     np_completion_event_arm(&owner.ev);
@@ -258,7 +254,7 @@ BOOST_AUTO_TEST_CASE(reinit_while_armed_is_a_violation)
 {
     TestQueue q;
     Owner owner;
-    BOOST_REQUIRE(np_completion_event_init(q.eq(), &owner.ev, &owner_callback, &owner) == NABTO_EC_OK);
+    BOOST_REQUIRE(np_completion_event_init(q.eq(), &owner.ev, &owner_callback, &owner, NULL) == NABTO_EC_OK);
     size_t violations = np_lifetime_violation_count();
     np_completion_event_arm(&owner.ev);
     np_completion_event_reinit(&owner.ev, &owner_callback, &owner);

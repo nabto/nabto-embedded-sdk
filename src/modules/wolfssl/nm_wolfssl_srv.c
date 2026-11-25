@@ -280,7 +280,7 @@ np_error_code nm_wolfssl_srv_create_connection(
     }
 
     ec = np_completion_event_init(&pl->eq, &ctx->senderEvent,
-                                  &nm_wolfssl_srv_connection_send_callback, ctx);
+                                  &nm_wolfssl_srv_connection_send_callback, ctx, NULL);
     if (ec != NABTO_EC_OK) {
         return ec;
     }

@@ -264,7 +264,7 @@ np_error_code create_connection(struct np_platform* pl, struct np_dtls_cli_conne
         ec = np_event_queue_create_event(&pl->eq, &start_send_deferred, conn, &conn->startSendEvent);
     }
     if (ec == NABTO_EC_OK) {
-        ec = np_completion_event_init(&pl->eq, &conn->senderEvent, &dtls_udp_send_callback, conn);
+        ec = np_completion_event_init(&pl->eq, &conn->senderEvent, &dtls_udp_send_callback, conn, NULL);
     }
     if (ec != NABTO_EC_OK) {
         do_free_connection(conn);

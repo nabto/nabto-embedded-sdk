@@ -350,7 +350,7 @@ np_error_code nm_openssl_srv_create_connection(
         ec = np_event_queue_create_event(&pl->eq, &handle_timeout, ctx, &ctx->timerEvent);
     }
     if (ec == NABTO_EC_OK) {
-        ec = np_completion_event_init(&pl->eq, &ctx->senderEvent, &connection_send_callback, ctx);
+        ec = np_completion_event_init(&pl->eq, &ctx->senderEvent, &connection_send_callback, ctx, NULL);
     }
     if (ec != NABTO_EC_OK) {
         nm_openssl_srv_do_free_connection(ctx);

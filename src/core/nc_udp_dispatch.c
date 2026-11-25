@@ -26,7 +26,7 @@ np_error_code nc_udp_dispatch_init(struct nc_udp_dispatch_context* ctx, struct n
     if (ec != NABTO_EC_OK) {
         return ec;
     }
-    ec = np_completion_event_init(&pl->eq, &ctx->recvCompletionEvent, async_recv_wait_complete, ctx);
+    ec = np_completion_event_init(&pl->eq, &ctx->recvCompletionEvent, async_recv_wait_complete, ctx, NULL);
     if (ec != NABTO_EC_OK) {
         return ec;
     }

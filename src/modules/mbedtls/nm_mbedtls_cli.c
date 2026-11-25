@@ -295,7 +295,7 @@ np_error_code create_connection(struct np_platform* pl, struct np_dtls_cli_conne
     }
 
     ec = np_completion_event_init(&pl->eq, &conn->senderEvent,
-                                  &dtls_udp_send_callback, conn);
+                                  &dtls_udp_send_callback, conn, NULL);
     if (ec != NABTO_EC_OK) {
         return ec;
     }

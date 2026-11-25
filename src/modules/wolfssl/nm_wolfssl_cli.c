@@ -257,7 +257,7 @@ static np_error_code create_client_connection(
     }
 
     ec = np_completion_event_init(&pl->eq, &conn->senderEvent,
-                                  &nm_dtls_udp_send_callback, conn);
+                                  &nm_dtls_udp_send_callback, conn, NULL);
 
     conn->ssl = wolfSSL_new(ctx->ctx);
     if (conn->ssl == NULL) {

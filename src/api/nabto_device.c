@@ -192,7 +192,7 @@ NabtoDevice* NABTO_DEVICE_API nabto_device_new(void)
     }
 #endif
 
-    ec = np_completion_event_init(&dev->pl.eq, &dev->platformCloseEvent, nabto_device_platform_closed_cb, dev);
+    ec = np_completion_event_init(&dev->pl.eq, &dev->platformCloseEvent, nabto_device_platform_closed_cb, dev, NULL);
     if (ec != NABTO_EC_OK) {
         nabto_device_new_resolve_failure(dev);
         return NULL;

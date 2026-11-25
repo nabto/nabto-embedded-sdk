@@ -32,7 +32,7 @@ void nc_stream_manager_init(struct nc_stream_manager_context* ctx, struct np_pla
     ctx->nonceCounter = 0;
     nn_llist_init(&ctx->listeners);
     nn_llist_init(&ctx->streams);
-    np_completion_event_init(&pl->eq, &ctx->sendRstCtx.ev, &nc_stream_manager_send_rst_callback, ctx);
+    np_completion_event_init(&pl->eq, &ctx->sendRstCtx.ev, &nc_stream_manager_send_rst_callback, ctx, NULL);
 }
 
 void nc_stream_manager_resolve_listener(struct nc_stream_listener* listener, struct nc_stream_context* stream, np_error_code ec)

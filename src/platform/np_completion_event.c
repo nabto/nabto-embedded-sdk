@@ -8,11 +8,12 @@
 
 static void resolve_event_callback(void* userData);
 
-np_error_code np_completion_event_init(struct np_event_queue* eq, struct np_completion_event* completionEvent, np_completion_event_callback cb, void* userData)
+np_error_code np_completion_event_init(struct np_event_queue* eq, struct np_completion_event* completionEvent, np_completion_event_callback cb, void* userData, struct np_ref* owner)
 {
     memset(completionEvent, 0, sizeof(struct np_completion_event));
     completionEvent->cb = cb;
     completionEvent->userData = userData;
+    completionEvent->owner = owner;
     completionEvent->eq = *eq;
 
     np_error_code ec = np_event_queue_create_event(eq, &resolve_event_callback, completionEvent, &completionEvent->event);
@@ -46,15 +47,6 @@ void np_completion_event_reinit(struct np_completion_event* completionEvent, np_
     }
     completionEvent->cb = cb;
     completionEvent->userData = userData;
-}
-
-void np_completion_event_set_owner(struct np_completion_event* completionEvent, struct np_ref* owner)
-{
-    if (completionEvent->armed) {
-        np_lifetime_violation("owner changed on an armed completion event");
-        return;
-    }
-    completionEvent->owner = owner;
 }
 
 void np_completion_event_arm(struct np_completion_event* completionEvent)

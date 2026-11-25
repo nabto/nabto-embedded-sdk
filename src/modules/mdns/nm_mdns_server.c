@@ -53,17 +53,17 @@ static np_error_code instance_init(struct nm_mdns_server_instance* instance, str
     if (ec != NABTO_EC_OK) {
         return ec;
     }
-    ec = np_completion_event_init(&instance->server->eq, &instance->openedCompletionEvent, nm_mdns_socket_opened, instance);
+    ec = np_completion_event_init(&instance->server->eq, &instance->openedCompletionEvent, nm_mdns_socket_opened, instance, NULL);
     if (ec != NABTO_EC_OK) {
         return ec;
     }
 
-    ec = np_completion_event_init(&instance->server->eq, &instance->recvWaitCompletionEvent, nm_mdns_packet_recv_wait_completed, instance);
+    ec = np_completion_event_init(&instance->server->eq, &instance->recvWaitCompletionEvent, nm_mdns_packet_recv_wait_completed, instance, NULL);
     if (ec != NABTO_EC_OK) {
         return ec;
     }
 
-    ec = np_completion_event_init(&instance->server->eq, &instance->sendCompletionEvent, nm_mdns_packet_sent, instance);
+    ec = np_completion_event_init(&instance->server->eq, &instance->sendCompletionEvent, nm_mdns_packet_sent, instance, NULL);
     if (ec != NABTO_EC_OK) {
         return ec;
     }
@@ -101,7 +101,7 @@ np_error_code nm_mdns_server_init(struct nm_mdns_server* server, struct np_event
     server->mdnsUdpBind = *mdnsUdpBind;
     server->localIp = *localIp;
 
-    np_error_code ec = np_completion_event_init(eq, &server->instanceCloseCompletionEvent, NULL, NULL);
+    np_error_code ec = np_completion_event_init(eq, &server->instanceCloseCompletionEvent, NULL, NULL, NULL);
     if (ec != NABTO_EC_OK) {
         return ec;
     }

@@ -26,7 +26,7 @@ class DnsTest {
     DnsTest(nabto::test::TestPlatform& tp)
         : tp_(tp), pl_(tp.getPlatform()), dns_(pl_->dns)
     {
-        np_completion_event_init(&pl_->eq, &completionEvent_, &DnsTest::dnsCallback, this);
+        np_completion_event_init(&pl_->eq, &completionEvent_, &DnsTest::dnsCallback, this, NULL);
     }
     ~DnsTest()
     {
@@ -160,7 +160,7 @@ class CompletionWaiter {
  public:
     CompletionWaiter(struct np_platform* pl)
     {
-        np_completion_event_init(&pl->eq, &completionEvent_, &CompletionWaiter::callback, this);
+        np_completion_event_init(&pl->eq, &completionEvent_, &CompletionWaiter::callback, this, NULL);
     }
     ~CompletionWaiter()
     {

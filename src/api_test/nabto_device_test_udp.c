@@ -130,7 +130,7 @@ nabto_device_test_udp(NabtoDevice* device, const char* ip, uint16_t port, NabtoD
         return;
     }
 
-    ec = np_completion_event_init(&dev->pl.eq, &t->completionEvent, &socket_bound, t);
+    ec = np_completion_event_init(&dev->pl.eq, &t->completionEvent, &socket_bound, t, NULL);
     if (ec != NABTO_EC_OK) {
         resolve_and_free_test(t, ec);
         return;

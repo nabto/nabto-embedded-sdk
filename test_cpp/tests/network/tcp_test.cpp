@@ -33,7 +33,7 @@ class TcpEchoClientTest {
     TcpEchoClientTest(TestPlatform& tp)
         : pl_(tp.getPlatform()), tcp_(pl_->tcp), eq_(pl_->eq)
     {
-        np_completion_event_init(&eq_, &completionEvent_, NULL, NULL);
+        np_completion_event_init(&eq_, &completionEvent_, NULL, NULL, NULL);
     }
 
     ~TcpEchoClientTest() {
@@ -112,7 +112,7 @@ class TcpCloseClientTest {
     TcpCloseClientTest(TestPlatform& tp)
         : pl_(tp.getPlatform()), tcp_(pl_->tcp), eq_(pl_->eq)
     {
-        np_completion_event_init(&eq_, &completionEvent_, NULL, NULL);
+        np_completion_event_init(&eq_, &completionEvent_, NULL, NULL, NULL);
     }
 
     ~TcpCloseClientTest()

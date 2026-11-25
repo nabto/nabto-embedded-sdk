@@ -162,7 +162,7 @@ static void async_resolve_v4(struct np_dns* obj, const char* host, struct np_ip_
         np_completion_event_resolve(completionEvent, NABTO_EC_OUT_OF_MEMORY);
         return;
     }
-    np_error_code ec = np_completion_event_init(&ctx->eq, &dnsRequest->dnsCbDeZalgo, dns_cb_deferred, dnsRequest);
+    np_error_code ec = np_completion_event_init(&ctx->eq, &dnsRequest->dnsCbDeZalgo, dns_cb_deferred, dnsRequest, NULL);
     if (ec != NABTO_EC_OK) {
         np_free(dnsRequest);
         np_completion_event_resolve(completionEvent, ec);
@@ -226,7 +226,7 @@ static void async_resolve_v6(struct np_dns* obj, const char* host, struct np_ip_
         np_completion_event_resolve(completionEvent, NABTO_EC_OUT_OF_MEMORY);
         return;
     }
-    np_error_code ec = np_completion_event_init(&ctx->eq, &dnsRequest->dnsCbDeZalgo, dns_cb_deferred, dnsRequest);
+    np_error_code ec = np_completion_event_init(&ctx->eq, &dnsRequest->dnsCbDeZalgo, dns_cb_deferred, dnsRequest, NULL);
     if (ec != NABTO_EC_OK) {
         np_free(dnsRequest);
         np_completion_event_resolve(completionEvent, ec);

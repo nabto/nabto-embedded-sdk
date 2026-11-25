@@ -142,7 +142,7 @@ void NABTO_DEVICE_API nabto_device_stream_accept(NabtoDeviceStream* stream, Nabt
         nabto_device_future_resolve(fut, NABTO_DEVICE_EC_OPERATION_IN_PROGRESS);
     } else {
         str->acceptFut = fut;
-        np_completion_event_init(&str->dev->pl.eq, &str->acceptEv, nabto_device_stream_accept_callback, str);
+        np_completion_event_init(&str->dev->pl.eq, &str->acceptEv, nabto_device_stream_accept_callback, str, NULL);
         nc_stream_async_accept(str->stream, &str->acceptEv);
     }
     nabto_device_threads_mutex_unlock(str->dev->eventMutex);
@@ -249,7 +249,7 @@ void NABTO_DEVICE_API nabto_device_stream_read_all(NabtoDeviceStream* stream,
         nabto_device_future_resolve(fut, NABTO_DEVICE_EC_OPERATION_IN_PROGRESS);
     } else {
         str->readFut = fut;
-        np_completion_event_init(&str->dev->pl.eq, &str->readEv, nabto_device_stream_read_callback, str);
+        np_completion_event_init(&str->dev->pl.eq, &str->readEv, nabto_device_stream_read_callback, str, NULL);
 
         nc_stream_async_read_all(str->stream, buffer, bufferLength, readLength, &str->readEv);
     }
@@ -270,7 +270,7 @@ void NABTO_DEVICE_API nabto_device_stream_read_some(NabtoDeviceStream* stream,
         nabto_device_future_resolve(fut, NABTO_DEVICE_EC_OPERATION_IN_PROGRESS);
     } else {
         str->readFut = fut;
-        np_completion_event_init(&str->dev->pl.eq, &str->readEv, nabto_device_stream_read_callback, str);
+        np_completion_event_init(&str->dev->pl.eq, &str->readEv, nabto_device_stream_read_callback, str, NULL);
 
         nc_stream_async_read_some(str->stream, buffer, bufferLength, readLength, &str->readEv);
     }
@@ -300,7 +300,7 @@ void NABTO_DEVICE_API nabto_device_stream_write(NabtoDeviceStream* stream,
         nabto_device_future_resolve(fut, NABTO_DEVICE_EC_OPERATION_IN_PROGRESS);
     } else {
         str->writeFut = fut;
-        np_completion_event_init(&str->dev->pl.eq, &str->writeEv, nabto_device_stream_write_callback, str);
+        np_completion_event_init(&str->dev->pl.eq, &str->writeEv, nabto_device_stream_write_callback, str, NULL);
 
         nc_stream_async_write(str->stream, buffer, bufferLength, &str->writeEv);
     }
@@ -330,7 +330,7 @@ void NABTO_DEVICE_API nabto_device_stream_close(NabtoDeviceStream* stream, Nabto
         nabto_device_future_resolve(fut, NABTO_DEVICE_EC_OPERATION_IN_PROGRESS);
     } else {
         str->closeFut = fut;
-        np_completion_event_init(&str->dev->pl.eq, &str->closeEv, nabto_device_stream_close_callback, str);
+        np_completion_event_init(&str->dev->pl.eq, &str->closeEv, nabto_device_stream_close_callback, str, NULL);
 
         nc_stream_async_close(str->stream, &str->closeEv);
     }

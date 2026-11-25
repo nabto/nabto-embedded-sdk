@@ -29,8 +29,9 @@ typedef void (*np_completion_event_callback)(const np_error_code ec, void* userD
  *     after the event was armed but before it was taken.
  *   - The event is disarmed when the callback is called. It must not be
  *     deinitialized or reinitialized while it is armed.
- *   - If the event has an owner, the armed event holds a reference to the
- *     owner. The reference is dropped after the callback has returned.
+ *   - The armed event holds a reference to its owner, the object the event
+ *     belongs to. The reference is dropped after the callback has returned,
+ *     so the owner is not freed while the operation is outstanding.
  *
  * Breaking the contract is reported with np_lifetime_violation.
  *
@@ -52,12 +53,14 @@ struct np_completion_event {
 /**
  * Init a completion event.
  *
- * @param pl  The platform.
+ * @param eq  The event queue.
  * @param completionEvent  The completion event to initialize.
  * @param cb  The callback to call when the completion events is resolved.
  * @param userData  The userData to give to the callback.
+ * @param owner  The object the event belongs to. While the event is armed
+ *               it holds a reference to the owner.
  */
-np_error_code np_completion_event_init(struct np_event_queue* eq, struct np_completion_event* completionEvent, np_completion_event_callback cb, void* userData);
+np_error_code np_completion_event_init(struct np_event_queue* eq, struct np_completion_event* completionEvent, np_completion_event_callback cb, void* userData, struct np_ref* owner);
 
 /**
  * Reinitialize a completion event. The event must not be armed.
@@ -80,16 +83,6 @@ void np_completion_event_deinit(struct np_completion_event* completionEvent);
  * @param ec  The error code
  */
 void np_completion_event_resolve(struct np_completion_event* completionEvent, np_error_code ec);
-
-/**
- * Set the object which owns the completion event. While the event is
- * armed it holds a reference to the owner, so the owner is not freed
- * before the callback has been called.
- *
- * @param completionEvent  The completion event.
- * @param owner  The owner, can be NULL.
- */
-void np_completion_event_set_owner(struct np_completion_event* completionEvent, struct np_ref* owner);
 
 /**
  * Arm the completion event. Called by the operation which takes the event

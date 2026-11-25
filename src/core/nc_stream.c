@@ -68,7 +68,7 @@ np_error_code nc_stream_init(struct np_platform* pl, struct nc_stream_context* c
         return ec;
     }
 
-    ec = np_completion_event_init(&pl->eq, &ctx->sendCtx.ev, &nc_stream_dtls_send_callback, ctx);
+    ec = np_completion_event_init(&pl->eq, &ctx->sendCtx.ev, &nc_stream_dtls_send_callback, ctx, NULL);
     if (ec != NABTO_EC_OK) {
         return ec;
     }

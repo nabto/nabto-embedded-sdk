@@ -33,7 +33,7 @@ NabtoDeviceTcpProbe* NABTO_DEVICE_API nabto_device_tcp_probe_new(NabtoDevice* de
 
     np_error_code ec = np_tcp_create(&dev->pl.tcp, &ctx->socket);
     if (ec == NABTO_EC_OK) {
-        ec = np_completion_event_init(&dev->pl.eq, &ctx->completionEvent, NULL, NULL);
+        ec = np_completion_event_init(&dev->pl.eq, &ctx->completionEvent, NULL, NULL, NULL);
     }
 
     if (ec != NABTO_EC_OK) {

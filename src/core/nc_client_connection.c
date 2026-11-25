@@ -60,12 +60,12 @@ np_error_code nc_client_connection_init(struct np_platform* pl, struct nc_client
         return ec;
     }
 
-    ec = np_completion_event_init(&pl->eq, &conn->sendCompletionEvent, &nc_client_connection_send_to_udp_cb, conn);
+    ec = np_completion_event_init(&pl->eq, &conn->sendCompletionEvent, &nc_client_connection_send_to_udp_cb, conn, NULL);
     if (ec != NABTO_EC_OK) {
         return ec;
     }
 
-    ec = np_completion_event_init(&pl->eq, &conn->keepAliveSendCtx.ev, &nc_keep_alive_packet_sent, &conn->keepAlive);
+    ec = np_completion_event_init(&pl->eq, &conn->keepAliveSendCtx.ev, &nc_keep_alive_packet_sent, &conn->keepAlive, NULL);
     if (ec != NABTO_EC_OK) {
         return ec;
     }

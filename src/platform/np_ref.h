@@ -21,7 +21,7 @@ extern "C" {
  *
  * An np_ref starts with one reference, the owner's. Each armed completion
  * event which has the object as owner holds a reference (see
- * np_completion_event_set_owner). Other holders take a reference with
+ * np_completion_event_init). Other holders take a reference with
  * np_ref_get and drop it with np_ref_put. When the count reaches zero
  * the release function is called, it frees the object.
  *

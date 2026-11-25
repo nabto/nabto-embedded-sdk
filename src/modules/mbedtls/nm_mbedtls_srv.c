@@ -246,7 +246,7 @@ np_error_code nm_mbedtls_srv_create_connection(struct np_dtls_srv* server,
     }
 
     ec = np_completion_event_init(&pl->eq, &ctx->senderEvent,
-                                  &nm_mbedtls_srv_connection_send_callback, ctx);
+                                  &nm_mbedtls_srv_connection_send_callback, ctx, NULL);
     if (ec != NABTO_EC_OK) {
         return ec;
     }
