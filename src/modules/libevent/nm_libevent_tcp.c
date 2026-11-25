@@ -219,6 +219,14 @@ void tcp_destroy(struct np_tcp_socket* sock)
 void tcp_async_connect(struct np_tcp_socket* sock, struct np_ip_address* address, uint16_t port, struct np_completion_event* completionEvent)
 {
     NABTO_LOG_TRACE(LOG, "tcp_async_connect");
+    if (sock->aborted) {
+        np_completion_event_resolve(completionEvent, NABTO_EC_ABORTED);
+        return;
+    }
+    if (sock->connect.completionEvent != NULL) {
+        np_completion_event_resolve(completionEvent, NABTO_EC_OPERATION_IN_PROGRESS);
+        return;
+    }
 
     bufferevent_setcb(sock->bev, &tcp_bufferevent_event_read, &tcp_bufferevent_event_write, &tcp_bufferevent_event, sock);
     sock->connect.completionEvent = completionEvent;
@@ -259,6 +267,10 @@ void tcp_async_connect(struct np_tcp_socket* sock, struct np_ip_address* address
 
 void tcp_async_write(struct np_tcp_socket* sock, const void* data, size_t dataLength, struct np_completion_event* completionEvent)
 {
+    if (sock->aborted) {
+        np_completion_event_resolve(completionEvent, NABTO_EC_ABORTED);
+        return;
+    }
     if (sock->write.completionEvent != NULL) {
         np_completion_event_resolve(completionEvent, NABTO_EC_OPERATION_IN_PROGRESS);
         return;
@@ -279,8 +291,13 @@ void tcp_async_write(struct np_tcp_socket* sock, const void* data, size_t dataLe
 void tcp_async_read(struct np_tcp_socket* sock, void* buffer, size_t bufferLength, size_t* readLength, struct np_completion_event* completionEvent)
 {
     NABTO_LOG_TRACE(LOG, "tcp_async_read");
+    if (sock->aborted) {
+        np_completion_event_resolve(completionEvent, NABTO_EC_ABORTED);
+        return;
+    }
     if (sock->read.completionEvent != NULL) {
-        np_completion_event_resolve(sock->read.completionEvent, NABTO_EC_OPERATION_IN_PROGRESS);
+        // Leave the outstanding read alone.
+        np_completion_event_resolve(completionEvent, NABTO_EC_OPERATION_IN_PROGRESS);
         return;
     }
 

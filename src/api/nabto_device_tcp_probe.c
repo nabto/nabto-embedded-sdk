@@ -15,9 +15,13 @@ struct nabto_device_tcp_probe_context {
     struct np_tcp_socket* socket;
     struct np_completion_event completionEvent;
     struct nabto_device_future* future;
+    // The application holds a reference until it frees the probe, an
+    // outstanding connect holds one through completionEvent.
+    struct np_ref ref;
 };
 
 static void probe_free(struct nabto_device_tcp_probe_context* probe);
+static void probe_release(struct np_ref* ref);
 static void connect_callback(const np_error_code ec, void* userData);
 
 NabtoDeviceTcpProbe* NABTO_DEVICE_API nabto_device_tcp_probe_new(NabtoDevice* device)
@@ -30,10 +34,13 @@ NabtoDeviceTcpProbe* NABTO_DEVICE_API nabto_device_tcp_probe_new(NabtoDevice* de
 
     nabto_device_threads_mutex_lock(dev->eventMutex);
     ctx->device = dev;
+    np_ref_init(&ctx->ref, &dev->pl.refTracker, &probe_release);
 
     np_error_code ec = np_tcp_create(&dev->pl.tcp, &ctx->socket);
     if (ec == NABTO_EC_OK) {
-        ec = np_completion_event_init(&dev->pl.eq, &ctx->completionEvent, NULL, NULL, NULL);
+        ec = np_completion_event_init(&dev->pl.eq, &ctx->completionEvent, NULL, NULL, &ctx->ref);
+    }
+    if (ec == NABTO_EC_OK) {
     }
 
     if (ec != NABTO_EC_OK) {
@@ -107,11 +114,24 @@ void nabto_device_tcp_probe_check_reachability(NabtoDeviceTcpProbe* probe, const
     nabto_device_threads_mutex_unlock(device->eventMutex);
 }
 
+/**
+ * Destroying the socket resolves an outstanding connect. The probe is freed
+ * when its callback has resolved the future.
+ */
 void probe_free(struct nabto_device_tcp_probe_context* ctx)
 {
     struct nabto_device_context* device = ctx->device;
+    if (ctx->socket != NULL) {
+        np_tcp_destroy(&device->pl.tcp, ctx->socket);
+        ctx->socket = NULL;
+    }
+    np_ref_put(&ctx->ref);
+}
+
+void probe_release(struct np_ref* ref)
+{
+    struct nabto_device_tcp_probe_context* ctx = np_ref_container(ref, struct nabto_device_tcp_probe_context, ref);
     np_completion_event_deinit(&ctx->completionEvent);
-    np_tcp_destroy(&device->pl.tcp, ctx->socket);
     np_free(ctx);
 }
 

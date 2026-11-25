@@ -44,6 +44,7 @@ struct np_mdns nm_mdns_server_get_impl(struct nm_mdns_server* server)
     return obj;
 }
 
+static void server_release(struct np_ref* ref);
 static np_error_code instance_init(struct nm_mdns_server_instance* instance, struct nm_mdns_server* server, bool v4)
 {
     instance->sendBuffer = NULL;
@@ -53,17 +54,17 @@ static np_error_code instance_init(struct nm_mdns_server_instance* instance, str
     if (ec != NABTO_EC_OK) {
         return ec;
     }
-    ec = np_completion_event_init(&instance->server->eq, &instance->openedCompletionEvent, nm_mdns_socket_opened, instance, NULL);
+    ec = np_completion_event_init(&instance->server->eq, &instance->openedCompletionEvent, nm_mdns_socket_opened, instance, &server->ref);
     if (ec != NABTO_EC_OK) {
         return ec;
     }
 
-    ec = np_completion_event_init(&instance->server->eq, &instance->recvWaitCompletionEvent, nm_mdns_packet_recv_wait_completed, instance, NULL);
+    ec = np_completion_event_init(&instance->server->eq, &instance->recvWaitCompletionEvent, nm_mdns_packet_recv_wait_completed, instance, &server->ref);
     if (ec != NABTO_EC_OK) {
         return ec;
     }
 
-    ec = np_completion_event_init(&instance->server->eq, &instance->sendCompletionEvent, nm_mdns_packet_sent, instance, NULL);
+    ec = np_completion_event_init(&instance->server->eq, &instance->sendCompletionEvent, nm_mdns_packet_sent, instance, &server->ref);
     if (ec != NABTO_EC_OK) {
         return ec;
     }
@@ -86,10 +87,12 @@ static np_error_code instance_init(struct nm_mdns_server_instance* instance, str
 
 static void instance_deinit(struct nm_mdns_server_instance* instance)
 {
+    // Destroying the socket resolves its outstanding operations, so it is
+    // destroyed before the completion events are.
+    np_udp_destroy(&instance->server->udp, instance->socket);
     np_completion_event_deinit(&instance->openedCompletionEvent);
     np_completion_event_deinit(&instance->recvWaitCompletionEvent);
     np_completion_event_deinit(&instance->sendCompletionEvent);
-    np_udp_destroy(&instance->server->udp, instance->socket);
 }
 
 // initialize the mdns server
@@ -100,8 +103,9 @@ np_error_code nm_mdns_server_init(struct nm_mdns_server* server, struct np_event
     server->udp = *udp;
     server->mdnsUdpBind = *mdnsUdpBind;
     server->localIp = *localIp;
+    np_ref_init(&server->ref, NULL, &server_release);
 
-    np_error_code ec = np_completion_event_init(eq, &server->instanceCloseCompletionEvent, NULL, NULL, NULL);
+    np_error_code ec = np_completion_event_init(eq, &server->instanceCloseCompletionEvent, NULL, NULL, &server->ref);
     if (ec != NABTO_EC_OK) {
         return ec;
     }
@@ -119,6 +123,15 @@ void nm_mdns_server_deinit(struct nm_mdns_server* server)
     instance_deinit(&server->v6);
     instance_deinit(&server->v4);
     np_completion_event_deinit(&server->instanceCloseCompletionEvent);
+    if (server->ref.count != 1) {
+        np_lifetime_violation("mDNS server deinitialized with outstanding operations");
+    }
+    np_ref_put(&server->ref);
+}
+
+void server_release(struct np_ref* ref)
+{
+    (void)ref;
 }
 
 void v4_closed(const np_error_code ec, void* userData)

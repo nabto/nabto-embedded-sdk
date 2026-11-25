@@ -100,7 +100,12 @@ void nc_stun_deinit(struct nc_stun_context* ctx)
     if (ctx->initialized) { // if init called
         ctx->state = NC_STUN_STATE_ABORTED;
         struct np_platform* pl = ctx->pl;
-        pl->buf.free(ctx->sendBuf);
+        if (!np_completion_event_is_armed(&ctx->sendCompletionEvent)) {
+            // An outstanding send still uses the buffer. That is a lifetime
+            // violation reported when the event is deinitialized, the buffer
+            // is leaked rather than freed while in use.
+            pl->buf.free(ctx->sendBuf);
+        }
 
         np_event_queue_destroy_event(&pl->eq, ctx->toEv);
         np_completion_event_deinit(&ctx->dnsCompletionEvent);

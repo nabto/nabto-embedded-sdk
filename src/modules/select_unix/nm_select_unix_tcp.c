@@ -266,7 +266,7 @@ np_error_code async_connect_ec(struct np_tcp_socket* sock, struct np_ip_address*
     return NABTO_EC_AGAIN;
 }
 
-void async_connect(struct np_tcp_socket* sock, struct np_ip_address* address, uint16_t port, struct np_completion_event* completionEvent)
+static void async_connect_locked(struct np_tcp_socket* sock, struct np_ip_address* address, uint16_t port, struct np_completion_event* completionEvent)
 {
     if (sock->aborted) {
         np_completion_event_resolve(completionEvent, NABTO_EC_ABORTED);
@@ -373,7 +373,7 @@ np_error_code async_write_ec(struct np_tcp_socket* sock, const void* data, size_
     return NABTO_EC_AGAIN;
 }
 
-void async_write(struct np_tcp_socket* sock, const void* data, size_t dataLength, struct np_completion_event* completionEvent)
+static void async_write_locked(struct np_tcp_socket* sock, const void* data, size_t dataLength, struct np_completion_event* completionEvent)
 {
     if (sock->aborted) {
         np_completion_event_resolve(completionEvent, NABTO_EC_ABORTED);
@@ -426,7 +426,7 @@ void tcp_do_read(struct np_tcp_socket* sock)
 }
 
 
-void async_read(struct np_tcp_socket* sock, void* buffer, size_t bufferSize, size_t* readLength, struct np_completion_event* completionEvent)
+static void async_read_locked(struct np_tcp_socket* sock, void* buffer, size_t bufferSize, size_t* readLength, struct np_completion_event* completionEvent)
 {
     if (sock->aborted) {
         np_completion_event_resolve(completionEvent, NABTO_EC_ABORTED);
@@ -448,7 +448,7 @@ void tcp_shutdown(struct np_tcp_socket* sock)
     shutdown(sock->fd, SHUT_WR);
 }
 
-void tcp_abort(struct np_tcp_socket* sock)
+static void tcp_abort_locked(struct np_tcp_socket* sock)
 {
     if (sock->aborted) {
         return;
@@ -469,4 +469,36 @@ void tcp_abort(struct np_tcp_socket* sock)
         sock->connect.completionEvent = NULL;
         np_completion_event_resolve(ev, NABTO_EC_ABORTED);
     }
+}
+
+/**
+ * The network thread completes the operations with the select lock held,
+ * so the core takes it when it starts or aborts an operation.
+ */
+void async_connect(struct np_tcp_socket* sock, struct np_ip_address* address, uint16_t port, struct np_completion_event* completionEvent)
+{
+    nm_select_unix_lock(sock->selectCtx);
+    async_connect_locked(sock, address, port, completionEvent);
+    nm_select_unix_unlock(sock->selectCtx);
+}
+
+void async_write(struct np_tcp_socket* sock, const void* data, size_t dataLength, struct np_completion_event* completionEvent)
+{
+    nm_select_unix_lock(sock->selectCtx);
+    async_write_locked(sock, data, dataLength, completionEvent);
+    nm_select_unix_unlock(sock->selectCtx);
+}
+
+void async_read(struct np_tcp_socket* sock, void* buffer, size_t bufferSize, size_t* readLength, struct np_completion_event* completionEvent)
+{
+    nm_select_unix_lock(sock->selectCtx);
+    async_read_locked(sock, buffer, bufferSize, readLength, completionEvent);
+    nm_select_unix_unlock(sock->selectCtx);
+}
+
+void tcp_abort(struct np_tcp_socket* sock)
+{
+    nm_select_unix_lock(sock->selectCtx);
+    tcp_abort_locked(sock);
+    nm_select_unix_unlock(sock->selectCtx);
 }

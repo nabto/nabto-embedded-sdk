@@ -178,6 +178,113 @@ class TcpCloseClientTest {
     std::promise<void> testEnded_;
 };
 
+// Starting a connect or a read while one is already pending has to fail the
+// new operation with NABTO_EC_OPERATION_IN_PROGRESS and leave the pending
+// operation alone.
+class TcpPendingOperationTest {
+ public:
+    TcpPendingOperationTest(TestPlatform& tp)
+        : pl_(tp.getPlatform()), tcp_(pl_->tcp), eq_(pl_->eq)
+    {
+        np_completion_event_init(&eq_, &connectEvent_, &TcpPendingOperationTest::connected, this, NULL);
+        np_completion_event_init(&eq_, &secondConnectEvent_, &TcpPendingOperationTest::secondConnected, this, NULL);
+        np_completion_event_init(&eq_, &readEvent_, &TcpPendingOperationTest::hasReaden, this, NULL);
+        np_completion_event_init(&eq_, &secondReadEvent_, &TcpPendingOperationTest::secondHasReaden, this, NULL);
+    }
+
+    ~TcpPendingOperationTest()
+    {
+        np_completion_event_deinit(&connectEvent_);
+        np_completion_event_deinit(&secondConnectEvent_);
+        np_completion_event_deinit(&readEvent_);
+        np_completion_event_deinit(&secondReadEvent_);
+    }
+
+    void start(uint16_t port) {
+        BOOST_TEST(np_tcp_create(&tcp_, &socket_) == NABTO_EC_OK);
+
+        struct np_ip_address address;
+        address.type = NABTO_IPV4;
+        uint8_t addr[] = { 0x7f, 0x00, 0x00, 0x01 };
+        memcpy(address.ip.v4, addr, 4);
+
+        np_tcp_async_connect(&tcp_, socket_, &address, port, &connectEvent_);
+        np_tcp_async_connect(&tcp_, socket_, &address, port, &secondConnectEvent_);
+    }
+
+    static void secondConnected(np_error_code ec, void* userData)
+    {
+        auto test = (TcpPendingOperationTest*)userData;
+        test->secondConnectCount_++;
+        test->secondConnectEc_ = ec;
+    }
+
+    static void connected(np_error_code ec, void* userData)
+    {
+        auto test = (TcpPendingOperationTest*)userData;
+        test->connectEc_ = ec;
+        if (ec != NABTO_EC_OK) {
+            test->end();
+            return;
+        }
+        // The echo server does not send anything, so the first read stays
+        // pending.
+        np_tcp_async_read(&test->tcp_, test->socket_, test->recvBuffer_.data(), test->recvBuffer_.size(), &test->readLength_, &test->readEvent_);
+        np_tcp_async_read(&test->tcp_, test->socket_, test->recvBuffer2_.data(), test->recvBuffer2_.size(), &test->readLength2_, &test->secondReadEvent_);
+    }
+
+    static void secondHasReaden(np_error_code ec, void* userData)
+    {
+        auto test = (TcpPendingOperationTest*)userData;
+        test->secondReadCount_++;
+        test->secondReadEc_ = ec;
+        np_tcp_abort(&test->tcp_, test->socket_);
+    }
+
+    static void hasReaden(np_error_code ec, void* userData)
+    {
+        auto test = (TcpPendingOperationTest*)userData;
+        test->readCount_++;
+        if (test->readCount_ == 1) {
+            test->readEc_ = ec;
+            test->end();
+        }
+    }
+
+    void end() {
+        np_tcp_destroy(&tcp_, socket_);
+        testEnded_.set_value();
+    }
+
+    bool waitForTestEnded() {
+        std::future<void> fut = testEnded_.get_future();
+        return fut.wait_for(std::chrono::seconds(30)) == std::future_status::ready;
+    }
+
+    np_error_code connectEc_ = NABTO_EC_FAILED;
+    np_error_code secondConnectEc_ = NABTO_EC_FAILED;
+    int secondConnectCount_ = 0;
+    np_error_code readEc_ = NABTO_EC_FAILED;
+    int readCount_ = 0;
+    np_error_code secondReadEc_ = NABTO_EC_FAILED;
+    int secondReadCount_ = 0;
+
+ private:
+    struct np_platform* pl_;
+    struct np_tcp_socket* socket_;
+    std::array<uint8_t, 42> recvBuffer_;
+    std::array<uint8_t, 42> recvBuffer2_;
+    size_t readLength_;
+    size_t readLength2_;
+    struct np_completion_event connectEvent_;
+    struct np_completion_event secondConnectEvent_;
+    struct np_completion_event readEvent_;
+    struct np_completion_event secondReadEvent_;
+    struct np_tcp tcp_;
+    struct np_event_queue eq_;
+    std::promise<void> testEnded_;
+};
+
 } }
 
 BOOST_TEST_DONT_PRINT_LOG_VALUE( std::vector<std::unique_ptr<nabto::test::TestPlatform> >)
@@ -233,6 +340,26 @@ BOOST_DATA_TEST_CASE(close, nabto::test::TestPlatformFactory::multi(), tpf)
     client.start(tcpServer.getPort());
     client.waitForTestEnded();
 //    BOOST_TEST(tcpServer.getConnectionsCount() > (size_t)0);
+}
+
+BOOST_TEST_DECORATOR(* boost::unit_test::timeout(120))
+BOOST_DATA_TEST_CASE(operation_in_progress, nabto::test::TestPlatformFactory::multi(), tpf)
+{
+    auto tp = tpf->create();
+    auto ioService = IoService::create("test");
+    test::TcpEchoServer tcpServer(ioService->getIoService(), nullptr);
+
+    test::TcpPendingOperationTest client(*tp);
+    client.start(tcpServer.getPort());
+    BOOST_REQUIRE(client.waitForTestEnded());
+
+    BOOST_TEST(client.connectEc_ == NABTO_EC_OK);
+    BOOST_TEST(client.secondConnectCount_ == 1);
+    BOOST_TEST(client.secondConnectEc_ == NABTO_EC_OPERATION_IN_PROGRESS);
+    BOOST_TEST(client.secondReadCount_ == 1);
+    BOOST_TEST(client.secondReadEc_ == NABTO_EC_OPERATION_IN_PROGRESS);
+    BOOST_TEST(client.readCount_ == 1);
+    BOOST_TEST(client.readEc_ == NABTO_EC_ABORTED);
 }
 
 BOOST_AUTO_TEST_SUITE_END()

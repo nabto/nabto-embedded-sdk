@@ -133,7 +133,14 @@ np_error_code nc_coap_client_handle_send(struct nc_coap_client_context* ctx)
     sendCtx->bufferSize = (uint16_t)used;
 
     struct np_dtls_cli_connection* dtls = connection;
-    ctx->pl->dtlsC.async_send_data(dtls, sendCtx);
+    np_error_code ec = ctx->pl->dtlsC.async_send_data(dtls, sendCtx);
+    if (ec != NABTO_EC_OK) {
+        // The send context was not taken, e.g. the connection is closing.
+        // The packet is dropped, the coap layer retransmits if needed.
+        pl->buf.free(ctx->sendBuffer);
+        ctx->sendBuffer = NULL;
+        return ec;
+    }
     return NABTO_EC_OPERATION_STARTED;
 }
 

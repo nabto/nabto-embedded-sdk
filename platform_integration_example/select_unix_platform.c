@@ -146,5 +146,8 @@ void nabto_device_platform_stop_blocking(struct nabto_device_context* device)
     platform->stopped = true;
     nm_mdns_server_stop(&platform->mdnsServer);
     nm_select_unix_stop(&platform->selectUnix);
+    // No DNS request is resolved after this, the queue thread runs the
+    // STOPPED results before it stops.
+    nm_unix_dns_resolver_stop(&platform->dnsResolver);
     thread_event_queue_stop_blocking(&platform->eventQueue);
 }
