@@ -1,6 +1,7 @@
 #ifndef THERMOSTAT_STATE_FILE_BACKEND_H_
 #define THERMOSTAT_STATE_FILE_BACKEND_H_
 
+#include "thermostat_mutex.h"
 #include "thermostat_state_data.h"
 
 /**
@@ -12,6 +13,9 @@ struct thermostat_state_file_backend {
     char* filename;
     struct thermostat_state_data stateData;
     struct nm_fs* fsImpl;
+    // protects stateData which is accessed from both the main thread and the
+    // nabto device threads.
+    thermostat_mutex mutex;
 };
 
 void thermostat_state_file_backend_init(struct thermostat_state_file_backend* fileBackend, struct thermostat_state* thermostatState, struct nm_fs* fsImpl, const char* filename);
