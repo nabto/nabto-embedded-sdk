@@ -694,6 +694,34 @@ BOOST_AUTO_TEST_CASE(abort_while_reading)
     nabto_device_future_free(fut);
 }
 
+BOOST_AUTO_TEST_CASE(read_after_abort, *boost::unit_test::timeout(60))
+{
+    // A read started after the stream was aborted was stored and never
+    // resolved, which also held the stream until nabto_device_stop gave up
+    // waiting for it.
+    nabto::test::TestStreamDevice td;
+    nabto::test::TestStream ts(&td);
+    td.streamListen([&](NabtoDeviceError ec, NabtoDeviceStream* stream) {
+        if (ec == NABTO_DEVICE_EC_OK) {
+            ts.acceptStream(stream);
+        }
+    });
+    td.makeConnection();
+    NabtoDeviceVirtualStream* virStream = td.virtualStreamOpen();
+    ts.futureWait(NABTO_DEVICE_EC_OK);
+
+    nabto_device_virtual_stream_abort(virStream);
+
+    char buffer[16];
+    size_t readLength = 0;
+    NabtoDeviceFuture* fut = nabto_device_future_new(td.device_);
+    nabto_device_virtual_stream_read_some(virStream, fut, buffer, sizeof(buffer), &readLength);
+    BOOST_TEST(nabto_device_future_timed_wait(fut, 2000) == NABTO_DEVICE_EC_ABORTED);
+    nabto_device_virtual_stream_read_all(virStream, fut, buffer, sizeof(buffer), &readLength);
+    BOOST_TEST(nabto_device_future_timed_wait(fut, 2000) == NABTO_DEVICE_EC_ABORTED);
+    nabto_device_future_free(fut);
+}
+
 BOOST_AUTO_TEST_CASE(read_all_while_reading, *boost::unit_test::timeout(60))
 {
     char readBuffer[256];
@@ -939,34 +967,6 @@ BOOST_AUTO_TEST_CASE(free_device_after_freeing_streams_with_outstanding_operatio
         // Frees the virtual connection, stops and frees the device.
     }
     BOOST_TEST(allocations.live() == 0u);
-}
-
-BOOST_AUTO_TEST_CASE(read_after_abort, *boost::unit_test::timeout(60))
-{
-    // A read started after the stream was aborted was stored and never
-    // resolved, which also held the stream until nabto_device_stop gave up
-    // waiting for it.
-    nabto::test::TestStreamDevice td;
-    nabto::test::TestStream ts(&td);
-    td.streamListen([&](NabtoDeviceError ec, NabtoDeviceStream* stream) {
-        if (ec == NABTO_DEVICE_EC_OK) {
-            ts.acceptStream(stream);
-        }
-    });
-    td.makeConnection();
-    NabtoDeviceVirtualStream* virStream = td.virtualStreamOpen();
-    ts.futureWait(NABTO_DEVICE_EC_OK);
-
-    nabto_device_virtual_stream_abort(virStream);
-
-    char buffer[16];
-    size_t readLength = 0;
-    NabtoDeviceFuture* fut = nabto_device_future_new(td.device_);
-    nabto_device_virtual_stream_read_some(virStream, fut, buffer, sizeof(buffer), &readLength);
-    BOOST_TEST(nabto_device_future_timed_wait(fut, 2000) == NABTO_DEVICE_EC_ABORTED);
-    nabto_device_virtual_stream_read_all(virStream, fut, buffer, sizeof(buffer), &readLength);
-    BOOST_TEST(nabto_device_future_timed_wait(fut, 2000) == NABTO_DEVICE_EC_ABORTED);
-    nabto_device_future_free(fut);
 }
 
 BOOST_AUTO_TEST_SUITE_END()
