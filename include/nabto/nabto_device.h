@@ -1452,6 +1452,7 @@ nabto_device_fcm_notification_get_response_body(NabtoDeviceFcmNotification* noti
  * @retval NABTO_DEVICE_EC_INVALID_ARGUMENT if the host could not be parsed as IPv4
  * @retval NABTO_DEVICE_EC_IN_USE if a service with the id exists
  * @retval NABTO_DEVICE_EC_OUT_OF_MEMORY if the underlying structure could not be allocated
+ * @retval NABTO_DEVICE_EC_NOT_IMPLEMENTED if the platform has no TCP module.
  */
 NABTO_DEVICE_DECL_PREFIX NabtoDeviceError NABTO_DEVICE_API
 nabto_device_add_tcp_tunnel_service(NabtoDevice* device,
@@ -1467,6 +1468,7 @@ nabto_device_add_tcp_tunnel_service(NabtoDevice* device,
  * @param serviceId [in]  ID of service to remove
  * @retval NABTO_DEVICE_EC_OK if the service was removed
  * @retval NABTO_DEVICE_EC_NOT_FOUND if the service ID was not found
+ * @retval NABTO_DEVICE_EC_NOT_IMPLEMENTED if the platform has no TCP module.
  */
 NABTO_DEVICE_DECL_PREFIX NabtoDeviceError NABTO_DEVICE_API
 nabto_device_remove_tcp_tunnel_service(NabtoDevice* device, const char* serviceId);
@@ -1481,6 +1483,7 @@ nabto_device_remove_tcp_tunnel_service(NabtoDevice* device, const char* serviceI
  * @param value [in]       The value of the key-value pair.
  * @return NABTO_DEVICE_EC_OK if the key-value pair was added to the metadata of the service.
  *         NABTO_DEVICE_EC_NOT_FOUND if no service with the given id was located on the device.
+ *         NABTO_DEVICE_EC_NOT_IMPLEMENTED if the platform has no TCP module.
  */
 NABTO_DEVICE_DECL_PREFIX NabtoDeviceError NABTO_DEVICE_API
 nabto_device_add_tcp_tunnel_service_metadata(NabtoDevice* device, const char* serviceId, const char* key, const char* value);
@@ -1493,6 +1496,7 @@ nabto_device_add_tcp_tunnel_service_metadata(NabtoDevice* device, const char* se
  * @param key [in]         The key of the key-value pair.
  * @return NABTO_DEVICE_EC_OK if the key-value pair was removed or if no key-value pair was found.
  *         NABTO_DEVICE_EC_NOT_FOUND if no service with the given id was located on the device.
+ *         NABTO_DEVICE_EC_NOT_IMPLEMENTED if the platform has no TCP module.
  */
 NABTO_DEVICE_DECL_PREFIX NabtoDeviceError NABTO_DEVICE_API
 nabto_device_remove_tcp_tunnel_service_metadata(NabtoDevice* device, const char* serviceId, const char* key);
@@ -2529,6 +2533,7 @@ nabto_device_limit_coap_server_requests(NabtoDevice* device, size_t limit);
  * @retval NABTO_DEVICE_EC_OK if the limit is set
  * @retval NABTO_DEVICE_EC_OUT_OF_MEMORY
  *         if the limit could not be added to the internal data structure.
+ * @retval NABTO_DEVICE_EC_NOT_IMPLEMENTED if the platform has no TCP module.
  */
 NABTO_DEVICE_DECL_PREFIX NabtoDeviceError NABTO_DEVICE_API
 nabto_device_limit_tcp_tunnel_connections(NabtoDevice* device, const char* serviceType, size_t limit);
