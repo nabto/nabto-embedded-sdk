@@ -443,12 +443,14 @@ np_error_code set_root_certs(struct np_platform* pl, const char* rootCerts)
  */
 np_error_code get_fingerprint(struct np_dtls_cli_connection* conn, uint8_t* fp)
 {
-    // Get client fingerprint
+    // Get client fingerprint. The certificate is a copy owned by the caller.
     WOLFSSL_X509 *crt = wolfSSL_get_peer_certificate(conn->ssl);
     if (!crt) {
         return NABTO_EC_UNKNOWN;
     }
-    return nm_wolfssl_util_fp_from_crt(crt, fp);
+    np_error_code ec = nm_wolfssl_util_fp_from_crt(crt, fp);
+    wolfSSL_X509_free(crt);
+    return ec;
 }
 
 np_error_code set_handshake_timeout(struct np_platform* pl, uint32_t minTimeout, uint32_t maxTimeout)
