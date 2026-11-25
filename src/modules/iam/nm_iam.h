@@ -427,7 +427,9 @@ struct nm_iam_change_callback {
 
 struct nm_iam_authorized_connection {
     NabtoDeviceConnectionRef ref;
-    struct nm_iam_user* user;
+    // The user is looked up by its username when it is needed, since the user
+    // can be deleted or replaced while the connection is open.
+    char* username;
 };
 
 struct nm_iam {

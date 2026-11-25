@@ -32,14 +32,7 @@ void handle_request(struct nm_iam_coap_handler* handler, NabtoDeviceCoapRequest*
     }
 
     if (!user) {
-        struct nm_iam_authorized_connection conn;
-        NN_VECTOR_FOREACH(&conn, &handler->iam->authorizedConnections)
-        {
-            if (conn.ref == ref) {
-                user = conn.user;
-                break;
-            }
-        }
+        user = nm_iam_internal_find_authorized_user(handler->iam, ref);
     }
 
 
