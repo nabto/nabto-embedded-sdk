@@ -617,6 +617,7 @@ np_error_code nm_openssl_srv_async_send_data(struct np_platform* pl,
     if (ctx->state == CLOSING) {
         return NABTO_EC_CONNECTION_CLOSING;
     }
+    np_completion_event_arm(&sendCtx->ev);
     nn_llist_append(&ctx->sendList, &sendCtx->sendListNode, sendCtx);
     start_send(ctx);
     return NABTO_EC_OK;
@@ -657,6 +658,9 @@ np_error_code nm_openssl_srv_async_close(struct np_platform* pl,
         return NABTO_EC_OK;
     }
     bool handshakeDone = ctx->state == DATA;
+    if (completionEvent != NULL) {
+        np_completion_event_arm(completionEvent);
+    }
     ctx->closeCompletionEvent = completionEvent;
     ctx->state = CLOSING;
     np_event_queue_cancel_event(&pl->eq, ctx->timerEvent);

@@ -111,6 +111,12 @@ struct np_tcp_functions {
      * reads or writes are possible. This operation is idempotent and
      * hence can be called multiple times.
      *
+     * Each completion event given to the socket is resolved exactly
+     * once, also when it is aborted. If an operation is started while
+     * the same kind of operation is outstanding, the new completion
+     * event is resolved with NABTO_EC_OPERATION_IN_PROGRESS and the
+     * outstanding one is left alone. See np_completion_event.h.
+     *
      * @param sock  The socket resource.
      */
     void (*abort)(struct np_tcp_socket* sock);

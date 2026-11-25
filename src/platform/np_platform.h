@@ -21,6 +21,7 @@
 #include <platform/interfaces/np_tcp.h>
 #include <platform/np_authorization.h>
 #include <platform/np_random.h>
+#include <platform/np_ref.h>
 #include <platform/np_spake2.h>
 
 #ifdef __cplusplus
@@ -30,6 +31,9 @@ extern "C" {
 struct np_platform {
     // Data pointer to custom data used for implementing the platform functionality
     void* platformData;
+
+    // Counts the live reference counted objects, see np_ref.h
+    struct np_ref_tracker refTracker;
 
     // Timestamp module
     struct np_timestamp timestamp;

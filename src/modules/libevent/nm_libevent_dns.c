@@ -179,6 +179,8 @@ static void async_resolve_v4(struct np_dns* obj, const char* host, struct np_ip_
     hints.ai_flags = 0; //AI_PASSIVE | AI_CANONNAME | AI_NUMERICHOST;
     hints.ai_socktype = SOCK_DGRAM;
     const char* service = "443";
+    // dns_cb resolves the event exactly once, also if the request is cancelled.
+    np_completion_event_arm(&dnsRequest->dnsCbDeZalgo);
     nn_llist_append(&ctx->requests, &dnsRequest->requestsNode, dnsRequest);
     dnsRequest->req = evdns_getaddrinfo(dnsBase, host, service, &hints, dns_cb, dnsRequest);
 }
@@ -241,6 +243,8 @@ static void async_resolve_v6(struct np_dns* obj, const char* host, struct np_ip_
     hints.ai_flags = 0; //AI_PASSIVE | AI_CANONNAME | AI_NUMERICHOST;
     hints.ai_socktype = SOCK_DGRAM;
     const char* service = "443";
+    // dns_cb resolves the event exactly once, also if the request is cancelled.
+    np_completion_event_arm(&dnsRequest->dnsCbDeZalgo);
     nn_llist_append(&ctx->requests, &dnsRequest->requestsNode, dnsRequest);
     dnsRequest->req = evdns_getaddrinfo(dnsBase, host, service, &hints, dns_cb, dnsRequest);
 }

@@ -37,6 +37,11 @@ void nabto_device_platform_close(struct nabto_device_context* device, struct np_
  * the platform is stopped and no further events or network
  * communication is happening.
  *
+ * Every completion event given to the platform (udp, tcp, dns, mdns) has
+ * been resolved when this function returns and no completion event is
+ * resolved after it returns, since the core frees the memory the events
+ * are in once the platform is stopped.
+ *
  * @param pl  The platform.
  */
 void nabto_device_platform_stop_blocking(struct nabto_device_context* device);

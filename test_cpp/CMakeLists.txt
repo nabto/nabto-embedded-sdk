@@ -24,6 +24,8 @@ set(test_src
   tests/platform/ip_address_test.cpp
   tests/platform/logging_test.cpp
   tests/platform/timestamp_test.cpp
+  tests/platform/thread_event_queue_test.cpp
+  tests/platform/np_completion_event_test.cpp
 #  tests/platform/event_queue_test.cpp
 #  tests/api/event_handler_test.cpp
   tests/api/error_codes_test.cpp

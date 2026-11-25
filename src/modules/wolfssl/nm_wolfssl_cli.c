@@ -617,6 +617,7 @@ np_error_code async_send_data(struct np_dtls_cli_connection* conn,
     if (conn->state != DATA) {
         return NABTO_EC_INVALID_STATE;
     }
+    np_completion_event_arm(&sendCtx->ev);
     nn_llist_append(&conn->sendList, &sendCtx->sendListNode, sendCtx);
     nm_wolfssl_cli_start_send(conn);
     return NABTO_EC_OK;

@@ -74,9 +74,13 @@ struct np_udp_functions {
     /**
      * Abort outstanding async operations on the socket resolving all
      * outstanding completion events. No further reads or writes are
-     * possible.  The socket can be destroyed imediately after abort
-     * or it can be destroyed when all completion events has been
-     * resolved.
+     * possible.
+     *
+     * Each completion event given to the socket is resolved exactly
+     * once, also when it is aborted. The caller does not free the
+     * memory it gave to an operation (the completion event, buffers)
+     * before the completion event has been resolved and its callback
+     * has been called. See np_completion_event.h.
      *
      * @param sock  The socket resource.
      */

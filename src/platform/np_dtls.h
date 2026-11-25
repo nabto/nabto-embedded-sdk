@@ -37,6 +37,15 @@ enum np_dtls_event {
     NP_DTLS_EVENT_CERTIFICATE_VERIFICATION_FAILED // The certificate could not be validated. The connection is closed.
 };
 
+/**
+ * Send a DTLS datagram on behalf of a DTLS connection.
+ *
+ * If the sender returns NABTO_EC_OK it has taken the completion event and
+ * resolves it exactly once, when the buffer is no longer used. This also
+ * holds if the DTLS connection is destroyed in the meantime, the
+ * connection is not freed before cb is resolved. If the sender returns an
+ * error, it has not taken the completion event. See np_completion_event.h.
+ */
 typedef np_error_code (*np_dtls_sender)(uint8_t channelId, uint8_t* buffer,
                                         uint16_t bufferSize,
                                         struct np_completion_event* cb,

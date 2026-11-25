@@ -168,6 +168,7 @@ void nm_mnds_server_close_instance_udp_sent_callback(const np_error_code ec, voi
 
 void nm_mdns_server_close_instance(struct nm_mdns_server_instance* instance, struct np_completion_event* completionEvent)
 {
+    np_completion_event_arm(completionEvent);
     if (instance->sendBuffer != NULL) {
         NABTO_LOG_INFO(LOG, "Tried to send mDNS goodbye but is already sending");
         np_completion_event_resolve(completionEvent, NABTO_EC_OPERATION_IN_PROGRESS);
@@ -390,10 +391,12 @@ void nm_mdns_packet_sent(const np_error_code ec, void* userData)
 
 void nm_mdns_udp_bind_async_ipv4(struct nm_mdns_udp_bind* udp, struct np_udp_socket* sock, struct np_completion_event* completionEvent)
 {
+    np_completion_event_arm(completionEvent);
     udp->mptr->async_bind_mdns_ipv4(sock, completionEvent);
 }
 
 void nm_mdns_udp_bind_async_ipv6(struct nm_mdns_udp_bind* udp, struct np_udp_socket* sock, struct np_completion_event* completionEvent)
 {
+    np_completion_event_arm(completionEvent);
     udp->mptr->async_bind_mdns_ipv6(sock, completionEvent);
 }

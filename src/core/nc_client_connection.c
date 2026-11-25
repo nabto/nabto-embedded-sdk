@@ -349,6 +349,7 @@ np_error_code nc_client_connection_async_send_to_udp(uint8_t channel,
     if (conn->sentCb != NULL) {
         return NABTO_EC_OPERATION_IN_PROGRESS;
     }
+    np_completion_event_arm(cb);
     conn->sentCb = cb;
 
     uint8_t* start = buffer;

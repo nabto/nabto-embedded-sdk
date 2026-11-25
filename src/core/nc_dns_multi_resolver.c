@@ -41,6 +41,7 @@ void nc_dns_multi_resolver_deinit(struct nc_dns_multi_resolver_context* ctx)
 void nc_dns_multi_resolver_resolve(struct nc_dns_multi_resolver_context* ctx, const char* host, struct np_ip_address* ips, size_t ipsSize, size_t* ipsResolved, struct np_completion_event* completionEvent)
 {
     struct np_platform* pl = ctx->pl;
+    np_completion_event_arm(completionEvent);
     if (ctx->v4Ec == NABTO_EC_OPERATION_IN_PROGRESS ||
         ctx->v6Ec == NABTO_EC_OPERATION_IN_PROGRESS)
     {

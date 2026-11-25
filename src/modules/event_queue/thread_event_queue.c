@@ -88,6 +88,7 @@ void thread_event_queue_stop_blocking(struct thread_event_queue* queue)
 {
     nabto_device_threads_mutex_lock(queue->queueMutex);
     if (queue->stopped) {
+        nabto_device_threads_mutex_unlock(queue->queueMutex);
         return;
     }
     queue->stopped = true;
@@ -160,27 +161,35 @@ void post_timed_event(struct np_event* event, uint32_t milliseconds)
     nabto_device_threads_mutex_unlock(queue->queueMutex);
 }
 
+/**
+ * Take one ready event and execute it. Do NOT wait for a future timed
+ * event — this is also used by the shutdown drain loop in
+ * nabto_device_platform_stop_blocking, which must not block waiting for a
+ * timer (e.g. keep-alive retry ~2s) to fire.
+ *
+ * The core mutex is taken before the event is taken off the queue and held
+ * until the callback has returned. Events are only destroyed or cancelled
+ * with the core mutex held, so once an event is taken off the queue it
+ * cannot be destroyed or cancelled before its callback has run. Lock order
+ * is coreMutex before queueMutex, as when the core posts, cancels or
+ * destroys events.
+ */
 bool thread_event_queue_do_one(struct thread_event_queue* queue)
 {
-    uint32_t now = np_timestamp_now_ms(&queue->ts);
     struct nm_event_queue_event* event = NULL;
 
-    // Handle one event if one is immediately ready. Do NOT wait for a future
-    // timed event — the only caller is the shutdown drain loop in
-    // nabto_device_platform_stop_blocking, which must not block waiting
-    // for a timer (e.g. keep-alive retry ~2s) to fire.
+    nabto_device_threads_mutex_lock(queue->coreMutex);
+    uint32_t now = np_timestamp_now_ms(&queue->ts);
     nabto_device_threads_mutex_lock(queue->queueMutex);
     (void)(nm_event_queue_take_event(&queue->eventQueue, &event) ||
            nm_event_queue_take_timed_event(&queue->eventQueue, now, &event));
     nabto_device_threads_mutex_unlock(queue->queueMutex);
 
     if (event != NULL) {
-        nabto_device_threads_mutex_lock(queue->coreMutex);
         event->cb(event->data);
-        nabto_device_threads_mutex_unlock(queue->coreMutex);
-        return true;
     }
-    return false;
+    nabto_device_threads_mutex_unlock(queue->coreMutex);
+    return event != NULL;
 }
 
 void* queue_thread(void* data)
@@ -189,13 +198,16 @@ void* queue_thread(void* data)
     while (true) {
         uint32_t nextEvent = 0;
         uint32_t now = np_timestamp_now_ms(&queue->ts);
-        struct nm_event_queue_event* event = NULL;
 
         nabto_device_threads_mutex_lock(queue->queueMutex);
-        if (nm_event_queue_take_event(&queue->eventQueue, &event) ||
-            nm_event_queue_take_timed_event(&queue->eventQueue, now, &event)) {
-            // ok execute the event later.
-        } else if (queue->stopped) {
+        if (nm_event_queue_has_ready_event(&queue->eventQueue, now)) {
+            // The event is taken off the queue once the core mutex is held.
+            // It may have been cancelled or destroyed by then.
+            nabto_device_threads_mutex_unlock(queue->queueMutex);
+            thread_event_queue_do_one(queue);
+            continue;
+        }
+        if (queue->stopped) {
             // Stop requested and no event is immediately ready. Exit without
             // waiting out any pending timed event — otherwise shutdown
             // blocks until the next scheduled timer fires (e.g. ~2s for DTLS
@@ -212,12 +224,6 @@ void* queue_thread(void* data)
         }
 
         nabto_device_threads_mutex_unlock(queue->queueMutex);
-
-        if (event != NULL) {
-            nabto_device_threads_mutex_lock(queue->coreMutex);
-            event->cb(event->data);
-            nabto_device_threads_mutex_unlock(queue->coreMutex);
-        }
     }
     return NULL;
 }

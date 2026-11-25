@@ -1,6 +1,7 @@
 #include "nm_event_queue.h"
 
 #include <platform/np_logging.h>
+#include <platform/np_ref.h>
 #include <platform/np_timestamp_wrapper.h>
 
 
@@ -36,7 +37,8 @@ void nm_event_queue_event_deinit(struct nm_event_queue_event* event)
 void nm_event_queue_post_event(struct nm_event_queue* queue, struct nm_event_queue_event* event)
 {
     if (nn_llist_node_in_list(&event->eventsNode)) {
-        NABTO_LOG_ERROR(LOG, "Double posted event, use the post_maybe_double if this bahavior is intended");
+        // E.g. a completion event which is resolved twice.
+        np_lifetime_violation("Double posted event, use the post_maybe_double if this bahavior is intended");
         return;
     }
     nn_llist_append(&queue->events, &event->eventsNode, event);
@@ -116,6 +118,16 @@ bool nm_event_queue_take_timed_event(struct nm_event_queue* queue, uint32_t now,
     }
 
     return false;
+}
+
+bool nm_event_queue_has_ready_event(struct nm_event_queue* queue, uint32_t now)
+{
+    if (!nn_llist_empty(&queue->events)) {
+        return true;
+    }
+    uint32_t nextTime = 0;
+    return nm_event_queue_next_timed_event(queue, &nextTime) &&
+           np_timestamp_less_or_equal(nextTime, now);
 }
 
 /**

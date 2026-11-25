@@ -50,6 +50,7 @@ set(ne_mdns_include_dir ${root_dir}/nabto-common/components/mdns/include)
 set(ne_platform_src
   ${root_dir}/src/platform/np_error_code.c
   ${root_dir}/src/platform/np_completion_event.c
+  ${root_dir}/src/platform/np_ref.c
   ${root_dir}/src/platform/np_logging.c
   ${root_dir}/src/platform/np_util.c
   ${root_dir}/src/platform/np_ip_address.c

@@ -53,6 +53,11 @@ struct np_dns_functions {
      */
     void (*async_resolve_v6)(struct np_dns* obj, const char* host, struct np_ip_address* ips, size_t ipsSize, size_t* ipsResolved, struct np_completion_event* completionEvent);
 
+    // Each completion event given to the DNS implementation is resolved
+    // exactly once. When the platform is stopped (see
+    // nabto_device_platform_stop_blocking) outstanding resolves are
+    // resolved with NABTO_EC_STOPPED and late results are dropped.
+
 };
 
 #ifdef __cplusplus

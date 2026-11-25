@@ -145,6 +145,8 @@ class DtlsPair {
                 ec = pl_->dtlsS.async_send_data(pl_, srvConn_, &sendCtx_);
             }
             if (ec != NABTO_EC_OK) {
+                // The send context was not taken, so it is not armed.
+                np_completion_event_arm(&sendCtx_.ev);
                 np_completion_event_resolve(&sendCtx_.ev, ec);
             }
         });
@@ -178,7 +180,8 @@ class DtlsPair {
         DtlsPair* self = (DtlsPair*)data;
         self->toServer_.emplace_back(buffer, buffer + bufferSize);
         self->maxDatagram_ = std::max(self->maxDatagram_, (size_t)bufferSize);
-        np_event_queue_post(&self->pl_->eq, self->deliverEvent_);
+        np_event_queue_post_maybe_double(&self->pl_->eq, self->deliverEvent_);
+        np_completion_event_arm(cb);
         np_completion_event_resolve(cb, NABTO_EC_OK);
         return NABTO_EC_OK;
     }
@@ -189,7 +192,8 @@ class DtlsPair {
         DtlsPair* self = (DtlsPair*)data;
         self->toClient_.emplace_back(buffer, buffer + bufferSize);
         self->maxDatagram_ = std::max(self->maxDatagram_, (size_t)bufferSize);
-        np_event_queue_post(&self->pl_->eq, self->deliverEvent_);
+        np_event_queue_post_maybe_double(&self->pl_->eq, self->deliverEvent_);
+        np_completion_event_arm(cb);
         np_completion_event_resolve(cb, NABTO_EC_OK);
         return NABTO_EC_OK;
     }

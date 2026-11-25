@@ -363,6 +363,7 @@ void nc_stream_accept(struct nc_stream_context* stream)
 
 void nc_stream_async_accept(struct nc_stream_context* stream, struct np_completion_event* acceptEv)
 {
+    np_completion_event_arm(acceptEv);
     NABTO_LOG_TRACE(LOG, "nc_stream_async_accept");
     if (stream->stopped || stream->virt.stopped) {
         np_completion_event_resolve(acceptEv, NABTO_EC_STOPPED);
@@ -385,6 +386,7 @@ void nc_stream_async_accept(struct nc_stream_context* stream, struct np_completi
 
 void nc_stream_async_read_all(struct nc_stream_context* stream, void* buffer, size_t bufferLength, size_t* readLength, struct np_completion_event* readAllEv)
 {
+    np_completion_event_arm(readAllEv);
     NABTO_LOG_TRACE(LOG, "nc_stream_async_read_all");
     if (stream->stopped || stream->virt.stopped) {
         np_completion_event_resolve(readAllEv, NABTO_EC_STOPPED);
@@ -412,6 +414,7 @@ void nc_stream_async_read_all(struct nc_stream_context* stream, void* buffer, si
 
 void nc_stream_async_read_some(struct nc_stream_context* stream, void* buffer, size_t bufferLength, size_t* readLength, struct np_completion_event* readSomeEv)
 {
+    np_completion_event_arm(readSomeEv);
     NABTO_LOG_TRACE(LOG, "nc_stream_async_read_some");
     if (stream->stopped || stream->virt.stopped) {
         np_completion_event_resolve(readSomeEv, NABTO_EC_STOPPED);
@@ -442,6 +445,7 @@ void nc_stream_async_read_some(struct nc_stream_context* stream, void* buffer, s
 
 void nc_stream_async_write(struct nc_stream_context* stream, const void* buffer, size_t bufferLength, struct np_completion_event* writeEv)
 {
+    np_completion_event_arm(writeEv);
     NABTO_LOG_TRACE(LOG, "nc_stream_async_write");
     if (stream->stopped || stream->virt.stopped) {
         np_completion_event_resolve(writeEv, NABTO_EC_STOPPED);
@@ -471,6 +475,7 @@ void nc_stream_async_write(struct nc_stream_context* stream, const void* buffer,
 
 void nc_stream_async_close(struct nc_stream_context* stream, struct np_completion_event* closeEv)
 {
+    np_completion_event_arm(closeEv);
     if (stream->stopped || stream->virt.stopped) {
         np_completion_event_resolve(closeEv, NABTO_EC_STOPPED);
         return;

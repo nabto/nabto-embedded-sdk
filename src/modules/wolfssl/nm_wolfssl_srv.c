@@ -517,6 +517,7 @@ np_error_code nm_wolfssl_srv_async_send_data(
     if (ctx->state == CLOSING) {
         return NABTO_EC_CONNECTION_CLOSING;
     }
+    np_completion_event_arm(&sendCtx->ev);
     nn_llist_append(&ctx->sendList, &sendCtx->sendListNode, sendCtx);
     nm_wolfssl_srv_start_send(ctx);
     return NABTO_EC_OK;
@@ -556,6 +557,9 @@ np_error_code nm_wolfssl_srv_async_close(
     }
     if (ctx->state == CLOSING) {
         return NABTO_EC_OK;
+    }
+    if (completionEvent != NULL) {
+        np_completion_event_arm(completionEvent);
     }
     ctx->closeCompletionEvent = completionEvent;
     ctx->state = CLOSING;

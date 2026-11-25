@@ -799,6 +799,7 @@ void start_send_initial_packet(struct nc_attach_context* ctx,
                                struct np_completion_event* cb)
 {
     // send the packet to all the endpoints
+    np_completion_event_arm(cb);
     ctx->initialPacket.cb = cb;
     ctx->initialPacket.buffer = buffer;
     ctx->initialPacket.bufferSize = bufferSize;

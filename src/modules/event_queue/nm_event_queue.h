@@ -53,4 +53,10 @@ bool nm_event_queue_take_timed_event(struct nm_event_queue* queue, uint32_t now,
  */
 bool nm_event_queue_next_timed_event(struct nm_event_queue* queue, uint32_t* nextEvent);
 
+/**
+ * Test if an event or an expired timed event is ready to be taken, without
+ * taking it.
+ */
+bool nm_event_queue_has_ready_event(struct nm_event_queue* queue, uint32_t now);
+
 #endif
