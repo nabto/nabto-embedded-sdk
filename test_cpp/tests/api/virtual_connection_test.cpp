@@ -11,6 +11,7 @@
 #include <nlohmann/json.hpp>
 
 #include <iostream>
+#include <future>
 
 namespace nabto {
 namespace test {
@@ -627,6 +628,45 @@ BOOST_AUTO_TEST_CASE(free_conn_with_coap)
 
     nabto_device_future_free(fut);
     nabto_device_virtual_coap_request_free(req);
+}
+
+// The client frees a virtual CoAP request before the device application has
+// answered it. Answering it afterwards wrote into the freed client request.
+BOOST_AUTO_TEST_CASE(client_frees_coap_request_before_response)
+{
+    const char* coapPath = "/hello/world";
+
+    nabto::test::TestDevice td;
+    std::promise<NabtoDeviceCoapRequest*> received;
+    bool first = true;
+    td.setupCoapEndpoint([&](NabtoDeviceError ec, NabtoDeviceCoapRequest* req) {
+        if (first) {
+            first = false;
+            BOOST_TEST(ec == NABTO_DEVICE_EC_OK);
+            received.set_value(req);
+        }
+        else {
+            BOOST_TEST(ec == NABTO_DEVICE_EC_STOPPED);
+        }
+    });
+    NabtoDeviceVirtualConnection* conn = td.makeConnection();
+
+    NabtoDeviceVirtualCoapRequest* req = nabto_device_virtual_coap_request_new(conn, NABTO_DEVICE_COAP_GET, coapPath);
+    BOOST_TEST((req != NULL));
+
+    NabtoDeviceFuture* fut = nabto_device_future_new(td.device_);
+    nabto_device_virtual_coap_request_execute(req, fut);
+
+    NabtoDeviceCoapRequest* deviceReq = received.get_future().get();
+
+    nabto_device_virtual_coap_request_free(req);
+    BOOST_TEST(nabto_device_future_wait(fut) == NABTO_DEVICE_EC_STOPPED);
+
+    nabto_device_coap_response_set_code(deviceReq, 205);
+    nabto_device_coap_response_ready(deviceReq);
+    nabto_device_coap_request_free(deviceReq);
+
+    nabto_device_future_free(fut);
 }
 
 // A request queued on a CoAP listener which is stopped before the application
