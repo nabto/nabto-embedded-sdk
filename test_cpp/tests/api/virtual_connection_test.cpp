@@ -1090,6 +1090,45 @@ BOOST_AUTO_TEST_CASE(coap_pwd_auth_step1_malformed_requests_do_not_spend_tokens)
     nabto_device_future_free(fut);
 }
 
+// A password authentication request whose CBOR payload is not a map is
+// rejected. It used to be read as a map anyway.
+BOOST_AUTO_TEST_CASE(coap_pwd_auth_step1_payload_not_a_map)
+{
+    const std::string clientFp = "1234567890123456789012345678901212345678901234567890123456789012";
+    const std::string deviceFp = "abcdefabcdefabcdefabcdefabcdefabcdefabcdefabcdefabcdefabcdefabcd";
+    const char* auth1Path = "/p2p/pwd-auth/1";
+
+    nabto::test::TestDevice td;
+    NabtoDeviceVirtualConnection* conn = td.makeConnection(deviceFp, clientFp);
+
+    bool called = false;
+    td.setupPassAuth([&](NabtoDeviceError ec, NabtoDevicePasswordAuthenticationRequest* req) {
+        if (ec == NABTO_DEVICE_EC_OK) {
+            called = true;
+            nabto_device_password_authentication_request_free(req);
+        }
+    });
+
+    // The CBOR unsigned integer 1.
+    const uint8_t payload[] = { 0x01 };
+
+    NabtoDeviceVirtualCoapRequest* req = nabto_device_virtual_coap_request_new(conn, NABTO_DEVICE_COAP_POST, auth1Path);
+    BOOST_REQUIRE(req != NULL);
+    BOOST_TEST(nabto_device_virtual_coap_request_set_payload(req, payload, sizeof(payload)) == NABTO_DEVICE_EC_OK);
+    BOOST_TEST(nabto_device_virtual_coap_request_set_content_format(req, NABTO_DEVICE_COAP_CONTENT_FORMAT_APPLICATION_CBOR) == NABTO_DEVICE_EC_OK);
+
+    NabtoDeviceFuture* fut = nabto_device_future_new(td.device_);
+    nabto_device_virtual_coap_request_execute(req, fut);
+    BOOST_TEST(nabto_device_future_wait(fut) == NABTO_DEVICE_EC_OK);
+    uint16_t status = 0;
+    BOOST_TEST(nabto_device_virtual_coap_request_get_response_status_code(req, &status) == NABTO_DEVICE_EC_OK);
+    BOOST_TEST(status == 400);
+    BOOST_TEST(!called);
+
+    nabto_device_virtual_coap_request_free(req);
+    nabto_device_future_free(fut);
+}
+
 BOOST_AUTO_TEST_CASE(coap_get_endpoints)
 {
     const char* coapPath = "/p2p/endpoints";

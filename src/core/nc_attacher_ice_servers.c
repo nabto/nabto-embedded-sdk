@@ -190,7 +190,8 @@ bool parse_response(const uint8_t* buffer, size_t bufferSize, struct nc_attacher
         CborValue urls;
 
         if (!cbor_value_is_map(&it)) {
-            NABTO_LOG_INFO(LOG, "Array element not a map");
+            NABTO_LOG_ERROR(LOG, "Array element not a map");
+            return false;
         }
 
         if (cbor_value_map_find_value(&it, "Username", &username) != CborNoError ||
