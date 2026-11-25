@@ -227,6 +227,46 @@ BOOST_AUTO_TEST_CASE(new_device_after_free, *boost::unit_test::timeout(10))
 }
 
 
+// The attacher keeps pointers to the device info strings once the device is
+// started. Changing them afterwards freed strings the attacher used on the
+// next attach.
+BOOST_AUTO_TEST_CASE(device_info_cannot_change_after_start, *boost::unit_test::timeout(10))
+{
+    NabtoDevice* dev = nabto_device_new();
+    BOOST_REQUIRE(dev);
+
+    BOOST_TEST(nabto_device_set_server_url(dev, "server.foo.bar") == NABTO_DEVICE_EC_OK);
+    char* key;
+    nabto_device_create_private_key(dev, &key);
+    BOOST_TEST(nabto_device_set_private_key(dev, key) == NABTO_DEVICE_EC_OK);
+    nabto_device_string_free(key);
+    BOOST_TEST(nabto_device_set_product_id(dev, "pr-test") == NABTO_DEVICE_EC_OK);
+    BOOST_TEST(nabto_device_set_device_id(dev, "de-test") == NABTO_DEVICE_EC_OK);
+    BOOST_TEST(nabto_device_set_app_name(dev, "app") == NABTO_DEVICE_EC_OK);
+    BOOST_TEST(nabto_device_set_app_version(dev, "1.0") == NABTO_DEVICE_EC_OK);
+    BOOST_TEST(nabto_device_set_local_port(dev, 0) == NABTO_DEVICE_EC_OK);
+    BOOST_TEST(nabto_device_set_p2p_port(dev, 0) == NABTO_DEVICE_EC_OK);
+
+    NabtoDeviceFuture* fut = nabto_device_future_new(dev);
+    nabto_device_start(dev, fut);
+    BOOST_TEST(nabto_device_future_wait(fut) == NABTO_DEVICE_EC_OK);
+    nabto_device_future_free(fut);
+
+    BOOST_TEST(nabto_device_set_server_url(dev, "other.foo.bar") == NABTO_DEVICE_EC_INVALID_STATE);
+    BOOST_TEST(nabto_device_set_product_id(dev, "pr-other") == NABTO_DEVICE_EC_INVALID_STATE);
+    BOOST_TEST(nabto_device_set_device_id(dev, "de-other") == NABTO_DEVICE_EC_INVALID_STATE);
+    BOOST_TEST(nabto_device_set_app_name(dev, "other") == NABTO_DEVICE_EC_INVALID_STATE);
+    BOOST_TEST(nabto_device_set_app_version(dev, "2.0") == NABTO_DEVICE_EC_INVALID_STATE);
+
+    BOOST_TEST(std::string(nabto_device_get_product_id(dev)) == "pr-test");
+    BOOST_TEST(std::string(nabto_device_get_device_id(dev)) == "de-test");
+    BOOST_TEST(std::string(nabto_device_get_app_name(dev)) == "app");
+    BOOST_TEST(std::string(nabto_device_get_app_version(dev)) == "1.0");
+
+    nabto_device_stop(dev);
+    nabto_device_free(dev);
+}
+
 BOOST_AUTO_TEST_CASE(tcp_tunnel_service_duplicate_id, *boost::unit_test::timeout(30))
 {
     NabtoDevice* dev = nabto_device_new();
