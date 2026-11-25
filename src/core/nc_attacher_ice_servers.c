@@ -13,6 +13,7 @@
 #define LOG NABTO_LOG_MODULE_ATTACHER
 
 static void coap_handler(struct nabto_coap_client_request* request, void* data);
+static void free_request(struct nc_attacher_request_ice_servers_context* ctx);
 static CborError encode_request(CborEncoder* encoder, const char* identifier);
 bool parse_response(const uint8_t* buffer, size_t bufferSize, struct nc_attacher_request_ice_servers_context* ctx);
 
@@ -30,13 +31,11 @@ static void ice_server_clean(struct nc_attacher_ice_server* server) {
 
 void nc_attacher_ice_servers_ctx_init(struct nc_attacher_request_ice_servers_context* ctx, struct nc_attach_context* attacher) {
     ctx->attacher = attacher;
-    ctx->coapRequest = nabto_coap_client_request_new(nc_coap_client_get_client(attacher->coapClient),
-        NABTO_COAP_METHOD_POST,
-        2, coapPath,
-        &coap_handler,
-        ctx, attacher->dtls);
-    // coapRequest is NULL if the allocation failed, that is reported when the
-    // request is made.
+    // The coap request is created when the request is sent. A request created
+    // here would be bound to the DTLS connection of this moment, and would be
+    // completed with a NULL callback if the coap client stopped before it was
+    // sent.
+    ctx->coapRequest = NULL;
     nn_vector_init(&ctx->iceServers, sizeof(struct nc_attacher_ice_server), np_allocator_get());
 }
 
@@ -46,8 +45,11 @@ void nc_attacher_ice_servers_ctx_deinit(struct nc_attacher_request_ice_servers_c
         ice_server_clean((struct nc_attacher_ice_server*)elm);
     }
     nn_vector_deinit(&ctx->iceServers);
+    // Freeing the coap request means its handler is never called, so complete
+    // the outstanding request here.
     if (ctx->coapRequest != NULL) {
-        nabto_coap_client_request_free(ctx->coapRequest);
+        free_request(ctx);
+        ctx->cb(NABTO_EC_STOPPED, ctx->cbData);
     }
 }
 
@@ -56,6 +58,15 @@ np_error_code nc_attacher_request_ice_servers(struct nc_attacher_request_ice_ser
     if (ctx->attacher->state != NC_ATTACHER_STATE_ATTACHED) {
         return NABTO_EC_NOT_ATTACHED;
     }
+    if (ctx->coapRequest != NULL) {
+        return NABTO_EC_OPERATION_IN_PROGRESS;
+    }
+
+    ctx->coapRequest = nabto_coap_client_request_new(nc_coap_client_get_client(ctx->attacher->coapClient),
+        NABTO_COAP_METHOD_POST,
+        2, coapPath,
+        &coap_handler,
+        ctx, ctx->attacher->dtls);
     if (ctx->coapRequest == NULL) {
         return NABTO_EC_OUT_OF_MEMORY;
     }
@@ -69,6 +80,7 @@ np_error_code nc_attacher_request_ice_servers(struct nc_attacher_request_ice_ser
         cbor_encoder_init(&encoder, NULL, 0, 0);
         if (encode_request(&encoder, identifier) != CborErrorOutOfMemory) {
             NABTO_LOG_ERROR(LOG, "Cannot determine buffer space needed to encode ice servers request.");
+            free_request(ctx);
             return NABTO_EC_FAILED;
         }
         bufferSize = cbor_encoder_get_extra_bytes_needed(&encoder);
@@ -76,6 +88,7 @@ np_error_code nc_attacher_request_ice_servers(struct nc_attacher_request_ice_ser
 
     uint8_t* buffer = np_calloc(1, bufferSize);
     if (buffer == NULL) {
+        free_request(ctx);
         return NABTO_EC_OUT_OF_MEMORY;
     }
     {
@@ -84,6 +97,7 @@ np_error_code nc_attacher_request_ice_servers(struct nc_attacher_request_ice_ser
         if (encode_request(&encoder, identifier) != CborNoError) {
             NABTO_LOG_ERROR(LOG, "Cannot encode ice servers request as cbor.");
             np_free(buffer);
+            free_request(ctx);
             return NABTO_EC_FAILED;
         }
     }
@@ -91,6 +105,7 @@ np_error_code nc_attacher_request_ice_servers(struct nc_attacher_request_ice_ser
     nabto_coap_error err = nabto_coap_client_request_set_payload(ctx->coapRequest, buffer, bufferSize);
     np_free(buffer);
     if (err != NABTO_COAP_ERROR_OK) {
+        free_request(ctx);
         return nc_coap_error_to_core(err);
     }
 
@@ -167,7 +182,15 @@ static void coap_handler(struct nabto_coap_client_request* request, void* data)
         }
     }
 
+    free_request(ctx);
+
     ctx->cb(ec, ctx->cbData);
+}
+
+void free_request(struct nc_attacher_request_ice_servers_context* ctx)
+{
+    nabto_coap_client_request_free(ctx->coapRequest);
+    ctx->coapRequest = NULL;
 }
 
 bool parse_response(const uint8_t* buffer, size_t bufferSize, struct nc_attacher_request_ice_servers_context* ctx) {

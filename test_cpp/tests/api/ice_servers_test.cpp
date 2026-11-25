@@ -23,6 +23,17 @@ BOOST_AUTO_TEST_CASE(create_destroy_request)
     nabto_device_free(dev);
 }
 
+BOOST_AUTO_TEST_CASE(stop_device_with_unsent_request)
+{
+    // An unsent request must not be completed when the device stops.
+    NabtoDevice* dev = nabto_device_new();
+
+    NabtoDeviceIceServersRequest* req = nabto_device_ice_servers_request_new(dev);
+    nabto_device_stop(dev);
+    nabto_device_ice_servers_request_free(req);
+    nabto_device_free(dev);
+}
+
 
 BOOST_AUTO_TEST_SUITE_END()
 
@@ -88,6 +99,26 @@ BOOST_AUTO_TEST_CASE(get_turn_creds)
 
 
     nabto_device_ice_servers_request_free(req);
+    nabto_device_future_free(f);
+}
+
+BOOST_AUTO_TEST_CASE(free_request_while_sending)
+{
+    nabto::test::AttachedTestDevice attachedTestDevice;
+
+    attachedTestDevice.attach(getHostname(), getPort(), getRootCerts());
+
+    NabtoDevice* dev = attachedTestDevice.device();
+
+    NabtoDeviceIceServersRequest* req = nabto_device_ice_servers_request_new(dev);
+    NabtoDeviceFuture* f = nabto_device_future_new(dev);
+
+    BOOST_TEST(EC(nabto_device_ice_servers_request_send("foobar", req, f)) == EC(NABTO_DEVICE_EC_OK));
+    nabto_device_ice_servers_request_free(req);
+
+    // The future is resolved whether or not the response arrived first.
+    NabtoDeviceError ec = nabto_device_future_wait(f);
+    BOOST_TEST((ec == NABTO_DEVICE_EC_OK || ec == NABTO_DEVICE_EC_STOPPED));
     nabto_device_future_free(f);
 }
 
