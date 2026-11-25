@@ -14,13 +14,13 @@ static void nc_client_connection_dispatch_send_internal_error_cb(np_error_code e
 
 np_error_code nc_client_connection_dispatch_init(struct nc_client_connection_dispatch_context* ctx,
                                         struct np_platform* pl,
-                                        struct nc_device_context* dev)
+                                        struct nc_device_context* dev, struct np_ref* owner)
 {
     ctx->device = dev;
     ctx->connections = &dev->connections;
     ctx->closing = false;
     ctx->sendingInternalError = false;
-    np_error_code ec = np_completion_event_init(&pl->eq, &ctx->sendCompletionEvent, &nc_client_connection_dispatch_send_internal_error_cb, ctx, NULL);
+    np_error_code ec = np_completion_event_init(&pl->eq, &ctx->sendCompletionEvent, &nc_client_connection_dispatch_send_internal_error_cb, ctx, owner);
     if (ec != NABTO_EC_OK) {
         return ec;
     }

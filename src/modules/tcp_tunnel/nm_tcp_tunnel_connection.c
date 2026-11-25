@@ -30,6 +30,7 @@ static void close_tcp(struct nm_tcp_tunnel_connection* connection);
 static void abort_connection(struct nm_tcp_tunnel_connection* connection);
 static void is_ended(struct nm_tcp_tunnel_connection* connection);
 static void the_end(struct nm_tcp_tunnel_connection* connection);
+static void connection_release(struct np_ref* ref);
 
 #define LOG NABTO_LOG_MODULE_TUNNEL
 
@@ -48,22 +49,35 @@ struct nm_tcp_tunnel_connection* nm_tcp_tunnel_connection_new(void)
     return connection;
 }
 
+/**
+ * End the connection. Destroying the socket and the stream resolves the
+ * operations which are still outstanding. The connection is freed when their
+ * callbacks have run.
+ */
 void nm_tcp_tunnel_connection_free(struct nm_tcp_tunnel_connection* connection)
 {
     struct np_platform* pl = connection->pl;
+    connection->ended = true;
     if (connection->socket != NULL) {
         np_tcp_destroy(&pl->tcp, connection->socket);
         connection->socket = NULL;
     }
+    if (connection->stream) {
+        nc_stream_destroy(connection->stream);
+        connection->stream = NULL;
+    }
+    np_ref_put(&connection->ref);
+}
+
+void connection_release(struct np_ref* ref)
+{
+    struct nm_tcp_tunnel_connection* connection = np_ref_container(ref, struct nm_tcp_tunnel_connection, ref);
     np_completion_event_deinit(&connection->connectCompletionEvent);
     np_completion_event_deinit(&connection->readCompletionEvent);
     np_completion_event_deinit(&connection->writeCompletionEvent);
     np_completion_event_deinit(&connection->streamReadCompletionEvent);
     np_completion_event_deinit(&connection->streamWriteCompletionEvent);
     np_completion_event_deinit(&connection->streamCloseCompletionEvent);
-    if (connection->stream) {
-        nc_stream_destroy(connection->stream);
-    }
     np_free(connection);
 }
 
@@ -71,6 +85,9 @@ np_error_code nm_tcp_tunnel_connection_init(struct nm_tcp_tunnel_service* servic
 {
     connection->pl = service->tunnels->device->pl;
     struct np_platform* pl = connection->pl;
+    // From here on nm_tcp_tunnel_connection_free frees the connection, also
+    // if init fails.
+    np_ref_init(&connection->ref, &pl->refTracker, &connection_release);
     np_error_code ec = np_tcp_create(&pl->tcp, &connection->socket);
     if (ec) {
         NABTO_LOG_ERROR(LOG, "Cannot create tcp connection");
@@ -81,35 +98,40 @@ np_error_code nm_tcp_tunnel_connection_init(struct nm_tcp_tunnel_service* servic
     connection->port = service->port;
 
     struct np_event_queue* eq = &pl->eq;
-    ec = np_completion_event_init(eq, &connection->connectCompletionEvent, &connect_callback, connection, NULL);
+    ec = np_completion_event_init(eq, &connection->connectCompletionEvent, &connect_callback, connection, &connection->ref);
     if (ec != NABTO_EC_OK) {
         return ec;
     }
 
-    ec = np_completion_event_init(eq, &connection->readCompletionEvent, &tcp_readen, connection, NULL);
+    ec = np_completion_event_init(eq, &connection->readCompletionEvent, &tcp_readen, connection, &connection->ref);
     if (ec != NABTO_EC_OK) {
         return ec;
     }
 
-    ec = np_completion_event_init(eq, &connection->writeCompletionEvent, &tcp_written, connection, NULL);
+
+    ec = np_completion_event_init(eq, &connection->writeCompletionEvent, &tcp_written, connection, &connection->ref);
     if (ec != NABTO_EC_OK) {
         return ec;
     }
 
-    ec = np_completion_event_init(eq, &connection->streamReadCompletionEvent, &stream_readen, connection, NULL);
+
+    ec = np_completion_event_init(eq, &connection->streamReadCompletionEvent, &stream_readen, connection, &connection->ref);
     if (ec != NABTO_EC_OK) {
         return ec;
     }
 
-    ec = np_completion_event_init(eq, &connection->streamWriteCompletionEvent, &stream_written, connection, NULL);
+
+    ec = np_completion_event_init(eq, &connection->streamWriteCompletionEvent, &stream_written, connection, &connection->ref);
     if (ec != NABTO_EC_OK) {
         return ec;
     }
 
-    ec = np_completion_event_init(eq, &connection->streamCloseCompletionEvent, &stream_closed, connection, NULL);
+
+    ec = np_completion_event_init(eq, &connection->streamCloseCompletionEvent, &stream_closed, connection, &connection->ref);
     if (ec != NABTO_EC_OK) {
         return ec;
     }
+
 
 
     connection->tcpRecvBufferSize = NM_TCP_TUNNEL_BUFFER_SIZE;
@@ -163,6 +185,9 @@ void start_connect(struct nm_tcp_tunnel_connection* connection)
 void connect_callback(np_error_code ec, void* userData)
 {
     struct nm_tcp_tunnel_connection* connection = userData;
+    if (connection->ended) {
+        return;
+    }
     if (ec) {
         NABTO_LOG_ERROR(LOG, "Could not connect to tcp endpoint: %s:%" PRIu16, nn_ip_address_to_string(&connection->address), connection->port);
         the_end(connection);
@@ -187,6 +212,9 @@ void start_tcp_read(struct nm_tcp_tunnel_connection* connection)
 void tcp_readen(np_error_code ec, void* userData)
 {
     struct nm_tcp_tunnel_connection* connection = userData;
+    if (connection->ended) {
+        return;
+    }
     if (connection->readLength == 0 || ec == NABTO_EC_EOF) {
         NABTO_LOG_TRACE(LOG, "TCP EOF received");
         // Close stream, aka signal that we will not write any
@@ -223,6 +251,9 @@ void stream_closed(np_error_code ec, void* userData)
 {
     (void)ec;
     struct nm_tcp_tunnel_connection* connection = userData;
+    if (connection->ended) {
+        return;
+    }
     connection->tcpReadEnded = true;
     is_ended(connection);
 }
@@ -235,6 +266,9 @@ void start_stream_write(struct nm_tcp_tunnel_connection* connection, size_t tran
 void stream_written(np_error_code ec, void* userData)
 {
     struct nm_tcp_tunnel_connection* connection = userData;
+    if (connection->ended) {
+        return;
+    }
     if (ec) {
         // NABTO_LOG_ERROR(LOG, "Stream write failed, stopping the tcp tunnel connection");
         // failed to write the data to the stream. In this scenario we
@@ -256,6 +290,9 @@ void start_stream_read(struct nm_tcp_tunnel_connection* connection)
 void stream_readen(np_error_code ec, void* userData)
 {
     struct nm_tcp_tunnel_connection* connection = userData;
+    if (connection->ended) {
+        return;
+    }
     if (connection->streamReadSize == 0 || ec == NABTO_EC_EOF) {
         NABTO_LOG_TRACE(LOG, "tcp tunnel stream read EOF.");
         close_tcp(connection);
@@ -290,6 +327,9 @@ void start_tcp_write(struct nm_tcp_tunnel_connection* connection, size_t transfe
 void tcp_written(const np_error_code ec, void* userData)
 {
     struct nm_tcp_tunnel_connection* connection = userData;
+    if (connection->ended) {
+        return;
+    }
     if (ec) {
         NABTO_LOG_ERROR(LOG, "Could not write all the data to the tcp connection, closing the tcp tunnel connection");
         // unrecoverable error

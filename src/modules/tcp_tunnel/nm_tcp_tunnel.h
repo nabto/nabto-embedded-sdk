@@ -42,6 +42,13 @@ struct nm_tcp_tunnel_connection {
     struct np_completion_event readCompletionEvent;
     size_t readLength;
     struct np_completion_event writeCompletionEvent;
+
+    // Held until the connection has ended, and by each outstanding
+    // operation through its completion event.
+    struct np_ref ref;
+    // The connection has ended, the callbacks of operations which are still
+    // outstanding do nothing.
+    bool ended;
 };
 
 struct nm_tcp_tunnel_service {

@@ -16,6 +16,7 @@ static void nc_device_local_socket_bound_cb(const np_error_code ec, void* data);
 static void nc_device_secondary_stun_socket_bound_cb(const np_error_code ec, void* data);
 static void nc_device_sockets_bound(struct nc_device_context* dev);
 static void nc_device_resolve_start_close_callbacks(struct nc_device_context* dev, np_error_code ec);
+static void nc_device_release(struct np_ref* ref);
 // return true iff the mdns capabilities are available.
 static bool nc_device_has_mdns_capability(struct nc_device_context* ctx);
 
@@ -44,6 +45,9 @@ np_error_code nc_device_init(struct nc_device_context* device, struct np_platfor
 
     nn_log_init(&device->moduleLogger, module_logger, device);
 
+    // The owner of the completion events of the modules in the device.
+    np_ref_init(&device->ref, &pl->refTracker, &nc_device_release);
+
     nn_llist_init(&device->eventsListeners);
     nn_llist_init(&device->deviceEvents);
 
@@ -53,17 +57,17 @@ np_error_code nc_device_init(struct nc_device_context* device, struct np_platfor
     device->initialized = true; // This will be set to false again if we cleanup after a failed init.
 
 
-    np_error_code ec = nc_udp_dispatch_init(&device->udp, pl, &nc_device_events_listener_notify, device);
+    np_error_code ec = nc_udp_dispatch_init(&device->udp, pl, &nc_device_events_listener_notify, device, &device->ref);
     if (ec != NABTO_EC_OK) {
         nc_device_deinit(device);
         return ec;
     }
-    ec = nc_udp_dispatch_init(&device->secondaryUdp, pl, &nc_device_events_listener_notify, device);
+    ec = nc_udp_dispatch_init(&device->secondaryUdp, pl, &nc_device_events_listener_notify, device, &device->ref);
     if (ec != NABTO_EC_OK) {
         nc_device_deinit(device);
         return ec;
     }
-    ec = nc_udp_dispatch_init(&device->localUdp, pl, &nc_device_events_listener_notify, device);
+    ec = nc_udp_dispatch_init(&device->localUdp, pl, &nc_device_events_listener_notify, device, &device->ref);
     if (ec != NABTO_EC_OK) {
         nc_device_deinit(device);
         return ec;
@@ -75,25 +79,25 @@ np_error_code nc_device_init(struct nc_device_context* device, struct np_platfor
         return ec;
     }
 #endif
-    ec = nc_coap_server_init(pl, device, &device->moduleLogger, &device->coapServer);
+    ec = nc_coap_server_init(pl, device, &device->moduleLogger, &device->coapServer, &device->ref);
     if (ec != NABTO_EC_OK) {
         nc_device_deinit(device);
         return ec;
     }
 
-    ec = nc_coap_client_init(pl, &device->coapClient);
+    ec = nc_coap_client_init(pl, &device->coapClient, &device->ref);
     if (ec != NABTO_EC_OK) {
         nc_device_deinit(device);
         return ec;
     }
 
-    ec = nc_attacher_init(&device->attacher, pl, device, &device->coapClient, &nc_device_events_listener_notify, device);
+    ec = nc_attacher_init(&device->attacher, pl, device, &device->coapClient, &nc_device_events_listener_notify, device, &device->ref);
     if (ec != NABTO_EC_OK) {
         nc_device_deinit(device);
         return ec;
     }
 
-    ec = nc_rendezvous_init(&device->rendezvous, pl);
+    ec = nc_rendezvous_init(&device->rendezvous, pl, &device->ref);
     if (ec != NABTO_EC_OK) {
         nc_device_deinit(device);
         return ec;
@@ -105,7 +109,7 @@ np_error_code nc_device_init(struct nc_device_context* device, struct np_platfor
     }
 
 
-    ec = nc_stun_init(&device->stun, device, pl);
+    ec = nc_stun_init(&device->stun, device, pl, &device->ref);
     if (ec != NABTO_EC_OK) {
         nc_device_deinit(device);
         return ec;
@@ -133,17 +137,17 @@ np_error_code nc_device_init(struct nc_device_context* device, struct np_platfor
         return ec;
     }
 
-    ec = nc_client_connection_dispatch_init(&device->clientConnect, pl, device);
+    ec = nc_client_connection_dispatch_init(&device->clientConnect, pl, device, &device->ref);
     if (ec != NABTO_EC_OK) {
         NABTO_LOG_ERROR(LOG, "nc_device failed init client connection dispatch. %s", np_error_code_to_string(ec));
         nc_device_deinit(device);
         return ec;
     }
 
-    nc_stream_manager_init(&device->streamManager, pl, &device->moduleLogger);
+    nc_stream_manager_init(&device->streamManager, pl, &device->moduleLogger, &device->ref);
 
 
-    ec = np_completion_event_init(&pl->eq, &device->socketBoundCompletionEvent, NULL, NULL, NULL);
+    ec = np_completion_event_init(&pl->eq, &device->socketBoundCompletionEvent, NULL, NULL, &device->ref);
     if (ec != NABTO_EC_OK) {
         nc_device_deinit(device);
         return ec;
@@ -197,6 +201,11 @@ void nc_device_deinit(struct nc_device_context* device) {
     nc_udp_dispatch_deinit(&device->secondaryUdp);
     np_completion_event_deinit(&device->socketBoundCompletionEvent);
 
+    if (device->ref.count != 1) {
+        np_lifetime_violation("device deinitialized while operations of its modules are outstanding");
+    }
+    np_ref_put(&device->ref);
+
     np_free(device->productId);
     np_free(device->deviceId);
     np_free(device->appName);
@@ -204,6 +213,12 @@ void nc_device_deinit(struct nc_device_context* device) {
     np_free(device->hostname);
 
     device->initialized = false;
+}
+
+void nc_device_release(struct np_ref* ref)
+{
+    // The device is embedded in the nabto device context, which frees it.
+    (void)ref;
 }
 
 void nc_device_resolve_start_close_callbacks(struct nc_device_context* dev, np_error_code ec)

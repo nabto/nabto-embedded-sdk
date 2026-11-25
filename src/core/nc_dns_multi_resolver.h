@@ -38,7 +38,7 @@ struct nc_dns_multi_resolver_context {
     struct np_completion_event* resolvedCompletionEvent;
 };
 
-np_error_code nc_dns_multi_resolver_init(struct np_platform* pl, struct nc_dns_multi_resolver_context* ctx);
+np_error_code nc_dns_multi_resolver_init(struct np_platform* pl, struct nc_dns_multi_resolver_context* ctx, struct np_ref* owner);
 
 void nc_dns_multi_resolver_deinit(struct nc_dns_multi_resolver_context* ctx);
 

@@ -15,11 +15,22 @@
 struct nabto_device_coap_resource;
 struct nm_tcp_tunnels;
 
+/**
+ * The time nabto_device_stop waits for closing connections, streams and
+ * tunnels to finish the operations they have started, before the platform
+ * is stopped.
+ */
+#ifndef NABTO_DEVICE_STOP_DRAIN_TIMEOUT_MS
+#define NABTO_DEVICE_STOP_DRAIN_TIMEOUT_MS 2000
+#endif
+
 struct nabto_device_context {
     struct np_platform pl;
     struct nc_device_context core;
 
     struct nabto_device_mutex* eventMutex;
+    // Signalled when no operations are outstanding, see np_ref_tracker.
+    struct nabto_device_condition* drainCondition;
 
     struct nn_llist listeners;
 

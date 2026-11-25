@@ -39,6 +39,7 @@ struct tcp_read_context {
 
 struct np_tcp_socket {
     struct np_platform* pl;
+    struct nm_libevent_context* impl;
     struct bufferevent* bev;
     struct tcp_write_context write;
     struct tcp_read_context read;
@@ -62,6 +63,8 @@ static void resolve_tcp_connect(struct np_tcp_socket* sock, np_error_code ec);
 static void resolve_tcp_read(struct np_tcp_socket* sock, np_error_code ec);
 static void resolve_tcp_write(struct np_tcp_socket* sock, np_error_code ec);
 static void tcp_eof(void* userData);
+static struct np_completion_event* take_event(struct np_tcp_socket* sock, struct np_completion_event** ev);
+static bool publish_event(struct np_tcp_socket* sock, struct np_completion_event** ev, struct np_completion_event* completionEvent);
 
 static struct np_tcp_functions module = {
     .create = tcp_create,
@@ -91,6 +94,7 @@ np_error_code tcp_create(struct np_tcp* obj, struct np_tcp_socket** sock)
 
     struct nm_libevent_context* ctx = obj->data;
 
+    s->impl = ctx;
     s->aborted = false;
 
     // NOLINTNEXTLINE(hicpp-signed-bitwise)
@@ -128,15 +132,23 @@ void tcp_bufferevent_event_read(struct bufferevent* bev, void* userData)
     (void)bev;
     NABTO_LOG_TRACE(LOG, "tcp_bufferevent_event_read");
     struct np_tcp_socket* sock = userData;
+    // libevent holds the bufferevent lock, the mutex is taken after it as in
+    // tcp_async_read. The buffer is only written while the read is
+    // outstanding, an abort takes the event under the mutex.
+    struct np_completion_event* e = NULL;
+    nabto_device_threads_mutex_lock(sock->impl->mutex);
     if (sock->read.completionEvent != NULL) {
         size_t readDataSize = bufferevent_read(sock->bev, sock->read.buffer, sock->read.bufferLength);
         if (readDataSize > 0) {
             *(sock->read.readLength) = readDataSize;
-            struct np_completion_event* e = sock->read.completionEvent;
+            e = sock->read.completionEvent;
             sock->read.completionEvent = NULL;
             bufferevent_disable(sock->bev, EV_READ);
-            np_completion_event_resolve(e, NABTO_EC_OK);
         }
+    }
+    nabto_device_threads_mutex_unlock(sock->impl->mutex);
+    if (e != NULL) {
+        np_completion_event_resolve(e, NABTO_EC_OK);
     }
 }
 
@@ -146,9 +158,9 @@ void tcp_bufferevent_event_write(struct bufferevent* bev, void* userData)
     struct np_tcp_socket* sock = userData;
     NABTO_LOG_TRACE(LOG, "tcp_written_data");
 
-    if (sock->connect.completionEvent != NULL) {
-        resolve_tcp_connect(sock, NABTO_EC_OK);
-    }
+    // A connect is completed when the socket is writable, if one is
+    // outstanding.
+    resolve_tcp_connect(sock, NABTO_EC_OK);
 
     struct evbuffer *output = bufferevent_get_output(sock->bev);
     if (evbuffer_get_length(output) == 0) {
@@ -158,18 +170,16 @@ void tcp_bufferevent_event_write(struct bufferevent* bev, void* userData)
 
 void resolve_tcp_connect(struct np_tcp_socket* sock, np_error_code ec)
 {
-    if (sock->connect.completionEvent != NULL) {
-        struct np_completion_event* e = sock->connect.completionEvent;
-        sock->connect.completionEvent = NULL;
+    struct np_completion_event* e = take_event(sock, &sock->connect.completionEvent);
+    if (e != NULL) {
         np_completion_event_resolve(e, ec);
     }
 }
 
 void resolve_tcp_write(struct np_tcp_socket* sock, np_error_code ec)
 {
-    if (sock->write.completionEvent != NULL) {
-        struct np_completion_event* e = sock->write.completionEvent;
-        sock->write.completionEvent = NULL;
+    struct np_completion_event* e = take_event(sock, &sock->write.completionEvent);
+    if (e != NULL) {
         np_completion_event_resolve(e, ec);
     }
 }
@@ -177,11 +187,38 @@ void resolve_tcp_write(struct np_tcp_socket* sock, np_error_code ec)
 void resolve_tcp_read(struct np_tcp_socket* sock, np_error_code ec)
 {
     NABTO_LOG_TRACE(LOG, "resolve_tcp_read");
-    if (sock->read.completionEvent != NULL) {
-        struct np_completion_event* e = sock->read.completionEvent;
-        sock->read.completionEvent = NULL;
+    struct np_completion_event* e = take_event(sock, &sock->read.completionEvent);
+    if (e != NULL) {
         np_completion_event_resolve(e, ec);
     }
+}
+
+/**
+ * The core thread and the libevent thread both complete operations, e.g.
+ * when a socket is aborted, so the event of an operation is taken under the
+ * mutex and only resolved by the one which took it.
+ */
+struct np_completion_event* take_event(struct np_tcp_socket* sock, struct np_completion_event** ev)
+{
+    nabto_device_threads_mutex_lock(sock->impl->mutex);
+    struct np_completion_event* e = *ev;
+    *ev = NULL;
+    nabto_device_threads_mutex_unlock(sock->impl->mutex);
+    return e;
+}
+
+/**
+ * @return false if an operation of the same kind is outstanding.
+ */
+bool publish_event(struct np_tcp_socket* sock, struct np_completion_event** ev, struct np_completion_event* completionEvent)
+{
+    nabto_device_threads_mutex_lock(sock->impl->mutex);
+    bool available = *ev == NULL;
+    if (available) {
+        *ev = completionEvent;
+    }
+    nabto_device_threads_mutex_unlock(sock->impl->mutex);
+    return available;
 }
 
 void tcp_eof(void* userData)
@@ -223,13 +260,12 @@ void tcp_async_connect(struct np_tcp_socket* sock, struct np_ip_address* address
         np_completion_event_resolve(completionEvent, NABTO_EC_ABORTED);
         return;
     }
-    if (sock->connect.completionEvent != NULL) {
+    if (!publish_event(sock, &sock->connect.completionEvent, completionEvent)) {
         np_completion_event_resolve(completionEvent, NABTO_EC_OPERATION_IN_PROGRESS);
         return;
     }
 
     bufferevent_setcb(sock->bev, &tcp_bufferevent_event_read, &tcp_bufferevent_event_write, &tcp_bufferevent_event, sock);
-    sock->connect.completionEvent = completionEvent;
 
     int ec = bufferevent_enable(sock->bev, EV_READ|EV_WRITE);
 
@@ -259,8 +295,7 @@ void tcp_async_connect(struct np_tcp_socket* sock, struct np_ip_address* address
     }
 #endif
     if (ec != 0) {
-        sock->connect.completionEvent = NULL;
-        np_completion_event_resolve(completionEvent, NABTO_EC_UNKNOWN);
+        resolve_tcp_connect(sock, NABTO_EC_UNKNOWN);
     }
 
 }
@@ -271,11 +306,10 @@ void tcp_async_write(struct np_tcp_socket* sock, const void* data, size_t dataLe
         np_completion_event_resolve(completionEvent, NABTO_EC_ABORTED);
         return;
     }
-    if (sock->write.completionEvent != NULL) {
+    if (!publish_event(sock, &sock->write.completionEvent, completionEvent)) {
         np_completion_event_resolve(completionEvent, NABTO_EC_OPERATION_IN_PROGRESS);
         return;
     }
-    sock->write.completionEvent = completionEvent;
     int status = 0;
     status = bufferevent_enable(sock->bev, EV_WRITE);
     if (status == 0) {
@@ -284,8 +318,7 @@ void tcp_async_write(struct np_tcp_socket* sock, const void* data, size_t dataLe
     if (status == 0) {
         return;
     }
-    sock->write.completionEvent = NULL;
-    np_completion_event_resolve(completionEvent, NABTO_EC_UNKNOWN);
+    resolve_tcp_write(sock, NABTO_EC_UNKNOWN);
 }
 
 void tcp_async_read(struct np_tcp_socket* sock, void* buffer, size_t bufferLength, size_t* readLength, struct np_completion_event* completionEvent)
@@ -295,28 +328,40 @@ void tcp_async_read(struct np_tcp_socket* sock, void* buffer, size_t bufferLengt
         np_completion_event_resolve(completionEvent, NABTO_EC_ABORTED);
         return;
     }
-    if (sock->read.completionEvent != NULL) {
+
+    // The locks are taken in the order the libevent thread takes them when
+    // it calls tcp_bufferevent_event_read: the bufferevent lock, then the
+    // mutex.
+    bufferevent_lock(sock->bev);
+    nabto_device_threads_mutex_lock(sock->impl->mutex);
+    bool inProgress = sock->read.completionEvent != NULL;
+    struct np_completion_event* e = NULL;
+    if (!inProgress) {
+        sock->read.completionEvent = completionEvent;
+        sock->read.buffer = buffer;
+        sock->read.bufferLength = bufferLength;
+        sock->read.readLength = readLength;
+
+        size_t readDataSize = bufferevent_read(sock->bev, sock->read.buffer, sock->read.bufferLength);
+        if (readDataSize > 0) {
+            *(sock->read.readLength) = readDataSize;
+            e = sock->read.completionEvent;
+            sock->read.completionEvent = NULL;
+            bufferevent_disable(sock->bev, EV_READ);
+        } else {
+            bufferevent_enable(sock->bev, EV_READ);
+        }
+    }
+    nabto_device_threads_mutex_unlock(sock->impl->mutex);
+    bufferevent_unlock(sock->bev);
+
+    if (inProgress) {
         // Leave the outstanding read alone.
         np_completion_event_resolve(completionEvent, NABTO_EC_OPERATION_IN_PROGRESS);
-        return;
-    }
-
-    sock->read.completionEvent = completionEvent;
-    sock->read.buffer = buffer;
-    sock->read.bufferLength = bufferLength;
-    sock->read.readLength = readLength;
-
-    size_t readDataSize = bufferevent_read(sock->bev, sock->read.buffer, sock->read.bufferLength);
-    if (readDataSize > 0) {
-        *(sock->read.readLength) = readDataSize;
-        struct np_completion_event* e = sock->read.completionEvent;
-        sock->read.completionEvent = NULL;
-        bufferevent_disable(sock->bev, EV_READ);
+    } else if (e != NULL) {
         np_completion_event_resolve(e, NABTO_EC_OK);
-    } else {
-        bufferevent_enable(sock->bev, EV_READ);
     }
-    }
+}
 
 void tcp_shutdown(struct np_tcp_socket* sock)
 {

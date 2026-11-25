@@ -29,9 +29,11 @@ typedef void (*np_completion_event_callback)(const np_error_code ec, void* userD
  *     after the event was armed but before it was taken.
  *   - The event is disarmed when the callback is called. It must not be
  *     deinitialized or reinitialized while it is armed.
- *   - The armed event holds a reference to its owner, the object the event
- *     belongs to. The reference is dropped after the callback has returned,
- *     so the owner is not freed while the operation is outstanding.
+ *   - Every event has an owner, the object the event belongs to, given to
+ *     np_completion_event_init. The armed event holds a reference to the
+ *     owner which is dropped after the callback has returned, so the owner
+ *     is not freed while the operation is outstanding. Objects which live as
+ *     long as the device use the device's reference (nc_device_context.ref).
  *
  * Breaking the contract is reported with np_lifetime_violation.
  *

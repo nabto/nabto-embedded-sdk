@@ -32,6 +32,11 @@ jobs:
             name: "linux_vcpkg_openssl"
           - os: ubuntu-24.04
             name: "linux_vcpkg_openssl_dtls_client_only"
+          # Debug build with address and undefined behaviour sanitizers.
+          # NABTO_DEVICE_LIFETIME_CHECKS makes a broken resource lifetime
+          # contract abort the tests.
+          - os: ubuntu-24.04
+            name: "linux_vcpkg_sanitize"
 
           - os: windows-2022
             name: "windows_vcpkg_static"
@@ -75,6 +80,8 @@ jobs:
 
       - if: matrix.workflow.os != 'windows-2022'
         name: Test run
+        env:
+          LSAN_OPTIONS: suppressions=${{ github.workspace }}/test_cpp/lsan_suppressions.txt
         run: ${{ github.workspace }}/build/${{ matrix.workflow.name }}/install/bin/embedded_unit_test -l test_suite --detect_memory_leaks=0
 
       - name: Upload artifacts

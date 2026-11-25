@@ -22,6 +22,13 @@
 #include <memory>
 #include <iostream>
 #include <array>
+#include <util/test_owner.hpp>
+
+namespace {
+// Owner of the completion events and modules created by the tests.
+nabto::test::TestOwner testOwner;
+}
+
 
 using namespace nabto;
 
@@ -33,7 +40,7 @@ class TcpEchoClientTest {
     TcpEchoClientTest(TestPlatform& tp)
         : pl_(tp.getPlatform()), tcp_(pl_->tcp), eq_(pl_->eq)
     {
-        np_completion_event_init(&eq_, &completionEvent_, NULL, NULL, NULL);
+        np_completion_event_init(&eq_, &completionEvent_, NULL, NULL, &testOwner.ref);
     }
 
     ~TcpEchoClientTest() {
@@ -112,7 +119,7 @@ class TcpCloseClientTest {
     TcpCloseClientTest(TestPlatform& tp)
         : pl_(tp.getPlatform()), tcp_(pl_->tcp), eq_(pl_->eq)
     {
-        np_completion_event_init(&eq_, &completionEvent_, NULL, NULL, NULL);
+        np_completion_event_init(&eq_, &completionEvent_, NULL, NULL, &testOwner.ref);
     }
 
     ~TcpCloseClientTest()
@@ -186,10 +193,10 @@ class TcpPendingOperationTest {
     TcpPendingOperationTest(TestPlatform& tp)
         : pl_(tp.getPlatform()), tcp_(pl_->tcp), eq_(pl_->eq)
     {
-        np_completion_event_init(&eq_, &connectEvent_, &TcpPendingOperationTest::connected, this, NULL);
-        np_completion_event_init(&eq_, &secondConnectEvent_, &TcpPendingOperationTest::secondConnected, this, NULL);
-        np_completion_event_init(&eq_, &readEvent_, &TcpPendingOperationTest::hasReaden, this, NULL);
-        np_completion_event_init(&eq_, &secondReadEvent_, &TcpPendingOperationTest::secondHasReaden, this, NULL);
+        np_completion_event_init(&eq_, &connectEvent_, &TcpPendingOperationTest::connected, this, &testOwner.ref);
+        np_completion_event_init(&eq_, &secondConnectEvent_, &TcpPendingOperationTest::secondConnected, this, &testOwner.ref);
+        np_completion_event_init(&eq_, &readEvent_, &TcpPendingOperationTest::hasReaden, this, &testOwner.ref);
+        np_completion_event_init(&eq_, &secondReadEvent_, &TcpPendingOperationTest::secondHasReaden, this, &testOwner.ref);
     }
 
     ~TcpPendingOperationTest()

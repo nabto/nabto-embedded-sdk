@@ -30,7 +30,7 @@ static void nc_coap_server_notify_event_callback(void* userData);
 
 void nc_coap_server_resolve_virtual(np_error_code ec, struct nc_coap_server_request* request);
 
-np_error_code nc_coap_server_init(struct np_platform* pl, struct nc_device_context* device, struct nn_log* logger, struct nc_coap_server_context* ctx)
+np_error_code nc_coap_server_init(struct np_platform* pl, struct nc_device_context* device, struct nn_log* logger, struct nc_coap_server_context* ctx, struct np_ref* owner)
 {
     ctx->sendBuffer = NULL;
     nabto_coap_error err = nabto_coap_server_init(&ctx->server, logger, np_allocator_get());
@@ -54,7 +54,7 @@ np_error_code nc_coap_server_init(struct np_platform* pl, struct nc_device_conte
         return ec;
     }
 
-    ec = np_completion_event_init(&pl->eq, &ctx->sendCtx.ev, &nc_coap_server_send_to_callback, ctx, NULL);
+    ec = np_completion_event_init(&pl->eq, &ctx->sendCtx.ev, &nc_coap_server_send_to_callback, ctx, owner);
     if (ec != NABTO_EC_OK) {
         return ec;
     }

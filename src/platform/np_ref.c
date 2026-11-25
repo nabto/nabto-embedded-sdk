@@ -40,9 +40,19 @@ void np_ref_put(struct np_ref* ref)
     ref->release(ref);
     if (tracker != NULL) {
         tracker->live--;
-        if (tracker->live == 0 && tracker->empty != NULL) {
-            tracker->empty(tracker->emptyUserData);
-        }
+    }
+}
+
+void np_ref_tracker_operation_started(struct np_ref_tracker* tracker)
+{
+    tracker->outstanding++;
+}
+
+void np_ref_tracker_operation_ended(struct np_ref_tracker* tracker)
+{
+    tracker->outstanding--;
+    if (tracker->outstanding == 0 && tracker->idle != NULL) {
+        tracker->idle(tracker->idleUserData);
     }
 }
 

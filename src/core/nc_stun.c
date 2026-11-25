@@ -50,7 +50,7 @@ bool nc_stun_get_rand(uint8_t* buf, uint16_t size, void* data)
 // init function
 np_error_code nc_stun_init(struct nc_stun_context* ctx,
                            struct nc_device_context* device,
-                           struct np_platform* pl)
+                           struct np_platform* pl, struct np_ref* owner)
 {
     memset(ctx, 0, sizeof(struct nc_stun_context));
     ctx->sendBuf = pl->buf.allocate();
@@ -69,15 +69,15 @@ np_error_code nc_stun_init(struct nc_stun_context* ctx,
     if (ec != NABTO_EC_OK) {
         return ec;
     }
-    ec = nc_dns_multi_resolver_init(pl, &ctx->dnsMultiResolver);
+    ec = nc_dns_multi_resolver_init(pl, &ctx->dnsMultiResolver, owner);
     if (ec != NABTO_EC_OK) {
         return ec;
     }
-    ec = np_completion_event_init(eq, &ctx->dnsCompletionEvent, &nc_stun_dns_cb, ctx, NULL);
+    ec = np_completion_event_init(eq, &ctx->dnsCompletionEvent, &nc_stun_dns_cb, ctx, owner);
     if (ec != NABTO_EC_OK) {
         return ec;
     }
-    ec = np_completion_event_init(eq, &ctx->sendCompletionEvent, &nc_stun_send_to_cb, ctx, NULL);
+    ec = np_completion_event_init(eq, &ctx->sendCompletionEvent, &nc_stun_send_to_cb, ctx, owner);
     if (ec != NABTO_EC_OK) {
         return ec;
     }
@@ -100,12 +100,7 @@ void nc_stun_deinit(struct nc_stun_context* ctx)
     if (ctx->initialized) { // if init called
         ctx->state = NC_STUN_STATE_ABORTED;
         struct np_platform* pl = ctx->pl;
-        if (!np_completion_event_is_armed(&ctx->sendCompletionEvent)) {
-            // An outstanding send still uses the buffer. That is a lifetime
-            // violation reported when the event is deinitialized, the buffer
-            // is leaked rather than freed while in use.
-            pl->buf.free(ctx->sendBuf);
-        }
+        pl->buf.free(ctx->sendBuf);
 
         np_event_queue_destroy_event(&pl->eq, ctx->toEv);
         np_completion_event_deinit(&ctx->dnsCompletionEvent);

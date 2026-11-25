@@ -34,15 +34,25 @@ struct np_ref;
 typedef void (*np_ref_release)(struct np_ref* ref);
 
 /**
- * Counts the live reference counted objects of a platform. nabto_device_stop
- * waits for this count to reach zero before the platform is stopped.
+ * Tracks the reference counted objects of a platform.
+ *
+ * nabto_device_stop waits for outstanding to reach zero before the
+ * platform is stopped, so objects which are closing can finish the
+ * operations they have started.
  */
 struct np_ref_tracker {
+    // The number of objects which have not been released.
     size_t live;
-    // Called when live reaches zero, can be NULL.
-    void (*empty)(void* userData);
-    void* emptyUserData;
+    // The number of armed completion events which have an owner, i.e. the
+    // operations objects are waiting for.
+    size_t outstanding;
+    // Called when outstanding reaches zero, can be NULL.
+    void (*idle)(void* userData);
+    void* idleUserData;
 };
+
+void np_ref_tracker_operation_started(struct np_ref_tracker* tracker);
+void np_ref_tracker_operation_ended(struct np_ref_tracker* tracker);
 
 struct np_ref {
     size_t count;

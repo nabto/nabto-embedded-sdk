@@ -226,7 +226,7 @@ struct nc_attach_context {
 // Init attacher module, always first function to be called
 np_error_code nc_attacher_init(struct nc_attach_context* ctx, struct np_platform* pl,
                                struct nc_device_context* device, struct nc_coap_client_context* coapClient,
-                               nc_attacher_event_listener listener, void* listenerData);
+                               nc_attacher_event_listener listener, void* listenerData, struct np_ref* owner);
 
 // deinit attacher module, always last function to be called, called after stop
 void nc_attacher_deinit(struct nc_attach_context* ctx);

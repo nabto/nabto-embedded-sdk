@@ -15,6 +15,13 @@
 #include <future>
 #include <memory>
 #include <vector>
+#include <util/test_owner.hpp>
+
+namespace {
+// Owner of the completion events and modules created by the tests.
+nabto::test::TestOwner testOwner;
+}
+
 
 #ifndef NABTO_DEVICE_DTLS_CLIENT_ONLY
 
@@ -31,7 +38,7 @@ class DtlsPair {
     DtlsPair(TestPlatform& tp) : pl_(tp.getPlatform())
     {
         np_event_queue_create_event(&pl_->eq, &DtlsPair::deliver, this, &deliverEvent_);
-        np_completion_event_init(&pl_->eq, &sendCtx_.ev, &DtlsPair::sent, this, NULL);
+        np_completion_event_init(&pl_->eq, &sendCtx_.ev, &DtlsPair::sent, this, &testOwner.ref);
     }
 
     ~DtlsPair()
@@ -66,7 +73,7 @@ class DtlsPair {
         queuedPayload_.assign(10, 0x42);
         for (size_t i = 0; i < count; i++) {
             auto q = std::make_unique<struct np_dtls_send_context>();
-            np_completion_event_init(&pl_->eq, &q->ev, [](np_error_code ec, void* d) { (void)ec; (void)d; }, NULL, NULL);
+            np_completion_event_init(&pl_->eq, &q->ev, [](np_error_code ec, void* d) { (void)ec; (void)d; }, NULL, &testOwner.ref);
             q->buffer = queuedPayload_.data();
             q->bufferSize = (uint16_t)queuedPayload_.size();
             q->channelId = NP_DTLS_DEFAULT_CHANNEL_ID;
@@ -75,7 +82,7 @@ class DtlsPair {
         np_completion_event_init(&pl_->eq, &closeEv_, [](np_error_code ec, void* d) {
             (void)ec;
             ((std::promise<void>*)d)->set_value();
-        }, &closed_, NULL);
+        }, &closed_, &testOwner.ref);
         runOnEventThread([&]() {
             for (auto& q : queued_) {
                 BOOST_TEST(pl_->dtlsS.async_send_data(pl_, srvConn_, q.get()) == NABTO_EC_OK);

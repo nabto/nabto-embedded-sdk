@@ -318,6 +318,15 @@ void np_completion_event_resolve(struct np_completion_event* completionEvent, np
 
 The semantics of async functions is that they are called with a specific request (hostname and array to return resolved ip addresses) and the function can then start an asynchronous operation and return the execution thread back to the platform. But once the function has computed the result of the request, the contract is that the function calls `resolve` function on the given `np_completion_event`.
 
+The rules for completion events, which apply to all the asynchronous interfaces (UDP, TCP, DNS and mDNS):
+
+ * Each completion event is resolved exactly once, also when the operation fails or is aborted, e.g. when the socket is aborted or destroyed.
+ * If an operation is started while the same kind of operation is outstanding on the socket, the new completion event is resolved with `NABTO_EC_OPERATION_IN_PROGRESS` and the outstanding one is left alone.
+ * The memory given to the operation (buffers, result arrays, the host name) may only be used until the completion event is resolved. Copy what is needed after that, e.g. the host name for a resolver thread.
+ * No completion event is resolved after `nabto_device_platform_stop_blocking` returns. A DNS lookup which cannot be cancelled is resolved with `NABTO_EC_STOPPED` when the platform stops, and its late result is dropped. `nm_unix_dns_resolver_stop` does this for the Linux resolver.
+
+Build the SDK with the CMake option `NABTO_DEVICE_LIFETIME_CHECKS=ON` while developing an integration: the device then aborts with an error log when a completion event is resolved twice or after its operation has ended.
+
 To implement this on Linux, requires special care since the resolving of hostnames is a blocking operation. Therefore a producer/consumer pattern is used by which an "asynchronous" consumer thread (ie. it is not in sync with the caller thread) is consuming (hostname,resultarray,np_completion_events) from a queue and the caller thread is the producer of (hostnames,resultarray,np_completion_events) to this same queue. Once the consumer has resolved a hostname, the solved adresses is entered into the resultarray and the np_completion_event_resolve function is called with completion_event informing the platform that the result is now ready. This document will not go deeper into the decription of the Linux implementation, but the implementation can be found in `modules/dns/unix/nm_unix_dns.c`.
 
 Instead an example of integration with the ESP32 LWIP DNS is given here. This example can be found in the github repository `nabto5-esp-eye` and in the source file: `common_components/nabto_device/src/esp32_dns.c`

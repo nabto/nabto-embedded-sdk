@@ -17,11 +17,11 @@ static void nc_rendezvous_send_device_request(struct nc_rendezvous_context* ctx)
 static void nc_rendezvous_packet_sent(const np_error_code ec, void* data);
 
 np_error_code nc_rendezvous_init(struct nc_rendezvous_context* ctx,
-                                 struct np_platform* pl)
+                                 struct np_platform* pl, struct np_ref* owner)
 {
     memset(ctx, 0, sizeof(struct nc_rendezvous_context));
     ctx->sendBuffer = NULL;
-    np_error_code ec = np_completion_event_init(&pl->eq, &ctx->sendCompletionEvent, nc_rendezvous_packet_sent, ctx, NULL);
+    np_error_code ec = np_completion_event_init(&pl->eq, &ctx->sendCompletionEvent, nc_rendezvous_packet_sent, ctx, owner);
     if (ec != NABTO_EC_OK) {
         return ec;
     }
@@ -35,13 +35,8 @@ np_error_code nc_rendezvous_init(struct nc_rendezvous_context* ctx,
 void nc_rendezvous_deinit(struct nc_rendezvous_context* ctx)
 {
     if (ctx->pl != NULL) { // if init called
-        if (!np_completion_event_is_armed(&ctx->sendCompletionEvent)) {
-            // An outstanding send still uses the buffer. That is a lifetime
-            // violation reported when the event is deinitialized, the buffer
-            // is leaked rather than freed while in use.
-            ctx->pl->buf.free(ctx->sendBuffer);
-        }
         np_completion_event_deinit(&ctx->sendCompletionEvent);
+        ctx->pl->buf.free(ctx->sendBuffer);
     }
 }
 

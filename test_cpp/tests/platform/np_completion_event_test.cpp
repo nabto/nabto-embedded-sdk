@@ -75,7 +75,7 @@ void owner_callback(const np_error_code ec, void* userData)
     BOOST_TEST(!owner->released);
 }
 
-void tracker_empty(void* userData)
+void tracker_idle(void* userData)
 {
     int* calls = (int*)userData;
     (*calls)++;
@@ -89,7 +89,8 @@ BOOST_AUTO_TEST_CASE(arm_resolve_callback)
 {
     TestQueue q;
     Owner owner;
-    BOOST_REQUIRE(np_completion_event_init(q.eq(), &owner.ev, &owner_callback, &owner, NULL) == NABTO_EC_OK);
+    np_ref_init(&owner.ref, NULL, &owner_release);
+    BOOST_REQUIRE(np_completion_event_init(q.eq(), &owner.ev, &owner_callback, &owner, &owner.ref) == NABTO_EC_OK);
     size_t violations = np_lifetime_violation_count();
 
     np_completion_event_arm(&owner.ev);
@@ -136,14 +137,15 @@ BOOST_AUTO_TEST_CASE(disarm)
 BOOST_AUTO_TEST_CASE(owner_is_released_after_the_last_callback)
 {
     TestQueue q;
-    int empty = 0;
-    struct np_ref_tracker tracker = { 0, &tracker_empty, &empty };
+    int idle = 0;
+    struct np_ref_tracker tracker = { 0, 0, &tracker_idle, &idle };
     Owner owner;
     np_ref_init(&owner.ref, &tracker, &owner_release);
     BOOST_TEST(tracker.live == (size_t)1);
     BOOST_REQUIRE(np_completion_event_init(q.eq(), &owner.ev, &owner_callback, &owner, &owner.ref) == NABTO_EC_OK);
 
     np_completion_event_arm(&owner.ev);
+    BOOST_TEST(tracker.outstanding == (size_t)1);
     np_completion_event_resolve(&owner.ev, NABTO_EC_ABORTED);
 
     // The owner drops its reference while the resolve is queued. The
@@ -151,19 +153,21 @@ BOOST_AUTO_TEST_CASE(owner_is_released_after_the_last_callback)
     np_ref_put(&owner.ref);
     BOOST_TEST(!owner.released);
     BOOST_TEST(tracker.live == (size_t)1);
-    BOOST_TEST(empty == 0);
+    BOOST_TEST(tracker.outstanding == (size_t)1);
+    BOOST_TEST(idle == 0);
 
     q.runAll();
     BOOST_TEST(owner.callbacks == 1);
     BOOST_TEST(owner.released);
     BOOST_TEST(tracker.live == (size_t)0);
-    BOOST_TEST(empty == 1);
+    BOOST_TEST(tracker.outstanding == (size_t)0);
+    BOOST_TEST(idle == 1);
     np_completion_event_deinit(&owner.ev);
 }
 
 BOOST_AUTO_TEST_CASE(owner_without_outstanding_operations_is_released_at_once)
 {
-    struct np_ref_tracker tracker = { 0, NULL, NULL };
+    struct np_ref_tracker tracker = { 0, 0, NULL, NULL };
     Owner owner;
     np_ref_init(&owner.ref, &tracker, &owner_release);
     np_ref_get(&owner.ref);
@@ -182,7 +186,8 @@ BOOST_AUTO_TEST_CASE(resolve_twice_is_a_violation)
 {
     TestQueue q;
     Owner owner;
-    BOOST_REQUIRE(np_completion_event_init(q.eq(), &owner.ev, &owner_callback, &owner, NULL) == NABTO_EC_OK);
+    np_ref_init(&owner.ref, NULL, &owner_release);
+    BOOST_REQUIRE(np_completion_event_init(q.eq(), &owner.ev, &owner_callback, &owner, &owner.ref) == NABTO_EC_OK);
     size_t violations = np_lifetime_violation_count();
 
     np_completion_event_arm(&owner.ev);
@@ -198,7 +203,8 @@ BOOST_AUTO_TEST_CASE(resolve_without_arm_is_a_violation)
 {
     TestQueue q;
     Owner owner;
-    BOOST_REQUIRE(np_completion_event_init(q.eq(), &owner.ev, &owner_callback, &owner, NULL) == NABTO_EC_OK);
+    np_ref_init(&owner.ref, NULL, &owner_release);
+    BOOST_REQUIRE(np_completion_event_init(q.eq(), &owner.ev, &owner_callback, &owner, &owner.ref) == NABTO_EC_OK);
     size_t violations = np_lifetime_violation_count();
     np_completion_event_resolve(&owner.ev, NABTO_EC_OK);
     q.runAll();
@@ -254,13 +260,28 @@ BOOST_AUTO_TEST_CASE(reinit_while_armed_is_a_violation)
 {
     TestQueue q;
     Owner owner;
-    BOOST_REQUIRE(np_completion_event_init(q.eq(), &owner.ev, &owner_callback, &owner, NULL) == NABTO_EC_OK);
+    np_ref_init(&owner.ref, NULL, &owner_release);
+    BOOST_REQUIRE(np_completion_event_init(q.eq(), &owner.ev, &owner_callback, &owner, &owner.ref) == NABTO_EC_OK);
     size_t violations = np_lifetime_violation_count();
     np_completion_event_arm(&owner.ev);
     np_completion_event_reinit(&owner.ev, &owner_callback, &owner);
     BOOST_TEST(np_lifetime_violation_count() == violations + 1);
     np_completion_event_resolve(&owner.ev, NABTO_EC_OK);
     q.runAll();
+    np_completion_event_deinit(&owner.ev);
+}
+
+BOOST_AUTO_TEST_CASE(arm_without_owner_is_a_violation)
+{
+    TestQueue q;
+    Owner owner;
+    BOOST_REQUIRE(np_completion_event_init(q.eq(), &owner.ev, &owner_callback, &owner, NULL) == NABTO_EC_OK);
+    size_t violations = np_lifetime_violation_count();
+    np_completion_event_arm(&owner.ev);
+    BOOST_TEST(np_lifetime_violation_count() == violations + 1);
+    np_completion_event_resolve(&owner.ev, NABTO_EC_OK);
+    q.runAll();
+    BOOST_TEST(owner.callbacks == 1);
     np_completion_event_deinit(&owner.ev);
 }
 

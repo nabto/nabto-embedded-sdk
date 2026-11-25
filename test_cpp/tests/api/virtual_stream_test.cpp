@@ -1,5 +1,7 @@
 #include <boost/test/unit_test.hpp>
 
+#include <util/live_allocations.hpp>
+
 #include <nabto/nabto_device.h>
 #include <nabto/nabto_device_virtual.h>
 #include <nabto/nabto_device_test.h>
@@ -898,6 +900,45 @@ BOOST_AUTO_TEST_CASE(free_virtual_stream_while_reading, *boost::unit_test::timeo
     ts.doWrite();
     NabtoDeviceError ec = nabto_device_future_wait(ts.future_);
     BOOST_TEST(ec != NABTO_DEVICE_EC_OK);
+}
+
+BOOST_AUTO_TEST_CASE(free_device_after_freeing_streams_with_outstanding_operations, *boost::unit_test::timeout(60))
+{
+    // Freeing the streams leaves their outstanding operations for the device
+    // to complete. Stopping and freeing the device right after must neither
+    // use freed memory nor leak.
+    nabto::test::LiveAllocations allocations;
+    {
+        nabto::test::TestStreamDevice td;
+        {
+            nabto::test::TestStream ts(&td);
+            td.streamListen([&](NabtoDeviceError ec, NabtoDeviceStream* stream) {
+                if (ec == NABTO_DEVICE_EC_OK) {
+                    ts.acceptStream(stream);
+                }
+            });
+            td.makeConnection();
+            NabtoDeviceVirtualStream* virStream = td.virtualStreamOpen();
+            ts.futureWait(NABTO_DEVICE_EC_OK); // wait for accept
+
+            ts.doRead();
+            uint8_t buffer[10];
+            size_t readen = 0;
+            NabtoDeviceFuture* readFut = nabto_device_future_new(td.device_);
+            nabto_device_virtual_stream_read_some(virStream, readFut, buffer, sizeof(buffer), &readen);
+
+            nabto_device_stream_free(ts.stream_);
+            ts.stream_ = NULL;
+            nabto_device_virtual_stream_free(virStream);
+            td.virtStream_ = NULL;
+
+            ts.futureWait(NABTO_DEVICE_EC_ABORTED);
+            BOOST_TEST(nabto_device_future_wait(readFut) == NABTO_DEVICE_EC_ABORTED);
+            nabto_device_future_free(readFut);
+        }
+        // Frees the virtual connection, stops and frees the device.
+    }
+    BOOST_TEST(allocations.live() == 0u);
 }
 
 BOOST_AUTO_TEST_SUITE_END()

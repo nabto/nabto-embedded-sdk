@@ -11,6 +11,13 @@
 #include <future>
 #include <string>
 #include <vector>
+#include <util/test_owner.hpp>
+
+namespace {
+// Owner of the completion events and modules created by the tests.
+nabto::test::TestOwner testOwner;
+}
+
 
 namespace {
 
@@ -52,7 +59,7 @@ class CompletionWaiter {
  public:
     CompletionWaiter(struct np_platform* pl)
     {
-        np_completion_event_init(&pl->eq, &completionEvent_, &CompletionWaiter::callback, this, NULL);
+        np_completion_event_init(&pl->eq, &completionEvent_, &CompletionWaiter::callback, this, &testOwner.ref);
     }
     ~CompletionWaiter()
     {
@@ -88,7 +95,7 @@ BOOST_AUTO_TEST_CASE(overlapping_resolve_is_rejected)
     pl->dns.data = &mock;
 
     struct nc_dns_multi_resolver_context ctx;
-    BOOST_TEST(nc_dns_multi_resolver_init(pl, &ctx) == NABTO_EC_OK);
+    BOOST_TEST(nc_dns_multi_resolver_init(pl, &ctx, &testOwner.ref) == NABTO_EC_OK);
     {
         CompletionWaiter first(pl);
         CompletionWaiter second(pl);
@@ -133,7 +140,7 @@ BOOST_AUTO_TEST_CASE(host_copy_allocation_failure_fails_the_resolve)
     pl->dns.data = &mock;
 
     struct nc_dns_multi_resolver_context ctx;
-    BOOST_TEST(nc_dns_multi_resolver_init(pl, &ctx) == NABTO_EC_OK);
+    BOOST_TEST(nc_dns_multi_resolver_init(pl, &ctx, &testOwner.ref) == NABTO_EC_OK);
     {
         CompletionWaiter waiter(pl);
         struct np_ip_address ips[NC_DNS_MULTI_RESOLVER_MAX_IPS];
@@ -168,7 +175,7 @@ BOOST_AUTO_TEST_CASE(host_outlives_the_callers_string)
     pl->dns.data = &mock;
 
     struct nc_dns_multi_resolver_context ctx;
-    BOOST_TEST(nc_dns_multi_resolver_init(pl, &ctx) == NABTO_EC_OK);
+    BOOST_TEST(nc_dns_multi_resolver_init(pl, &ctx, &testOwner.ref) == NABTO_EC_OK);
     {
         CompletionWaiter waiter(pl);
         struct np_ip_address ips[NC_DNS_MULTI_RESOLVER_MAX_IPS];

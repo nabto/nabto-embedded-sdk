@@ -23,7 +23,7 @@ struct nabto_coap_client* nc_coap_client_get_client(struct nc_coap_client_contex
     return &ctx->client;
 }
 
-np_error_code nc_coap_client_init(struct np_platform* pl, struct nc_coap_client_context* ctx)
+np_error_code nc_coap_client_init(struct np_platform* pl, struct nc_coap_client_context* ctx, struct np_ref* owner)
 {
     ctx->sendBuffer = NULL;
     ctx->pl = pl;
@@ -38,7 +38,7 @@ np_error_code nc_coap_client_init(struct np_platform* pl, struct nc_coap_client_
     }
 
     ec = np_completion_event_init(&ctx->pl->eq, &ctx->sendCtx.ev,
-                                  &nc_coap_client_send_to_callback, ctx, NULL);
+                                  &nc_coap_client_send_to_callback, ctx, owner);
     if (ec != NABTO_EC_OK)
     {
         return ec;

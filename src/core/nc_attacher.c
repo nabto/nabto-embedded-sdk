@@ -98,7 +98,7 @@ static void sct_deinit(struct nc_attach_context* ctx);
  * API functions *
  *****************/
 
-np_error_code nc_attacher_init(struct nc_attach_context* ctx, struct np_platform* pl, struct nc_device_context* device, struct nc_coap_client_context* coapClient, nc_attacher_event_listener listener, void* listenerData)
+np_error_code nc_attacher_init(struct nc_attach_context* ctx, struct np_platform* pl, struct nc_device_context* device, struct nc_coap_client_context* coapClient, nc_attacher_event_listener listener, void* listenerData, struct np_ref* owner)
 {
     memset(ctx, 0, sizeof(struct nc_attach_context));
     ctx->pl = pl;
@@ -141,20 +141,20 @@ np_error_code nc_attacher_init(struct nc_attach_context* ctx, struct np_platform
         return ec;
     }
 
-    ec = np_completion_event_init(eq, &ctx->senderCompletionEvent, NULL, NULL, NULL);
+    ec = np_completion_event_init(eq, &ctx->senderCompletionEvent, NULL, NULL, owner);
     if (ec != NABTO_EC_OK) {
         return ec;
     }
-    ec = np_completion_event_init(eq, &ctx->resolveCompletionEvent, &dns_resolved_callback, ctx, NULL);
+    ec = np_completion_event_init(eq, &ctx->resolveCompletionEvent, &dns_resolved_callback, ctx, owner);
     if (ec != NABTO_EC_OK) {
         return ec;
     }
-    ec = np_completion_event_init(eq, &ctx->keepAliveSendCtx.ev, &nc_keep_alive_packet_sent, &ctx->keepAlive, NULL);
+    ec = np_completion_event_init(eq, &ctx->keepAliveSendCtx.ev, &nc_keep_alive_packet_sent, &ctx->keepAlive, owner);
     if (ec != NABTO_EC_OK) {
         return ec;
     }
 
-    ec = nc_dns_multi_resolver_init(pl, &ctx->dnsMultiResolver);
+    ec = nc_dns_multi_resolver_init(pl, &ctx->dnsMultiResolver, owner);
 
     return ec;
 }

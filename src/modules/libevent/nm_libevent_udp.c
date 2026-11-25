@@ -125,9 +125,13 @@ void udp_abort(struct np_udp_socket* sock)
 
 void complete_recv_wait(struct np_udp_socket* sock, np_error_code ec)
 {
-    if (sock->recv.completionEvent != NULL) {
-        struct np_completion_event* ev = sock->recv.completionEvent;
-        sock->recv.completionEvent = NULL;
+    // Called from the core thread on abort and from the libevent thread when
+    // data is ready, only one of them takes the event.
+    nabto_device_threads_mutex_lock(sock->impl->mutex);
+    struct np_completion_event* ev = sock->recv.completionEvent;
+    sock->recv.completionEvent = NULL;
+    nabto_device_threads_mutex_unlock(sock->impl->mutex);
+    if (ev != NULL) {
         np_completion_event_resolve(ev, ec);
     }
 }
@@ -227,13 +231,17 @@ void udp_async_recv_wait(struct np_udp_socket* sock,
         return;
     }
 
-    if (sock->recv.completionEvent != NULL) {
+    nabto_device_threads_mutex_lock(sock->impl->mutex);
+    bool inProgress = sock->recv.completionEvent != NULL;
+    if (!inProgress) {
+        sock->recv.completionEvent = completionEvent;
+    }
+    nabto_device_threads_mutex_unlock(sock->impl->mutex);
+    if (inProgress) {
         NABTO_LOG_TRACE(LOG, "operation in progress");
         np_completion_event_resolve(completionEvent, NABTO_EC_OPERATION_IN_PROGRESS);
         return;
     }
-
-    sock->recv.completionEvent = completionEvent;
 
     event_add(sock->event, 0);
     return;

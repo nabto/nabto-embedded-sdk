@@ -19,14 +19,14 @@ void nc_udp_dispatch_handle_packet(struct np_udp_endpoint* ep,
 static void start_recv(struct nc_udp_dispatch_context* ctx);
 static void async_recv_wait_complete(const np_error_code ec, void* userData);
 
-np_error_code nc_udp_dispatch_init(struct nc_udp_dispatch_context* ctx, struct np_platform* pl, nc_udp_dispatch_event_listener listener, void* listenerData)
+np_error_code nc_udp_dispatch_init(struct nc_udp_dispatch_context* ctx, struct np_platform* pl, nc_udp_dispatch_event_listener listener, void* listenerData, struct np_ref* owner)
 {
     memset(ctx, 0, sizeof(struct nc_udp_dispatch_context));
     np_error_code ec = np_udp_create(&pl->udp, &ctx->sock);
     if (ec != NABTO_EC_OK) {
         return ec;
     }
-    ec = np_completion_event_init(&pl->eq, &ctx->recvCompletionEvent, async_recv_wait_complete, ctx, NULL);
+    ec = np_completion_event_init(&pl->eq, &ctx->recvCompletionEvent, async_recv_wait_complete, ctx, owner);
     if (ec != NABTO_EC_OK) {
         return ec;
     }

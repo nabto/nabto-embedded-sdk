@@ -46,7 +46,8 @@ void nm_libevent_global_deinit(void)
 bool nm_libevent_init(struct nm_libevent_context* ctx, struct event_base* eventBase)
 {
     ctx->eventBase = eventBase;
-    return true;
+    ctx->mutex = nabto_device_threads_create_mutex();
+    return ctx->mutex != NULL;
 }
 
 void nm_libevent_stop(struct nm_libevent_context* ctx)
@@ -56,5 +57,8 @@ void nm_libevent_stop(struct nm_libevent_context* ctx)
 
 void nm_libevent_deinit(struct nm_libevent_context* ctx)
 {
-    (void)ctx;
+    if (ctx->mutex != NULL) {
+        nabto_device_threads_free_mutex(ctx->mutex);
+        ctx->mutex = NULL;
+    }
 }

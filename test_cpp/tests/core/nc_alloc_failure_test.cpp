@@ -6,6 +6,13 @@
 #include <core/nc_coap_server.h>
 
 #include <vector>
+#include <util/test_owner.hpp>
+
+namespace {
+// Owner of the completion events and modules created by the tests.
+nabto::test::TestOwner testOwner;
+}
+
 
 BOOST_AUTO_TEST_SUITE(alloc_failure)
 
@@ -27,7 +34,7 @@ BOOST_AUTO_TEST_CASE(coap_server_request_allocation_failure_refuses_the_request)
 {
     auto tp = nabto::test::TestPlatform::create();
     struct nc_coap_server_context ctx;
-    BOOST_REQUIRE(nc_coap_server_init(tp->getPlatform(), NULL, NULL, &ctx) == NABTO_EC_OK);
+    BOOST_REQUIRE(nc_coap_server_init(tp->getPlatform(), NULL, NULL, &ctx, &testOwner.ref) == NABTO_EC_OK);
 
     // The event queue is stopped such that the events posted by the coap
     // server never run. They would send the response to the fake connection
