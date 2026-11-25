@@ -487,6 +487,13 @@ nabto_device_virtual_stream_open(NabtoDeviceVirtualStream* stream, NabtoDeviceFu
     nabto_device_threads_mutex_lock(dev->eventMutex);
     struct nabto_device_future* fut = (struct nabto_device_future*)future;
     nabto_device_future_reset(fut);
+    if (str->stream != NULL) {
+        // The stream has been opened already, or is being opened, and openEv
+        // may still be in use.
+        nabto_device_future_resolve(fut, NABTO_DEVICE_EC_INVALID_STATE);
+        nabto_device_threads_mutex_unlock(dev->eventMutex);
+        return;
+    }
     str->openFuture = fut;
     str->stream = nc_stream_manager_accept_virtual_stream(&dev->core.streamManager, str->connection->connection, port, &str->openEv);
     if (str->stream == NULL) {
@@ -509,6 +516,12 @@ nabto_device_virtual_stream_read_all(NabtoDeviceVirtualStream* stream,
     nabto_device_threads_mutex_lock(dev->eventMutex);
     struct nabto_device_future* fut = (struct nabto_device_future*)future;
     nabto_device_future_reset(fut);
+    if (str->stream == NULL) {
+        // The stream was never opened, or opening it failed.
+        nabto_device_future_resolve(fut, NABTO_DEVICE_EC_INVALID_STATE);
+        nabto_device_threads_mutex_unlock(dev->eventMutex);
+        return;
+    }
     if (str->readFuture != NULL) {
         nabto_device_future_resolve(fut, NABTO_DEVICE_EC_OPERATION_IN_PROGRESS);
         nabto_device_threads_mutex_unlock(dev->eventMutex);
@@ -534,6 +547,12 @@ nabto_device_virtual_stream_read_some(NabtoDeviceVirtualStream* stream,
     nabto_device_threads_mutex_lock(dev->eventMutex);
     struct nabto_device_future* fut = (struct nabto_device_future*)future;
     nabto_device_future_reset(fut);
+    if (str->stream == NULL) {
+        // The stream was never opened, or opening it failed.
+        nabto_device_future_resolve(fut, NABTO_DEVICE_EC_INVALID_STATE);
+        nabto_device_threads_mutex_unlock(dev->eventMutex);
+        return;
+    }
     if (str->readFuture != NULL) {
         nabto_device_future_resolve(fut, NABTO_DEVICE_EC_OPERATION_IN_PROGRESS);
         nabto_device_threads_mutex_unlock(dev->eventMutex);
@@ -559,6 +578,12 @@ nabto_device_virtual_stream_write(NabtoDeviceVirtualStream* stream,
     nabto_device_threads_mutex_lock(dev->eventMutex);
     struct nabto_device_future* fut = (struct nabto_device_future*)future;
     nabto_device_future_reset(fut);
+    if (str->stream == NULL) {
+        // The stream was never opened, or opening it failed.
+        nabto_device_future_resolve(fut, NABTO_DEVICE_EC_INVALID_STATE);
+        nabto_device_threads_mutex_unlock(dev->eventMutex);
+        return;
+    }
     if (str->writeFuture != NULL) {
         nabto_device_future_resolve(fut, NABTO_DEVICE_EC_OPERATION_IN_PROGRESS);
         nabto_device_threads_mutex_unlock(dev->eventMutex);
@@ -578,6 +603,12 @@ nabto_device_virtual_stream_close(NabtoDeviceVirtualStream* stream, NabtoDeviceF
     nabto_device_threads_mutex_lock(dev->eventMutex);
     struct nabto_device_future* fut = (struct nabto_device_future*)future;
     nabto_device_future_reset(fut);
+    if (str->stream == NULL) {
+        // The stream was never opened, or opening it failed.
+        nabto_device_future_resolve(fut, NABTO_DEVICE_EC_INVALID_STATE);
+        nabto_device_threads_mutex_unlock(dev->eventMutex);
+        return;
+    }
     if (str->closeFuture != NULL) {
         nabto_device_future_resolve(fut, NABTO_DEVICE_EC_OPERATION_IN_PROGRESS);
         nabto_device_threads_mutex_unlock(dev->eventMutex);
@@ -595,7 +626,9 @@ nabto_device_virtual_stream_abort(NabtoDeviceVirtualStream* stream)
     struct nabto_device_virtual_stream* str = (struct nabto_device_virtual_stream*)stream;
     struct nabto_device_context* dev = str->device;
     nabto_device_threads_mutex_lock(dev->eventMutex);
-    nc_virtual_stream_client_stop(str->stream);
+    if (str->stream != NULL) {
+        nc_virtual_stream_client_stop(str->stream);
+    }
     nabto_device_threads_mutex_unlock(dev->eventMutex);
 }
 
