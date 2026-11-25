@@ -53,7 +53,12 @@ struct np_dtls_srv_connection {
     struct nn_llist sendList;
     struct np_event* startSendEvent;
 
-    bool receiving;
+    // The owner holds a reference until it destroys the connection. Each
+    // outstanding send holds a reference through senderEvent, and
+    // handle_packet holds one while it runs.
+    struct np_ref ref;
+    // The owner has destroyed the connection, it is freed when the last
+    // reference is dropped. The owner's callbacks are not called anymore.
     bool destroyed;
 
     np_dtls_sender sender;
@@ -92,6 +97,7 @@ static void nm_openssl_srv_destroy_connection(
     struct np_dtls_srv_connection* connection);
 
 static void nm_openssl_srv_do_free_connection(struct np_dtls_srv_connection* conn);
+static void connection_release(struct np_ref* ref);
 
 static np_error_code nm_openssl_srv_async_send_data(
     struct np_platform* pl, struct np_dtls_srv_connection* ctx,
@@ -344,16 +350,18 @@ np_error_code nm_openssl_srv_create_connection(
     nn_llist_init(&ctx->sendList);
 
     struct np_platform* pl = ctx->pl;
+    // From here on errors release the reference, which frees ctx.
+    np_ref_init(&ctx->ref, &pl->refTracker, &connection_release);
 
     np_error_code ec = np_event_queue_create_event(&pl->eq, &start_send_deferred, ctx, &ctx->startSendEvent);
     if (ec == NABTO_EC_OK) {
         ec = np_event_queue_create_event(&pl->eq, &handle_timeout, ctx, &ctx->timerEvent);
     }
     if (ec == NABTO_EC_OK) {
-        ec = np_completion_event_init(&pl->eq, &ctx->senderEvent, &connection_send_callback, ctx, NULL);
+        ec = np_completion_event_init(&pl->eq, &ctx->senderEvent, &connection_send_callback, ctx, &ctx->ref);
     }
     if (ec != NABTO_EC_OK) {
-        nm_openssl_srv_do_free_connection(ctx);
+        np_ref_put(&ctx->ref);
         return ec;
     }
 
@@ -363,7 +371,7 @@ np_error_code nm_openssl_srv_create_connection(
         NABTO_LOG_ERROR(LOG, "Cannot create the ssl object");
         nm_openssl_util_log_errors(LOG);
         BIO_free(bio);
-        nm_openssl_srv_do_free_connection(ctx);
+        np_ref_put(&ctx->ref);
         return NABTO_EC_OUT_OF_MEMORY;
     }
     BIO_set_data(bio, ctx);
@@ -379,7 +387,7 @@ np_error_code nm_openssl_srv_create_connection(
     if (ec != NABTO_EC_OK) {
         NABTO_LOG_ERROR(LOG, "Cannot configure the ssl object");
         nm_openssl_util_log_errors(LOG);
-        nm_openssl_srv_do_free_connection(ctx);
+        np_ref_put(&ctx->ref);
         return ec;
     }
 
@@ -389,17 +397,28 @@ np_error_code nm_openssl_srv_create_connection(
     return NABTO_EC_OK;
 }
 
-void nm_openssl_srv_do_free_connection(struct np_dtls_srv_connection* conn)
+static void resolve_send_list(struct np_dtls_srv_connection* conn, np_error_code ec)
 {
-    // remove the first element until the list is empty
-    if (!nn_llist_empty(&conn->sendList)) {
-        NABTO_LOG_ERROR(LOG, "invalid state the sendlist must be empty when calling destroy.");
-    }
     while (!nn_llist_empty(&conn->sendList)) {
         struct nn_llist_iterator it = nn_llist_begin(&conn->sendList);
         struct np_dtls_send_context* first = nn_llist_get_item(&it);
         nn_llist_erase(&it);
-        np_completion_event_resolve(&first->ev, NABTO_EC_CONNECTION_CLOSING);
+        np_completion_event_resolve(&first->ev, ec);
+    }
+}
+
+void connection_release(struct np_ref* ref)
+{
+    nm_openssl_srv_do_free_connection(np_ref_container(ref, struct np_dtls_srv_connection, ref));
+}
+
+void nm_openssl_srv_do_free_connection(struct np_dtls_srv_connection* conn)
+{
+    if (!nn_llist_empty(&conn->sendList)) {
+        // destroy_connection resolves the queued sends, and no send is
+        // accepted after it.
+        np_lifetime_violation("DTLS server connection freed with queued sends");
+        resolve_send_list(conn, NABTO_EC_CONNECTION_CLOSING);
     }
 
     struct np_event_queue* eq = &conn->pl->eq;
@@ -410,15 +429,30 @@ void nm_openssl_srv_do_free_connection(struct np_dtls_srv_connection* conn)
     np_free(conn);
 }
 
+/**
+ * The owner destroys the connection. The operations the owner started are
+ * completed and the owner's reference is dropped. An outstanding send keeps
+ * the connection alive until the sender has resolved it.
+ */
 static void nm_openssl_srv_destroy_connection(struct np_dtls_srv_connection* conn)
 {
     if (conn == NULL) {
         return;
     }
-    conn->destroyed = true;
-    if (conn->sslSendBuffer == NULL && !conn->receiving) {
-        nm_openssl_srv_do_free_connection(conn);
+    if (conn->destroyed) {
+        np_lifetime_violation("DTLS server connection destroyed twice");
+        return;
     }
+    conn->destroyed = true;
+    np_event_queue_cancel_event(&conn->pl->eq, conn->timerEvent);
+    np_event_queue_cancel_event(&conn->pl->eq, conn->startSendEvent);
+    resolve_send_list(conn, NABTO_EC_CONNECTION_CLOSING);
+    if (conn->closeCompletionEvent != NULL) {
+        struct np_completion_event* completionEvent = conn->closeCompletionEvent;
+        conn->closeCompletionEvent = NULL;
+        np_completion_event_resolve(completionEvent, NABTO_EC_ABORTED);
+    }
+    np_ref_put(&conn->ref);
 }
 
 np_error_code nm_openssl_srv_handle_packet(struct np_platform* pl,
@@ -427,24 +461,25 @@ np_error_code nm_openssl_srv_handle_packet(struct np_platform* pl,
                                            uint16_t bufferSize)
 {
     (void)pl;
+    // The owner can destroy the connection from a callback called by do_one.
+    np_ref_get(&ctx->ref);
     ctx->currentChannelId = channelId;
     ctx->recvBuffer = buffer;
     ctx->recvBufferSize = bufferSize;
     ctx->channelId = channelId;
-    ctx->receiving = true;
     do_one(ctx);
     ctx->channelId = NP_DTLS_DEFAULT_CHANNEL_ID;
     ctx->recvBuffer = NULL;
     ctx->recvBufferSize = 0;
-    ctx->receiving = false;
-    if (ctx->destroyed && ctx->sslSendBuffer == NULL) {
-        nm_openssl_srv_do_free_connection(ctx);
-    }
+    np_ref_put(&ctx->ref);
     return NABTO_EC_OK;
 }
 
 void do_one(struct np_dtls_srv_connection* ctx)
 {
+    if (ctx->destroyed) {
+        return;
+    }
     if (ctx->state == CONNECTING) {
         ERR_clear_error();
         int ret = SSL_do_handshake(ctx->ssl);
@@ -523,7 +558,7 @@ void set_timeout(struct np_dtls_srv_connection* ctx)
 void handle_timeout(void* data)
 {
     struct np_dtls_srv_connection* ctx = data;
-    if (ctx->state != CONNECTING) {
+    if (ctx->state != CONNECTING || ctx->destroyed) {
         return;
     }
     struct timeval tv;
@@ -553,6 +588,9 @@ void handle_timeout(void* data)
 
 void event_callback(struct np_dtls_srv_connection* ctx, enum np_dtls_event event)
 {
+    if (ctx->destroyed) {
+        return;
+    }
     ctx->eventHandler(event, ctx->senderData);
 }
 
@@ -564,7 +602,7 @@ void start_send(struct np_dtls_srv_connection* ctx)
 void start_send_deferred(void* data)
 {
     struct np_dtls_srv_connection* ctx = (struct np_dtls_srv_connection*)data;
-    if (ctx->sslSendBuffer != NULL) {
+    if (ctx->sslSendBuffer != NULL || ctx->destroyed) {
         return;
     }
 
@@ -614,7 +652,7 @@ np_error_code nm_openssl_srv_async_send_data(struct np_platform* pl,
                                              struct np_dtls_send_context* sendCtx)
 {
     (void)pl;
-    if (ctx->state == CLOSING) {
+    if (ctx->state == CLOSING || ctx->destroyed) {
         return NABTO_EC_CONNECTION_CLOSING;
     }
     np_completion_event_arm(&sendCtx->ev);
@@ -728,9 +766,8 @@ void connection_send_callback(const np_error_code ec, void* data)
     ctx->sslSendBuffer = NULL;
 
     if (ctx->destroyed) {
-        if (!ctx->receiving) {
-            nm_openssl_srv_do_free_connection(ctx);
-        }
+        // The reference held by senderEvent is dropped when this callback
+        // returns, which frees the connection.
         return;
     }
 

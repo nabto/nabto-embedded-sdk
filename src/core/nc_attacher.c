@@ -171,6 +171,12 @@ void nc_attacher_deinit(struct nc_attach_context* ctx)
         if (ctx->udp) {
             nc_udp_dispatch_clear_attacher_context(ctx->udp);
         }
+        if (ctx->initialPacket.cb != NULL) {
+            // The DTLS connection is freed when its send has completed.
+            struct np_completion_event* cb = ctx->initialPacket.cb;
+            ctx->initialPacket.cb = NULL;
+            np_completion_event_resolve(cb, NABTO_EC_ABORTED);
+        }
         if (ctx->dtls) {
             ctx->pl->dtlsC.destroy_connection(ctx->dtls);
         }
@@ -784,6 +790,11 @@ np_error_code dtls_packet_sender(uint8_t ch, uint8_t* buffer, uint16_t bufferSiz
     (void)ch;
     struct nc_attach_context* ctx = (struct nc_attach_context*)senderData;
     if (!ctx->hasActiveEp) {
+        if (ctx->initialPacket.cb != NULL) {
+            // The previous packet is still being sent to all the endpoints.
+            // The DTLS connection drops this packet and retransmits later.
+            return NABTO_EC_OPERATION_IN_PROGRESS;
+        }
         // We have yet to find suitable endpoint
         start_send_initial_packet(ctx, buffer, bufferSize, cb);
     } else {
@@ -809,8 +820,14 @@ void start_send_initial_packet(struct nc_attach_context* ctx,
 
 void send_initial_packet(struct nc_attach_context* ctx)
 {
+    if (ctx->initialPacket.cb == NULL) {
+        // Aborted by nc_attacher_deinit.
+        return;
+    }
     if (ctx->initialPacket.endpointsIndex >= ctx->initialPacket.endpointsSize) {
-        np_completion_event_resolve(ctx->initialPacket.cb, NABTO_EC_OK);
+        struct np_completion_event* cb = ctx->initialPacket.cb;
+        ctx->initialPacket.cb = NULL;
+        np_completion_event_resolve(cb, NABTO_EC_OK);
         return;
     }
     np_completion_event_reinit(&ctx->senderCompletionEvent, &initial_packet_sent, ctx);

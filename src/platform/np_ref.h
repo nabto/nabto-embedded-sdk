@@ -59,6 +59,12 @@ struct np_ref {
  */
 void np_ref_init(struct np_ref* ref, struct np_ref_tracker* tracker, np_ref_release release);
 
+/**
+ * Get the object which contains the reference, e.g. in a release function:
+ *   struct foo* f = np_ref_container(ref, struct foo, ref);
+ */
+#define np_ref_container(ref, type, member) ((type*)((char*)(ref) - offsetof(type, member)))
+
 void np_ref_get(struct np_ref* ref);
 
 /**

@@ -60,8 +60,15 @@ struct np_dtls_cli_connection {
 
     struct np_completion_event senderEvent;
 
-    bool receiving;
+    // The owner holds a reference until it destroys the connection. Each
+    // outstanding send holds a reference through senderEvent, and
+    // handle_packet holds one while it runs.
+    struct np_ref ref;
+    // The owner has destroyed the connection, it is freed when the last
+    // reference is dropped. The owner's callbacks are not called anymore.
     bool destroyed;
+    // NP_DTLS_EVENT_CLOSED has been given to the owner.
+    bool closedNotified;
 
     np_dtls_sender sender;
     np_dtls_data_handler dataHandler;
@@ -115,7 +122,8 @@ static np_error_code get_packet_count(struct np_dtls_cli_connection* conn,
 
 // Internal function definitions
 static np_error_code initialize_context(struct np_platform* pl);
-static void do_destroy_connection(struct np_dtls_cli_connection* conn);
+static void do_free_connection(struct np_dtls_cli_connection* conn);
+static void connection_release(struct np_ref* ref);
 
 // Old internal functions
 static void set_timeout(struct np_dtls_cli_connection* conn);
@@ -245,24 +253,31 @@ static np_error_code create_client_connection(
 
     nn_llist_init(&conn->sendList);
     conn->destroyed = false;
+    // From here on errors release the reference, which frees conn.
+    np_ref_init(&conn->ref, &pl->refTracker, &connection_release);
 
     np_error_code ec = np_event_queue_create_event(&pl->eq, handle_timeout, conn, &conn->timerEvent);
     if (ec != NABTO_EC_OK) {
-        do_destroy_connection(conn);
+        np_ref_put(&conn->ref);
         return ec;
     }
     ec = np_event_queue_create_event(&pl->eq, &start_send_deferred, conn, &conn->startSendEvent);
     if (ec != NABTO_EC_OK) {
+        np_ref_put(&conn->ref);
         return ec;
     }
 
     ec = np_completion_event_init(&pl->eq, &conn->senderEvent,
-                                  &nm_dtls_udp_send_callback, conn, NULL);
+                                  &nm_dtls_udp_send_callback, conn, &conn->ref);
+    if (ec != NABTO_EC_OK) {
+        np_ref_put(&conn->ref);
+        return ec;
+    }
 
     conn->ssl = wolfSSL_new(ctx->ctx);
     if (conn->ssl == NULL) {
         NABTO_LOG_ERROR(LOG,  "Failed  to create wolfSSL object");
-        do_destroy_connection(conn);
+        np_ref_put(&conn->ref);
         return NABTO_EC_UNKNOWN;
     }
 
@@ -272,7 +287,7 @@ static np_error_code create_client_connection(
     if (wolfSSL_UseALPN(conn->ssl, (char *)(alpnList), strlen(alpnList), WOLFSSL_ALPN_FAILED_ON_MISMATCH) != WOLFSSL_SUCCESS)
     {
         NABTO_LOG_ERROR(LOG, "cannot set alpn list");
-        do_destroy_connection(conn);
+        np_ref_put(&conn->ref);
         return NABTO_EC_FAILED;
     }
 
@@ -281,7 +296,7 @@ static np_error_code create_client_connection(
         wolfSSL_dtls_set_timeout_max(conn->ssl, ctx->timeoutMax) !=
             WOLFSSL_SUCCESS) {
         NABTO_LOG_ERROR(LOG, "Cannot set timeout for DTLS client connection");
-        do_destroy_connection(conn);
+        np_ref_put(&conn->ref);
         return NABTO_EC_FAILED;
     };
 
@@ -289,7 +304,7 @@ static np_error_code create_client_connection(
 
     ec = nm_wolfssl_util_set_mtu(conn->ssl, ctx->mtu);
     if (ec != NABTO_EC_OK) {
-        do_destroy_connection(conn);
+        np_ref_put(&conn->ref);
         return ec;
     }
 
@@ -312,14 +327,14 @@ static np_error_code create_attach_connection(
     if(wolfSSL_UseSNI((*connection)->ssl, WOLFSSL_SNI_HOST_NAME, sni, strlen(sni) ) != WOLFSSL_SUCCESS )
     {
         NABTO_LOG_INFO(LOG,  "Failed to set SNI Hostname in the DTLS client");
-        do_destroy_connection(*connection);
+        np_ref_put(&(*connection)->ref);
         *connection = NULL;
         return NABTO_EC_UNKNOWN;
     }
 
     if (wolfSSL_check_domain_name((*connection)->ssl, sni) != WOLFSSL_SUCCESS ) {
         NABTO_LOG_INFO(LOG,  "Failed to set check domain name in the DTLS client");
-        do_destroy_connection(*connection);
+        np_ref_put(&(*connection)->ref);
         *connection = NULL;
         return NABTO_EC_UNKNOWN;
     }
@@ -330,16 +345,28 @@ static np_error_code create_attach_connection(
     return NABTO_EC_OK;
 }
 
-void do_destroy_connection(struct np_dtls_cli_connection* conn)
+static void resolve_send_list(struct np_dtls_cli_connection* conn, np_error_code ec)
 {
-    conn->state = CLOSING;
-    conn->destroyed = true;
-    // remove the first element until the list is empty
     while(!nn_llist_empty(&conn->sendList)) {
         struct nn_llist_iterator it = nn_llist_begin(&conn->sendList);
         struct np_dtls_send_context* first = nn_llist_get_item(&it);
         nn_llist_erase(&it);
-        np_completion_event_resolve(&first->ev, NABTO_EC_CONNECTION_CLOSING);
+        np_completion_event_resolve(&first->ev, ec);
+    }
+}
+
+void connection_release(struct np_ref* ref)
+{
+    do_free_connection(np_ref_container(ref, struct np_dtls_cli_connection, ref));
+}
+
+void do_free_connection(struct np_dtls_cli_connection* conn)
+{
+    if (!nn_llist_empty(&conn->sendList)) {
+        // destroy_connection resolves the queued sends, and no send is
+        // accepted after it.
+        np_lifetime_violation("DTLS client connection freed with queued sends");
+        resolve_send_list(conn, NABTO_EC_CONNECTION_CLOSING);
     }
 
     np_event_queue_destroy_event(&conn->pl->eq, conn->timerEvent);
@@ -350,14 +377,26 @@ void do_destroy_connection(struct np_dtls_cli_connection* conn)
     np_free(conn);
 }
 
+/**
+ * The owner destroys the connection. The operations the owner started are
+ * completed and the owner's reference is dropped. An outstanding send keeps
+ * the connection alive until the sender has resolved it.
+ */
 void destroy_connection(struct np_dtls_cli_connection* conn)
 {
+    if (conn == NULL) {
+        return;
+    }
+    if (conn->destroyed) {
+        np_lifetime_violation("DTLS client connection destroyed twice");
+        return;
+    }
     conn->state = CLOSING;
     conn->destroyed = true;
-
-    if (conn->sslSendBuffer == NULL && !conn->receiving) {
-        do_destroy_connection(conn);
-    }
+    np_event_queue_cancel_event(&conn->pl->eq, conn->timerEvent);
+    np_event_queue_cancel_event(&conn->pl->eq, conn->startSendEvent);
+    resolve_send_list(conn, NABTO_EC_CONNECTION_CLOSING);
+    np_ref_put(&conn->ref);
 }
 
 np_error_code set_keys(struct np_platform* pl,
@@ -441,6 +480,9 @@ np_error_code nm_wolfssl_connect(struct np_dtls_cli_connection* conn)
 void event_do_one(void* data)
 {
     struct np_dtls_cli_connection* conn = data;
+    if (conn->destroyed) {
+        return;
+    }
     int ret = 0;
     if(conn->state == CONNECTING) {
         ret = wolfSSL_connect(conn->ssl);
@@ -476,7 +518,11 @@ void event_do_one(void* data)
                 NABTO_LOG_INFO( LOG, "wolfssl_connect returned %d, which is %d, %s", ret , err, buf);
                 conn->state = CLOSING;
                 np_event_queue_cancel_event(&conn->pl->eq, conn->timerEvent);
-                conn->eventHandler(event, conn->callbackData);
+                if (event == NP_DTLS_EVENT_CLOSED) {
+                    nm_wolfssl_do_close(conn, NABTO_EC_FAILED);
+                } else {
+                    conn->eventHandler(event, conn->callbackData);
+                }
                 return;
             }
         } else if (ret == WOLFSSL_SUCCESS) {
@@ -541,6 +587,9 @@ void set_timeout(struct np_dtls_cli_connection* conn)
 void handle_timeout(void* data)
 {
     struct np_dtls_cli_connection* conn = data;
+    if (conn->destroyed) {
+        return;
+    }
     int ec = wolfSSL_dtls_got_timeout(conn->ssl);
     if (ec == WOLFSSL_SUCCESS) {
         NABTO_LOG_TRACE(LOG, "Got timeout returned success");
@@ -555,7 +604,7 @@ void handle_timeout(void* data)
             wolfSSL_ERR_error_string(err, buf);
             NABTO_LOG_ERROR(LOG, "Got timeout returned error: %s", buf);
             // too many retries, timeout.
-            conn->eventHandler(NP_DTLS_EVENT_CLOSED, conn->callbackData);
+            nm_wolfssl_do_close(conn, NABTO_EC_TIMEOUT);
         }
     } else {
         // NOT_COMPILED_IN etc
@@ -611,7 +660,7 @@ void start_send_deferred(void* data)
 np_error_code async_send_data(struct np_dtls_cli_connection* conn,
                               struct np_dtls_send_context* sendCtx)
 {
-    if (conn->state == CLOSING) {
+    if (conn->state == CLOSING || conn->destroyed) {
         return NABTO_EC_CONNECTION_CLOSING;
     }
     if (conn->state != DATA) {
@@ -628,6 +677,12 @@ void nm_wolfssl_do_close(void* data, np_error_code ec){
     struct np_dtls_cli_connection* conn = data;
     NABTO_LOG_TRACE(LOG, "Closing DTLS Client Connection");
     np_event_queue_cancel_event(&conn->pl->eq, conn->timerEvent);
+    // The closed event is given once, e.g. not again when a send which was
+    // outstanding when the connection failed completes.
+    if (conn->destroyed || conn->closedNotified) {
+        return;
+    }
+    conn->closedNotified = true;
     conn->eventHandler(NP_DTLS_EVENT_CLOSED, conn->callbackData);
 }
 
@@ -653,9 +708,11 @@ np_error_code async_close(struct np_dtls_cli_connection* conn)
 np_error_code handle_packet(struct np_dtls_cli_connection* conn, uint8_t channelId,
                             uint8_t* buffer, uint16_t bufferSize)
 {
+    // The owner can destroy the connection from a callback called by
+    // event_do_one.
+    np_ref_get(&conn->ref);
     conn->recvBuffer = buffer;
     conn->recvBufferSize = bufferSize;
-    conn->receiving = true;
     conn->recvChannelId = channelId;
     event_do_one(conn);
     conn->recvChannelId = NP_DTLS_CLI_DEFAULT_CHANNEL_ID;
@@ -664,10 +721,7 @@ np_error_code handle_packet(struct np_dtls_cli_connection* conn, uint8_t channel
         NABTO_LOG_TRACE(LOG, "Discarding received data");
     }
     conn->recvBufferSize = 0;
-    conn->receiving = false;
-    if (conn->destroyed && conn->sslSendBuffer == NULL) {
-        do_destroy_connection(conn);
-    }
+    np_ref_put(&conn->ref);
     return NABTO_EC_OK;
 }
 
@@ -680,18 +734,18 @@ void nm_dtls_udp_send_callback(const np_error_code ec, void* data)
     }
 
     conn->pl->buf.free(conn->sslSendBuffer);
-
-    if (conn->state == CLOSING) {
-        NABTO_LOG_TRACE(LOG, "udp send cb after close");
-    }
-    if(conn->state == CLOSING) {
-        nm_wolfssl_do_close(conn, /* ec unused */NABTO_EC_OK);
-        if (conn->destroyed) {
-            do_destroy_connection(conn);
-        }
+    conn->sslSendBuffer = NULL;
+    if (conn->destroyed) {
+        // The reference held by senderEvent is dropped when this callback
+        // returns, which frees the connection.
         return;
     }
-    conn->sslSendBuffer = NULL;
+
+    if(conn->state == CLOSING) {
+        NABTO_LOG_TRACE(LOG, "udp send cb after close");
+        nm_wolfssl_do_close(conn, /* ec unused */NABTO_EC_OK);
+        return;
+    }
     if (conn->state == DATA) {
         nm_wolfssl_cli_start_send(conn);
     }
@@ -736,9 +790,6 @@ int nm_dtls_wolfssl_send(WOLFSSL* ssl, char* buffer,
             conn->sslSendBuffer = NULL;
             if (conn->state == CLOSING) {
                 nm_wolfssl_do_close(conn, /* ec unused */ NABTO_EC_OK);
-                if (conn->destroyed) {
-                    do_destroy_connection(conn);
-                }
             }
             // dropping the packet as there is no way to trigger a
             // retransmission of the data.
