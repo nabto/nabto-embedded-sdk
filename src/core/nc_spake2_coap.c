@@ -56,7 +56,8 @@ static bool read_username_and_password(struct nc_spake2_password_request* passwo
 {
     CborParser parser;
     CborValue map;
-    if (cbor_parser_init(payload, payloadLength, 0, &parser, &map) != CborNoError) {
+    if (cbor_parser_init(payload, payloadLength, 0, &parser, &map) != CborNoError ||
+        !cbor_value_is_map(&map)) {
         return false;
     }
 
