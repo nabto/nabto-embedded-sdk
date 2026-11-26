@@ -141,7 +141,7 @@ np_error_code nc_attacher_init(struct nc_attach_context* ctx, struct np_platform
         return ec;
     }
 
-    ec = np_completion_event_init(eq, &ctx->senderCompletionEvent, NULL, NULL, owner);
+    ec = np_completion_event_init(eq, &ctx->senderCompletionEvent, &initial_packet_sent, ctx, owner);
     if (ec != NABTO_EC_OK) {
         return ec;
     }
@@ -830,7 +830,6 @@ void send_initial_packet(struct nc_attach_context* ctx)
         np_completion_event_resolve(cb, NABTO_EC_OK);
         return;
     }
-    np_completion_event_reinit(&ctx->senderCompletionEvent, &initial_packet_sent, ctx);
     nc_udp_dispatch_async_send_to(ctx->udp, &ctx->initialPacket.endpoints[ctx->initialPacket.endpointsIndex],
                                   ctx->initialPacket.buffer, (uint16_t)ctx->initialPacket.bufferSize,
                                   &ctx->senderCompletionEvent);
