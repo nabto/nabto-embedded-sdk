@@ -244,6 +244,12 @@ void nc_virtual_stream_client_async_read_all(struct nc_stream_context* stream, v
 {
     np_completion_event_arm(readEv);
     NABTO_LOG_TRACE(LOG, "nc_virtual_stream_client_async_read_all");
+    // A read stored after the client has aborted the stream would never be
+    // resolved, as nc_virtual_stream_client_stop only runs once.
+    if (stream->virt.stopped) {
+        np_completion_event_resolve(readEv, NABTO_EC_ABORTED);
+        return;
+    }
     if (stream->virt.readAllEv != NULL || stream->virt.readSomeEv != NULL) {
         np_completion_event_resolve(readEv, NABTO_EC_OPERATION_IN_PROGRESS);
         return;
@@ -265,6 +271,12 @@ void nc_virtual_stream_client_async_read_some(struct nc_stream_context* stream, 
 {
     np_completion_event_arm(readEv);
     NABTO_LOG_TRACE(LOG, "nc_virtual_stream_client_async_read_some");
+    // A read stored after the client has aborted the stream would never be
+    // resolved, as nc_virtual_stream_client_stop only runs once.
+    if (stream->virt.stopped) {
+        np_completion_event_resolve(readEv, NABTO_EC_ABORTED);
+        return;
+    }
     if (stream->virt.readAllEv != NULL || stream->virt.readSomeEv != NULL) {
         np_completion_event_resolve(readEv, NABTO_EC_OPERATION_IN_PROGRESS);
         return;
