@@ -69,6 +69,11 @@ np_error_code nm_mdns_server_init(struct nm_mdns_server* server, struct np_event
 
 void nm_mdns_server_deinit(struct nm_mdns_server* server);
 
+/**
+ * Close the server gracefully by sending goodbye packets. This is called from
+ * nabto_device_platform_close with the event the core has armed, so it only
+ * resolves closedEvent.
+ */
 void nm_mdns_server_close(struct nm_mdns_server* server, struct np_completion_event* closedEvent);
 
 void nm_mdns_server_stop(struct nm_mdns_server* server);

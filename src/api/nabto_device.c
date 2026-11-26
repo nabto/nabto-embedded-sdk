@@ -63,6 +63,7 @@ void nabto_device_free_threads(struct nabto_device_context* dev);
 void nabto_device_do_stop(struct nabto_device_context* dev);
 
 static void nabto_device_platform_closed_cb(const np_error_code ec, void* userData);
+static void nabto_device_platform_async_close(struct nabto_device_context* dev, struct np_completion_event* closeEvent);
 static void nabto_device_drained(void* userData);
 static void nabto_device_wait_for_outstanding_operations(struct nabto_device_context* dev);
 
@@ -728,10 +729,19 @@ void nabto_device_core_closed_cb(const np_error_code ec, void* data)
     if (ec != NABTO_EC_OK) {
         nabto_device_closed(dev, ec);
     } else {
-        // The platform integration resolves the event, so it is armed here.
-        np_completion_event_arm(&dev->platformCloseEvent);
-        nabto_device_platform_close(dev, &dev->platformCloseEvent);
+        nabto_device_platform_async_close(dev, &dev->platformCloseEvent);
     }
+}
+
+/**
+ * Wrapper for nabto_device_platform_close. Like the np_udp_*, np_tcp_* and
+ * np_dns_* wrappers it arms the event on behalf of the platform integration,
+ * which only resolves it.
+ */
+void nabto_device_platform_async_close(struct nabto_device_context* dev, struct np_completion_event* closeEvent)
+{
+    np_completion_event_arm(closeEvent);
+    nabto_device_platform_close(dev, closeEvent);
 }
 
 void NABTO_DEVICE_API nabto_device_close(NabtoDevice* device, NabtoDeviceFuture* future)

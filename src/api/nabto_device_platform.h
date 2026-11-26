@@ -29,6 +29,10 @@ void nabto_device_platform_deinit(struct nabto_device_context* device);
 /**
  * Close the platform gracefully. This is called whenever nabto_device_close is
  * called, it makes it possible to e.g. gracefully close an embedded mdns server.
+ *
+ * The core arms closeEvent before this is called. The platform resolves it
+ * exactly once, and does not arm, reinit or deinit it, see
+ * np_completion_event.h.
  */
 void nabto_device_platform_close(struct nabto_device_context* device, struct np_completion_event* closeEvent);
 
