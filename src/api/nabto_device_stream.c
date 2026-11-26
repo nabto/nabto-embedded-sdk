@@ -18,6 +18,8 @@ struct nabto_device_stream_listener_context {
 
 static void nabto_device_stream_free_internal(struct nabto_device_stream* stream);
 static void nabto_device_stream_release(struct np_ref* ref);
+static np_error_code init_events(struct nabto_device_stream* str);
+static void deinit_events(struct nabto_device_stream* str);
 
 /*******************************************
  * Streaming Api
@@ -128,7 +130,6 @@ void nabto_device_stream_accept_callback(const np_error_code ec, void* userData)
 {
     // this callback is from the core, the lock is already taken.
     struct nabto_device_stream* str = userData;
-    np_completion_event_deinit(&str->acceptEv);
     nabto_device_future_resolve(str->acceptFut, nabto_device_error_core_to_api(ec));
 }
 
@@ -143,7 +144,6 @@ void NABTO_DEVICE_API nabto_device_stream_accept(NabtoDeviceStream* stream, Nabt
         nabto_device_future_resolve(fut, NABTO_DEVICE_EC_OPERATION_IN_PROGRESS);
     } else {
         str->acceptFut = fut;
-        np_completion_event_init(&str->dev->pl.eq, &str->acceptEv, nabto_device_stream_accept_callback, str, &str->ref);
         nc_stream_async_accept(str->stream, &str->acceptEv);
     }
     nabto_device_threads_mutex_unlock(str->dev->eventMutex);
@@ -231,7 +231,6 @@ void nabto_device_stream_read_callback(const np_error_code ec, void* userData)
     // this callback is from the core, the lock is already taken.
     struct nabto_device_stream* str = userData;
 
-    np_completion_event_deinit(&str->readEv);
     nabto_device_future_resolve(str->readFut, nabto_device_error_core_to_api(ec));
     str->readFut = NULL;
 }
@@ -250,8 +249,6 @@ void NABTO_DEVICE_API nabto_device_stream_read_all(NabtoDeviceStream* stream,
         nabto_device_future_resolve(fut, NABTO_DEVICE_EC_OPERATION_IN_PROGRESS);
     } else {
         str->readFut = fut;
-        np_completion_event_init(&str->dev->pl.eq, &str->readEv, nabto_device_stream_read_callback, str, &str->ref);
-
         nc_stream_async_read_all(str->stream, buffer, bufferLength, readLength, &str->readEv);
     }
     nabto_device_threads_mutex_unlock(str->dev->eventMutex);
@@ -271,8 +268,6 @@ void NABTO_DEVICE_API nabto_device_stream_read_some(NabtoDeviceStream* stream,
         nabto_device_future_resolve(fut, NABTO_DEVICE_EC_OPERATION_IN_PROGRESS);
     } else {
         str->readFut = fut;
-        np_completion_event_init(&str->dev->pl.eq, &str->readEv, nabto_device_stream_read_callback, str, &str->ref);
-
         nc_stream_async_read_some(str->stream, buffer, bufferLength, readLength, &str->readEv);
     }
     nabto_device_threads_mutex_unlock(str->dev->eventMutex);
@@ -283,7 +278,6 @@ void nabto_device_stream_write_callback(const np_error_code ec, void* userData)
     // this callback is from the core, the lock is already taken.
     struct nabto_device_stream* str = userData;
 
-    np_completion_event_deinit(&str->writeEv);
     nabto_device_future_resolve(str->writeFut, nabto_device_error_core_to_api(ec));
     str->writeFut = NULL;
 }
@@ -301,8 +295,6 @@ void NABTO_DEVICE_API nabto_device_stream_write(NabtoDeviceStream* stream,
         nabto_device_future_resolve(fut, NABTO_DEVICE_EC_OPERATION_IN_PROGRESS);
     } else {
         str->writeFut = fut;
-        np_completion_event_init(&str->dev->pl.eq, &str->writeEv, nabto_device_stream_write_callback, str, &str->ref);
-
         nc_stream_async_write(str->stream, buffer, bufferLength, &str->writeEv);
     }
     nabto_device_threads_mutex_unlock(str->dev->eventMutex);
@@ -315,7 +307,6 @@ void nabto_device_stream_close_callback(const np_error_code ec, void* userData)
 
     NABTO_LOG_INFO(LOG, "stream async close core callback");
     nabto_device_future_resolve(str->closeFut, nabto_device_error_core_to_api(ec));
-    np_completion_event_deinit(&str->closeEv);
     str->closeFut = NULL;
 }
 
@@ -327,12 +318,9 @@ void NABTO_DEVICE_API nabto_device_stream_close(NabtoDeviceStream* stream, Nabto
 
     nabto_device_threads_mutex_lock(str->dev->eventMutex);
     if (str->closeFut != NULL) {
-        // The core still references closeEv, it must not be reinitialized.
         nabto_device_future_resolve(fut, NABTO_DEVICE_EC_OPERATION_IN_PROGRESS);
     } else {
         str->closeFut = fut;
-        np_completion_event_init(&str->dev->pl.eq, &str->closeEv, nabto_device_stream_close_callback, str, &str->ref);
-
         nc_stream_async_close(str->stream, &str->closeEv);
     }
     nabto_device_threads_mutex_unlock(str->dev->eventMutex);
@@ -349,7 +337,36 @@ void nabto_device_stream_free_internal(struct nabto_device_stream* str) {
 
 void nabto_device_stream_release(struct np_ref* ref)
 {
-    np_free(np_ref_container(ref, struct nabto_device_stream, ref));
+    struct nabto_device_stream* str = np_ref_container(ref, struct nabto_device_stream, ref);
+    deinit_events(str);
+    np_free(str);
+}
+
+static np_error_code init_events(struct nabto_device_stream* str)
+{
+    struct np_event_queue* eq = &str->dev->pl.eq;
+    np_error_code ec = np_completion_event_init(eq, &str->acceptEv, &nabto_device_stream_accept_callback, str, &str->ref);
+    if (ec == NABTO_EC_OK) {
+        ec = np_completion_event_init(eq, &str->readEv, &nabto_device_stream_read_callback, str, &str->ref);
+    }
+    if (ec == NABTO_EC_OK) {
+        ec = np_completion_event_init(eq, &str->writeEv, &nabto_device_stream_write_callback, str, &str->ref);
+    }
+    if (ec == NABTO_EC_OK) {
+        ec = np_completion_event_init(eq, &str->closeEv, &nabto_device_stream_close_callback, str, &str->ref);
+    }
+    if (ec != NABTO_EC_OK) {
+        deinit_events(str);
+    }
+    return ec;
+}
+
+static void deinit_events(struct nabto_device_stream* str)
+{
+    np_completion_event_deinit(&str->acceptEv);
+    np_completion_event_deinit(&str->readEv);
+    np_completion_event_deinit(&str->writeEv);
+    np_completion_event_deinit(&str->closeEv);
 }
 
 /*******************************************
@@ -399,9 +416,14 @@ void nabto_device_stream_core_callback(np_error_code ec, struct nc_stream_contex
             nc_stream_destroy(stream);
             return;
         }
-        np_ref_init(&str->ref, &dev->pl.refTracker, &nabto_device_stream_release);
         str->stream = stream;
         str->dev = dev;
+        if (init_events(str) != NABTO_EC_OK) {
+            np_free(str);
+            nc_stream_destroy(stream);
+            return;
+        }
+        np_ref_init(&str->ref, &dev->pl.refTracker, &nabto_device_stream_release);
         // using the stream structure directly as listener event, this means we dont free event untill user calls stream_free()
         ec = nabto_device_listener_add_event(listenerContext->listener, &str->eventListNode, str);
         if (ec != NABTO_EC_OK) {
