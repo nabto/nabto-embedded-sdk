@@ -38,9 +38,7 @@ NabtoDeviceTcpProbe* NABTO_DEVICE_API nabto_device_tcp_probe_new(NabtoDevice* de
 
     np_error_code ec = np_tcp_create(&dev->pl.tcp, &ctx->socket);
     if (ec == NABTO_EC_OK) {
-        ec = np_completion_event_init(&dev->pl.eq, &ctx->completionEvent, NULL, NULL, &ctx->ref);
-    }
-    if (ec == NABTO_EC_OK) {
+        ec = np_completion_event_init(&dev->pl.eq, &ctx->completionEvent, &connect_callback, ctx, &ctx->ref);
     }
 
     if (ec != NABTO_EC_OK) {
@@ -106,7 +104,6 @@ void nabto_device_tcp_probe_check_reachability(NabtoDeviceTcpProbe* probe, const
             nabto_device_future_resolve(fut, NABTO_DEVICE_EC_INVALID_ARGUMENT);
         } else {
             ctx->future = fut;
-            np_completion_event_reinit(&ctx->completionEvent, connect_callback, ctx);
             np_tcp_async_connect(&device->pl.tcp, ctx->socket, &address, port, &ctx->completionEvent);
         }
     }

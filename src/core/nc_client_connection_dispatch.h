@@ -21,7 +21,6 @@ struct nc_client_connection_dispatch_context {
     nc_client_connection_dispatch_close_callback closeCb;
     void* closeData;
     bool closing;
-    bool sendingInternalError;
     struct np_completion_event sendCompletionEvent;
 };
 

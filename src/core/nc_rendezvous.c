@@ -28,7 +28,6 @@ np_error_code nc_rendezvous_init(struct nc_rendezvous_context* ctx,
 
     ctx->pl = pl;
     ctx->packetIndex = 0;
-    ctx->sendingDevReqs = false;
     return NABTO_EC_OK;
 }
 

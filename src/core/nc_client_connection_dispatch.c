@@ -19,7 +19,6 @@ np_error_code nc_client_connection_dispatch_init(struct nc_client_connection_dis
     ctx->device = dev;
     ctx->connections = &dev->connections;
     ctx->closing = false;
-    ctx->sendingInternalError = false;
     np_error_code ec = np_completion_event_init(&pl->eq, &ctx->sendCompletionEvent, &nc_client_connection_dispatch_send_internal_error_cb, ctx, owner);
     if (ec != NABTO_EC_OK) {
         return ec;
@@ -38,8 +37,7 @@ void nc_client_connection_dispatch_deinit(struct nc_client_connection_dispatch_c
 static void nc_client_connection_dispatch_send_internal_error_cb(np_error_code ec, void* data)
 {
     (void)ec;
-    struct nc_client_connection_dispatch_context* ctx = (struct nc_client_connection_dispatch_context*)data;
-    ctx->sendingInternalError = false;
+    (void)data;
 }
 
 
@@ -47,7 +45,7 @@ void nc_client_connection_dispatch_send_internal_error(struct nc_client_connecti
                                                        struct nc_udp_dispatch_context *sock, struct np_udp_endpoint *ep,
                                                        uint8_t *buffer, uint16_t bufferSize)
 {
-    if (ctx->sendingInternalError) {
+    if (np_completion_event_is_armed(&ctx->sendCompletionEvent)) {
         return;
     }
     if (bufferSize < 16) {
@@ -68,7 +66,6 @@ void nc_client_connection_dispatch_send_internal_error(struct nc_client_connecti
     *ptr = 2; ptr++; // fatal alert
     *ptr = 80; ptr++; // internal_error message
 
-    ctx->sendingInternalError = true;
     nc_udp_dispatch_async_send_to(sock, ep,
                                       responseBuffer, sizeof(responseBuffer),
                                       &ctx->sendCompletionEvent);

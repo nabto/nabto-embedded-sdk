@@ -84,7 +84,6 @@ np_error_code nc_stream_init(struct np_platform* pl, struct nc_stream_context* c
     ctx->streamManager = streamManager;
     ctx->pl = pl;
     ctx->currentExpiry = nabto_stream_stamp_infinite();
-    ctx->isSending = false;
     ctx->connectionRef = connectionRef;
     ctx->accepted = false;
     ctx->isVirtual = false;
@@ -232,7 +231,6 @@ void nc_stream_dtls_send_callback(const np_error_code ec, void* data)
 {
     (void)ec;
     struct nc_stream_context* ctx = data;
-    ctx->isSending = false;
     if (!ctx->stopped) {
         nabto_stream_event_handled(&ctx->stream, ctx->sendEventType);
         nc_stream_event(ctx);
@@ -251,11 +249,9 @@ void nc_stream_send_packet(struct nc_stream_context* ctx, enum nabto_stream_next
         return;
     }
 
-    if (ctx->isSending) {
+    if (np_completion_event_is_armed(&ctx->sendCtx.ev)) {
         return;
     }
-
-    ctx->isSending = true;
 
     ctx->sendEventType = eventType;
 
@@ -272,7 +268,6 @@ void nc_stream_send_packet(struct nc_stream_context* ctx, enum nabto_stream_next
     size_t packetSize = nabto_stream_create_packet(&ctx->stream, ptr, NC_STREAM_SEND_BUFFER_SIZE+start-ptr, eventType);
     if (packetSize == 0) {
         // no packet to send
-        ctx->isSending = false;
         return;
     }
     ctx->sendCtx.bufferSize = (uint16_t)(ptr-start+packetSize);
