@@ -29,7 +29,6 @@ struct nc_rendezvous_context {
     struct nc_rendezvous_send_packet packetList[NC_RENDEZVOUS_SEND_QUEUE_LENGTH];
     // index of first empty spot in epList
     uint8_t packetIndex;
-    bool sendingDevReqs;
 
     struct np_completion_event sendCompletionEvent;
 };

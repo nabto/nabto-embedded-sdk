@@ -18,7 +18,6 @@ np_error_code nc_virtual_stream_init(struct np_platform* pl, struct nc_stream_co
     ctx->conn = conn;
     ctx->streamManager = streamManager;
     ctx->pl = pl;
-    ctx->isSending = false;
     ctx->connectionRef = conn->connectionRef;
     ctx->accepted = false;
     ctx->isVirtual = true;

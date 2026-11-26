@@ -72,7 +72,6 @@ struct nc_stream_context {
     size_t writeBufferLength;
     struct np_completion_event* closeEv;
 
-    bool isSending;
     struct np_dtls_send_context sendCtx;
     uint8_t sendBuffer[NC_STREAM_SEND_BUFFER_SIZE];
     enum nabto_stream_next_event_type sendEventType;
