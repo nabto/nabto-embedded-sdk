@@ -40,7 +40,12 @@ NabtoDeviceError NABTO_DEVICE_API nabto_device_get_attach_certificate_expiration
 
     struct np_platform* pl = &dev->pl;
 
-    np_error_code ec = pl->dtlsC.get_certificate_expiration(dev->core.attacher.dtls, expiration);
+    // The attacher has no DTLS connection before the first attach and while
+    // it reconnects.
+    np_error_code ec = NABTO_EC_NOT_ATTACHED;
+    if (dev->core.attacher.state == NC_ATTACHER_STATE_ATTACHED && dev->core.attacher.dtls != NULL) {
+        ec = pl->dtlsC.get_certificate_expiration(dev->core.attacher.dtls, expiration);
+    }
 
     nabto_device_threads_mutex_unlock(dev->eventMutex);
 
