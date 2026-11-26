@@ -5,6 +5,14 @@
 #include <modules/tcp_tunnel/nm_tcp_tunnel.h>
 #include <platform/np_error_code.h>
 
+/**
+ * The tunnels are only initialized when the platform has a TCP module.
+ */
+static bool has_tcp_tunnels(struct nabto_device_context* dev)
+{
+    return dev->tcpTunnels.device != NULL;
+}
+
 NabtoDeviceError NABTO_DEVICE_API
 nabto_device_add_tcp_tunnel_service(NabtoDevice* device, const char* serviceId, const char* serviceType, const char* host, uint16_t port)
 {
@@ -17,6 +25,10 @@ nabto_device_add_tcp_tunnel_service(NabtoDevice* device, const char* serviceId, 
 
     np_error_code ec = NABTO_EC_OK;
     nabto_device_threads_mutex_lock(dev->eventMutex);
+    if (!has_tcp_tunnels(dev)) {
+        nabto_device_threads_mutex_unlock(dev->eventMutex);
+        return NABTO_DEVICE_EC_NOT_IMPLEMENTED;
+    }
     struct nm_tcp_tunnel_service* service = nm_tcp_tunnel_service_create(&dev->tcpTunnels);
     if (service == NULL) {
         ec = NABTO_EC_OUT_OF_MEMORY;
@@ -37,7 +49,11 @@ nabto_device_remove_tcp_tunnel_service(NabtoDevice* device, const char* serviceI
 
     np_error_code ec = NABTO_EC_OK;
     nabto_device_threads_mutex_lock(dev->eventMutex);
-    ec = nm_tcp_tunnel_service_destroy_by_id(&dev->tcpTunnels, serviceId);
+    if (!has_tcp_tunnels(dev)) {
+        ec = NABTO_EC_NOT_IMPLEMENTED;
+    } else {
+        ec = nm_tcp_tunnel_service_destroy_by_id(&dev->tcpTunnels, serviceId);
+    }
     nabto_device_threads_mutex_unlock(dev->eventMutex);
 
     return nabto_device_error_core_to_api(ec);
@@ -51,7 +67,11 @@ nabto_device_add_tcp_tunnel_service_metadata(NabtoDevice* device, const char* se
 
     // @TODO: Unsure if locking eventMutex is required here, needs more research.
     nabto_device_threads_mutex_lock(dev->eventMutex);
-    ec = nm_tcp_tunnel_service_add_metadata(&dev->tcpTunnels, serviceId, key, value);
+    if (!has_tcp_tunnels(dev)) {
+        ec = NABTO_EC_NOT_IMPLEMENTED;
+    } else {
+        ec = nm_tcp_tunnel_service_add_metadata(&dev->tcpTunnels, serviceId, key, value);
+    }
     nabto_device_threads_mutex_unlock(dev->eventMutex);
 
     return nabto_device_error_core_to_api(ec);
@@ -65,7 +85,11 @@ nabto_device_remove_tcp_tunnel_service_metadata(NabtoDevice* device, const char*
 
     // @TODO: Unsure if locking eventMutex is required here, same as above.
     nabto_device_threads_mutex_lock(dev->eventMutex);
-    ec = nm_tcp_tunnel_service_remove_metadata(&dev->tcpTunnels, serviceId, key);
+    if (!has_tcp_tunnels(dev)) {
+        ec = NABTO_EC_NOT_IMPLEMENTED;
+    } else {
+        ec = nm_tcp_tunnel_service_remove_metadata(&dev->tcpTunnels, serviceId, key);
+    }
     nabto_device_threads_mutex_unlock(dev->eventMutex);
 
     return nabto_device_error_core_to_api(ec);
@@ -78,7 +102,11 @@ nabto_device_limit_tcp_tunnel_connections(NabtoDevice* device, const char* type,
 
     np_error_code ec = NABTO_EC_OK;
     nabto_device_threads_mutex_lock(dev->eventMutex);
-    ec = nm_tcp_tunnel_limit_concurrent_connections_by_type(&dev->tcpTunnels, type, limit);
+    if (!has_tcp_tunnels(dev)) {
+        ec = NABTO_EC_NOT_IMPLEMENTED;
+    } else {
+        ec = nm_tcp_tunnel_limit_concurrent_connections_by_type(&dev->tcpTunnels, type, limit);
+    }
     nabto_device_threads_mutex_unlock(dev->eventMutex);
 
     return nabto_device_error_core_to_api(ec);

@@ -5,6 +5,10 @@
 
 #include <modules/libevent/nm_libevent_udp.h>
 
+// Before nabto_device_defines.h, which includes it without C linkage.
+extern "C" {
+#include <modules/tcp_tunnel/nm_tcp_tunnel.h>
+}
 #include <api/nabto_device_defines.h>
 #include <api/nabto_device_future.h>
 
@@ -238,6 +242,30 @@ BOOST_AUTO_TEST_CASE(tcp_tunnel_service_duplicate_id, *boost::unit_test::timeout
     BOOST_TEST(nabto_device_remove_tcp_tunnel_service(dev, "ssh") != NABTO_DEVICE_EC_OK);
     nabto_device_stop(dev);
     nabto_device_free(dev);
+}
+
+BOOST_AUTO_TEST_CASE(tcp_tunnel_api_without_tcp_module, *boost::unit_test::timeout(30))
+{
+    // On a platform without a TCP module the TCP tunnels are never
+    // initialized, and the TCP tunnel functions used the zeroed state. The
+    // device is put in that state by undoing the tunnel initialization.
+    NabtoDevice* device = nabto_device_new();
+    BOOST_REQUIRE(device);
+    struct nabto_device_context* dev = (struct nabto_device_context*)device;
+    nabto_device_threads_mutex_lock(dev->eventMutex);
+    nm_tcp_tunnels_deinit(&dev->tcpTunnels);
+    memset(&dev->tcpTunnels, 0, sizeof(dev->tcpTunnels));
+    dev->pl.tcp.mptr = NULL;
+    nabto_device_threads_mutex_unlock(dev->eventMutex);
+
+    BOOST_TEST(nabto_device_add_tcp_tunnel_service(device, "ssh", "ssh", "127.0.0.1", 22) == NABTO_DEVICE_EC_NOT_IMPLEMENTED);
+    BOOST_TEST(nabto_device_remove_tcp_tunnel_service(device, "ssh") == NABTO_DEVICE_EC_NOT_IMPLEMENTED);
+    BOOST_TEST(nabto_device_add_tcp_tunnel_service_metadata(device, "ssh", "key", "value") == NABTO_DEVICE_EC_NOT_IMPLEMENTED);
+    BOOST_TEST(nabto_device_remove_tcp_tunnel_service_metadata(device, "ssh", "key") == NABTO_DEVICE_EC_NOT_IMPLEMENTED);
+    BOOST_TEST(nabto_device_limit_tcp_tunnel_connections(device, "ssh", 1) == NABTO_DEVICE_EC_NOT_IMPLEMENTED);
+
+    nabto_device_stop(device);
+    nabto_device_free(device);
 }
 
 BOOST_AUTO_TEST_CASE(future_wait_ignores_wakeups_before_resolve, *boost::unit_test::timeout(30))
