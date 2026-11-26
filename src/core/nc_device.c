@@ -585,8 +585,13 @@ np_error_code nc_device_is_server_connect_tokens_synchronized(struct nc_device_c
     return nc_attacher_is_server_connect_tokens_synchronized(&dev->attacher);
 }
 
+// The attacher keeps pointers to these strings once the device is started, so
+// they can only be changed before that.
 np_error_code nc_device_set_app_name(struct nc_device_context* dev, const char* name)
 {
+    if (dev->state != NC_DEVICE_STATE_SETUP) {
+        return NABTO_EC_INVALID_STATE;
+    }
     np_free(dev->appName);
     dev->appName = nn_strdup(name, np_allocator_get());
     if (dev->appName == NULL) {
@@ -602,6 +607,9 @@ const char* nc_device_get_app_name(struct nc_device_context* dev)
 
 np_error_code nc_device_set_app_version(struct nc_device_context* dev, const char* version)
 {
+    if (dev->state != NC_DEVICE_STATE_SETUP) {
+        return NABTO_EC_INVALID_STATE;
+    }
     np_free(dev->appVersion);
     dev->appVersion = nn_strdup(version, np_allocator_get());
     if (dev->appVersion == NULL) {
@@ -618,6 +626,9 @@ const char* nc_device_get_app_version(struct nc_device_context* dev)
 
 np_error_code nc_device_set_product_id(struct nc_device_context* dev, const char* productId)
 {
+    if (dev->state != NC_DEVICE_STATE_SETUP) {
+        return NABTO_EC_INVALID_STATE;
+    }
     np_free(dev->productId);
     dev->productId = nn_strdup(productId, np_allocator_get());
     if (dev->productId == NULL) {
@@ -628,6 +639,9 @@ np_error_code nc_device_set_product_id(struct nc_device_context* dev, const char
 
 np_error_code nc_device_set_device_id(struct nc_device_context* dev, const char* deviceId)
 {
+    if (dev->state != NC_DEVICE_STATE_SETUP) {
+        return NABTO_EC_INVALID_STATE;
+    }
     np_free(dev->deviceId);
     dev->deviceId = nn_strdup(deviceId, np_allocator_get());
     if (dev->deviceId == NULL) {
@@ -638,6 +652,9 @@ np_error_code nc_device_set_device_id(struct nc_device_context* dev, const char*
 
 np_error_code nc_device_set_server_url(struct nc_device_context* dev, const char* serverUrl)
 {
+    if (dev->state != NC_DEVICE_STATE_SETUP) {
+        return NABTO_EC_INVALID_STATE;
+    }
     np_free(dev->hostname);
     dev->hostname = nn_strdup(serverUrl, np_allocator_get());
     if (dev->hostname == NULL) {

@@ -237,6 +237,7 @@ nabto_device_free(NabtoDevice* device);
  * @param productId [in]  The product ID to set e.g. pr-abcdefg
  * @retval NABTO_DEVICE_EC_OK on success
  * @retval NABTO_DEVICE_EC_OUT_OF_MEMORY if string could not be saved
+ * @retval NABTO_DEVICE_EC_INVALID_STATE if the device has been started
  */
 NABTO_DEVICE_DECL_PREFIX NabtoDeviceError NABTO_DEVICE_API
 nabto_device_set_product_id(NabtoDevice* device, const char* productId);
@@ -258,6 +259,7 @@ nabto_device_get_product_id(NabtoDevice* device);
  * @param deviceId [in] The device ID to set e.g. de-abcdefg
  * @retval NABTO_DEVICE_EC_OK on success
  * @retval NABTO_DEVICE_EC_OUT_OF_MEMORY if string could not be saved
+ * @retval NABTO_DEVICE_EC_INVALID_STATE if the device has been started
  */
 NABTO_DEVICE_DECL_PREFIX NabtoDeviceError NABTO_DEVICE_API
 nabto_device_set_device_id(NabtoDevice* device, const char* deviceId);
@@ -280,6 +282,7 @@ nabto_device_get_device_id(NabtoDevice* device);
  * @param serverUrl [in] The url of the basestation attach node to set e.g. foo.bar.baz
  * @retval NABTO_DEVICE_EC_OK on success
  * @retval NABTO_DEVICE_EC_OUT_OF_MEMORY if string could not be saved
+ * @retval NABTO_DEVICE_EC_INVALID_STATE if the device has been started
  */
 NABTO_DEVICE_DECL_PREFIX NabtoDeviceError NABTO_DEVICE_API
 nabto_device_set_server_url(NabtoDevice* device, const char* serverUrl);
@@ -353,6 +356,7 @@ nabto_device_set_root_certs(NabtoDevice* device, const char* roots);
  * @param name [in]     The application name to set
  * @retval NABTO_DEVICE_EC_OK on success
  * @retval NABTO_DEVICE_EC_STRING_TOO_LOG if string length > 32
+ * @retval NABTO_DEVICE_EC_INVALID_STATE if the device has been started
  */
 NABTO_DEVICE_DECL_PREFIX NabtoDeviceError NABTO_DEVICE_API
 nabto_device_set_app_name(NabtoDevice* device, const char* name);
@@ -376,6 +380,7 @@ nabto_device_get_app_name(NabtoDevice* device);
  * @param version [in]  The application version to set
  * @retval NABTO_DEVICE_EC_OK on success
  * @retval NABTO_DEVICE_EC_STRING_TOO_LOG if string length > 32
+ * @retval NABTO_DEVICE_EC_INVALID_STATE if the device has been started
  */
 NABTO_DEVICE_DECL_PREFIX NabtoDeviceError NABTO_DEVICE_API
 nabto_device_set_app_version(NabtoDevice* device, const char* version);
