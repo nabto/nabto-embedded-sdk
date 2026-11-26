@@ -21,8 +21,9 @@ typedef void (*np_completion_event_callback)(const np_error_code ec, void* userD
  *   - The operation which takes the event arms it with
  *     np_completion_event_arm, and then resolves it exactly once, also if
  *     it is aborted or the resource it belongs to is destroyed. The
- *     platform wrappers (np_udp_*, np_tcp_*, np_dns_*) arm events on
- *     behalf of the platform integration. A function which only passes
+ *     platform wrappers (np_udp_*, np_tcp_*, np_dns_*, and
+ *     nabto_device_platform_async_close for nabto_device_platform_close)
+ *     arm events on behalf of the platform integration. A function which only passes
  *     the event on to another operation does not arm it. A function which
  *     returns an error does not take the event, so it does not arm it.
  *     np_completion_event_disarm undoes an arm if an operation fails
