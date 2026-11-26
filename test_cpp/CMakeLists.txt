@@ -64,6 +64,7 @@ set(test_src
   tests/core/watchdog_test.cpp
   tests/core/nc_alloc_failure_test.cpp
   tests/core/nc_keep_alive_test.cpp
+  tests/core/nc_stun_test.cpp
   tests/core/nc_stream_demux_test.cpp
   tests/spake2/spake2_test.cpp
   tests/spake2/spake2_mbedtls_test.cpp

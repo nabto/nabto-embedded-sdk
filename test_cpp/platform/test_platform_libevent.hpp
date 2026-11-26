@@ -211,6 +211,11 @@ class TestPlatformLibevent : public TestPlatform {
         return &pl_;
     }
 
+    // The core mutex, which the core holds when it calls into the platform.
+    nabto_device_mutex* getMutex() {
+        return mutex_;
+    }
+
  private:
     bool stopped_ = false;
     struct np_platform pl_;
