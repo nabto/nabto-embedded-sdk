@@ -31,7 +31,7 @@ void handle_truncated_packet(const std::vector<uint8_t>& packet)
 {
     auto tp = nabto::test::TestPlatform::create();
     struct nc_stream_manager_context ctx;
-    nc_stream_manager_init(&ctx, tp->getPlatform(), NULL, &testOwner.ref);
+    BOOST_REQUIRE(nc_stream_manager_init(&ctx, tp->getPlatform(), NULL, &testOwner.ref) == NABTO_EC_OK);
 
     uint8_t* buffer = exact_heap_copy(packet);
     // The packet ends right after the stream id, there are no flags. It is

@@ -35,7 +35,7 @@ struct nc_stream_manager_context {
     uint64_t nonceCounter;
 };
 
-void nc_stream_manager_init(struct nc_stream_manager_context* ctx, struct np_platform* pl, struct nn_log* logger, struct np_ref* owner);
+np_error_code nc_stream_manager_init(struct nc_stream_manager_context* ctx, struct np_platform* pl, struct nn_log* logger, struct np_ref* owner);
 void nc_stream_manager_deinit(struct nc_stream_manager_context* ctx);
 np_error_code nc_stream_manager_add_listener(struct nc_stream_manager_context* ctx, struct nc_stream_listener* listener, uint32_t type, nc_stream_manager_listen_callback cb, void* data);
 void nc_stream_manager_remove_listener(struct nc_stream_listener* listener);
