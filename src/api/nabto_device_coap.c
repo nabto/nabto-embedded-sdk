@@ -33,6 +33,12 @@ nabto_device_coap_init_listener(NabtoDevice* device, NabtoDeviceListener* device
 
     res->listener = listener;
 
+    if (nabto_device_listener_is_active(listener)) {
+        np_free(res);
+        nabto_device_threads_mutex_unlock(dev->eventMutex);
+        return NABTO_DEVICE_EC_INVALID_STATE;
+    }
+
     nabto_coap_error err = nc_coap_server_add_resource(&dev->core.coapServer, nabto_device_coap_method_to_code(method), pathSegments, &nabto_device_coap_resource_handler, res, &res->resource);
     if (err != NABTO_COAP_ERROR_OK) {
         np_free(res);

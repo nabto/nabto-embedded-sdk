@@ -736,6 +736,41 @@ BOOST_AUTO_TEST_CASE(coap_listener_init_twice)
     nabto_device_listener_free(listener);
 }
 
+BOOST_AUTO_TEST_CASE(listener_init_twice_same_registration)
+{
+    // Initializing an active listener again with the same registration is
+    // rejected by the listener before the module reports it as in use.
+    // Password authentication is covered in password_authorization_request.
+    const char* path[] = { "a", NULL };
+    nabto::test::TestDevice td;
+
+    NabtoDeviceListener* coap = nabto_device_listener_new(td.device_);
+    BOOST_TEST(nabto_device_coap_init_listener(td.device_, coap, NABTO_DEVICE_COAP_GET, path) == NABTO_DEVICE_EC_OK);
+    BOOST_TEST(nabto_device_coap_init_listener(td.device_, coap, NABTO_DEVICE_COAP_GET, path) == NABTO_DEVICE_EC_INVALID_STATE);
+
+    NabtoDeviceListener* stream = nabto_device_listener_new(td.device_);
+    BOOST_TEST(nabto_device_stream_init_listener(td.device_, stream, 4242) == NABTO_DEVICE_EC_OK);
+    BOOST_TEST(nabto_device_stream_init_listener(td.device_, stream, 4242) == NABTO_DEVICE_EC_INVALID_STATE);
+
+    NabtoDeviceListener* authorization = nabto_device_listener_new(td.device_);
+    BOOST_TEST(nabto_device_authorization_request_init_listener(td.device_, authorization) == NABTO_DEVICE_EC_OK);
+    BOOST_TEST(nabto_device_authorization_request_init_listener(td.device_, authorization) == NABTO_DEVICE_EC_INVALID_STATE);
+
+    NabtoDeviceListener* deviceEvents = nabto_device_listener_new(td.device_);
+    BOOST_TEST(nabto_device_device_events_init_listener(td.device_, deviceEvents) == NABTO_DEVICE_EC_OK);
+    BOOST_TEST(nabto_device_device_events_init_listener(td.device_, deviceEvents) == NABTO_DEVICE_EC_INVALID_STATE);
+
+    NabtoDeviceListener* connectionEvents = nabto_device_listener_new(td.device_);
+    BOOST_TEST(nabto_device_connection_events_init_listener(td.device_, connectionEvents) == NABTO_DEVICE_EC_OK);
+    BOOST_TEST(nabto_device_connection_events_init_listener(td.device_, connectionEvents) == NABTO_DEVICE_EC_INVALID_STATE);
+
+    nabto_device_listener_free(coap);
+    nabto_device_listener_free(stream);
+    nabto_device_listener_free(authorization);
+    nabto_device_listener_free(deviceEvents);
+    nabto_device_listener_free(connectionEvents);
+}
+
 BOOST_AUTO_TEST_CASE(coap_404)
 {
     const char* coapPath = "/not/found";

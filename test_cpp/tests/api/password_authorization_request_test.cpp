@@ -12,7 +12,12 @@ BOOST_AUTO_TEST_CASE(double_register)
     NabtoDeviceError ec = nabto_device_password_authentication_request_init_listener(device, listener);
     if (ec != NABTO_DEVICE_EC_NOT_IMPLEMENTED) {
         BOOST_TEST(ec == NABTO_DEVICE_EC_OK);
-        BOOST_TEST(nabto_device_password_authentication_request_init_listener(device, listener) == NABTO_DEVICE_EC_IN_USE);
+        // The same listener again is rejected by the listener, another
+        // listener by the module.
+        BOOST_TEST(nabto_device_password_authentication_request_init_listener(device, listener) == NABTO_DEVICE_EC_INVALID_STATE);
+        NabtoDeviceListener* other = nabto_device_listener_new(device);
+        BOOST_TEST(nabto_device_password_authentication_request_init_listener(device, other) == NABTO_DEVICE_EC_IN_USE);
+        nabto_device_listener_free(other);
     }
     nabto_device_listener_free(listener);
     nabto_device_free(device);

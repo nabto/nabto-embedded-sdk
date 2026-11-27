@@ -86,6 +86,15 @@ np_error_code nabto_device_listener_init(struct nabto_device_context* dev,
                                          nabto_device_listener_resolve_event cb,
                                          void* listenerData);
 
+/**
+ * A listener is active when it is initialized and not stopped. An active
+ * listener is registered with the module it belongs to, and cannot be
+ * initialized again. Init functions which register with a module check this
+ * first, so they fail with NABTO_EC_INVALID_STATE before the module rejects
+ * the registration for another reason.
+ */
+bool nabto_device_listener_is_active(struct nabto_device_listener* listener);
+
 enum nabto_device_listener_type nabto_device_listener_get_type(struct nabto_device_listener* listener);
 np_error_code nabto_device_listener_init_future(struct nabto_device_listener* listener, struct nabto_device_future* future);
 np_error_code nabto_device_listener_get_status(struct nabto_device_listener* listener);

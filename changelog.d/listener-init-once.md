@@ -6,3 +6,11 @@
    place, pointing at the listener, so a CoAP request or stream for it was
    delivered to the listener after it had been freed. A stopped listener can
    still be initialized again.
+
+### Changed
+ * Initializing the same stream, authorization or password authentication
+   listener twice with the same registration now returns
+   `NABTO_DEVICE_EC_INVALID_STATE`. It used to return
+   `NABTO_DEVICE_EC_OPERATION_IN_PROGRESS` (streams) or
+   `NABTO_DEVICE_EC_IN_USE`. Initializing a second listener for a
+   registration which is in use still returns those codes.
