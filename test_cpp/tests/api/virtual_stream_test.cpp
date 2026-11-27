@@ -10,6 +10,7 @@
 
 #include <nlohmann/json.hpp>
 
+#include <future>
 #include <iostream>
 
 namespace nabto {
@@ -967,6 +968,143 @@ BOOST_AUTO_TEST_CASE(free_device_after_freeing_streams_with_outstanding_operatio
         // Frees the virtual connection, stops and frees the device.
     }
     BOOST_TEST(allocations.live() == 0u);
+}
+
+BOOST_AUTO_TEST_CASE(operations_after_failed_open, *boost::unit_test::timeout(60))
+{
+    // When opening fails, e.g. because the stream limit is reached, the
+    // virtual stream has no core stream. Operations on it passed NULL to the
+    // core.
+    nabto::test::TestStreamDevice td;
+    BOOST_TEST(nabto_device_limit_streams(td.device_, 0) == NABTO_DEVICE_EC_OK);
+
+    NabtoDeviceVirtualConnection* conn = td.makeConnection();
+    NabtoDeviceVirtualStream* virStream = nabto_device_virtual_stream_new(conn);
+    NabtoDeviceFuture* fut = nabto_device_future_new(td.device_);
+
+    nabto_device_virtual_stream_open(virStream, fut, 4242);
+    BOOST_TEST(nabto_device_future_wait(fut) == NABTO_DEVICE_EC_OUT_OF_MEMORY);
+
+    char buffer[16];
+    size_t readLength = 0;
+    nabto_device_virtual_stream_read_all(virStream, fut, buffer, sizeof(buffer), &readLength);
+    BOOST_TEST(nabto_device_future_wait(fut) == NABTO_DEVICE_EC_INVALID_STATE);
+    nabto_device_virtual_stream_read_some(virStream, fut, buffer, sizeof(buffer), &readLength);
+    BOOST_TEST(nabto_device_future_wait(fut) == NABTO_DEVICE_EC_INVALID_STATE);
+    nabto_device_virtual_stream_write(virStream, fut, buffer, sizeof(buffer));
+    BOOST_TEST(nabto_device_future_wait(fut) == NABTO_DEVICE_EC_INVALID_STATE);
+    nabto_device_virtual_stream_close(virStream, fut);
+    BOOST_TEST(nabto_device_future_wait(fut) == NABTO_DEVICE_EC_INVALID_STATE);
+    nabto_device_virtual_stream_abort(virStream);
+
+    nabto_device_future_free(fut);
+    nabto_device_virtual_stream_free(virStream);
+}
+
+BOOST_AUTO_TEST_CASE(operations_after_stopped_open, *boost::unit_test::timeout(60))
+{
+    // When opening fails after the call, e.g. because there is no listener,
+    // the open future resolves with STOPPED. A read on the stream after that
+    // was stored on the stopped core stream and never resolved.
+    nabto::test::TestStreamDevice td;
+    nabto::test::TestStream ts(&td);
+
+    NabtoDeviceVirtualConnection* conn = td.makeConnection();
+    NabtoDeviceVirtualStream* virStream = nabto_device_virtual_stream_new(conn);
+    NabtoDeviceFuture* fut = nabto_device_future_new(td.device_);
+
+    nabto_device_virtual_stream_open(virStream, fut, 4242);
+    BOOST_TEST(nabto_device_future_timed_wait(fut, 5000) == NABTO_DEVICE_EC_STOPPED);
+
+    char buffer[16];
+    size_t readLength = 0;
+    nabto_device_virtual_stream_read_all(virStream, fut, buffer, sizeof(buffer), &readLength);
+    BOOST_TEST(nabto_device_future_timed_wait(fut, 5000) == NABTO_DEVICE_EC_INVALID_STATE);
+    nabto_device_virtual_stream_read_some(virStream, fut, buffer, sizeof(buffer), &readLength);
+    BOOST_TEST(nabto_device_future_timed_wait(fut, 5000) == NABTO_DEVICE_EC_INVALID_STATE);
+    nabto_device_virtual_stream_close(virStream, fut);
+    BOOST_TEST(nabto_device_future_timed_wait(fut, 5000) == NABTO_DEVICE_EC_INVALID_STATE);
+
+    // The stream can be opened again once there is a listener.
+    td.streamListen([&](NabtoDeviceError ec, NabtoDeviceStream* stream) {
+        if (ec == NABTO_DEVICE_EC_OK) {
+            ts.acceptStream(stream);
+        }
+    });
+    nabto_device_virtual_stream_open(virStream, fut, td.streamPort_);
+    BOOST_TEST(nabto_device_future_timed_wait(fut, 5000) == NABTO_DEVICE_EC_OK);
+    ts.futureWait(NABTO_DEVICE_EC_OK);
+
+    ts.doRead();
+    nabto_device_virtual_stream_abort(virStream);
+    ts.futureWait(NABTO_DEVICE_EC_ABORTED);
+
+    nabto_device_future_free(fut);
+    nabto_device_virtual_stream_free(virStream);
+}
+
+BOOST_AUTO_TEST_CASE(operations_while_opening, *boost::unit_test::timeout(60))
+{
+    // The open is pending until the application accepts the stream, and
+    // the stream cannot be used before that.
+    nabto::test::TestStreamDevice td;
+    std::promise<NabtoDeviceStream*> serverStream;
+    td.streamListen([&](NabtoDeviceError ec, NabtoDeviceStream* stream) {
+        if (ec == NABTO_DEVICE_EC_OK) {
+            serverStream.set_value(stream);
+        }
+    });
+
+    NabtoDeviceVirtualConnection* conn = td.makeConnection();
+    NabtoDeviceVirtualStream* virStream = nabto_device_virtual_stream_new(conn);
+    NabtoDeviceFuture* openFut = nabto_device_future_new(td.device_);
+    NabtoDeviceFuture* fut = nabto_device_future_new(td.device_);
+
+    nabto_device_virtual_stream_open(virStream, openFut, td.streamPort_);
+    NabtoDeviceStream* stream = serverStream.get_future().get();
+    BOOST_TEST(nabto_device_future_ready(openFut) == NABTO_DEVICE_EC_FUTURE_NOT_RESOLVED);
+
+    char buffer[16];
+    size_t readLength = 0;
+    nabto_device_virtual_stream_read_all(virStream, fut, buffer, sizeof(buffer), &readLength);
+    BOOST_TEST(nabto_device_future_timed_wait(fut, 5000) == NABTO_DEVICE_EC_INVALID_STATE);
+    nabto_device_virtual_stream_write(virStream, fut, buffer, sizeof(buffer));
+    BOOST_TEST(nabto_device_future_timed_wait(fut, 5000) == NABTO_DEVICE_EC_INVALID_STATE);
+    nabto_device_virtual_stream_open(virStream, fut, td.streamPort_);
+    BOOST_TEST(nabto_device_future_timed_wait(fut, 5000) == NABTO_DEVICE_EC_INVALID_STATE);
+
+    nabto_device_virtual_stream_abort(virStream);
+    BOOST_TEST(nabto_device_future_timed_wait(openFut, 5000) == NABTO_DEVICE_EC_ABORTED);
+
+    nabto_device_stream_free(stream);
+    nabto_device_future_free(fut);
+    nabto_device_future_free(openFut);
+    nabto_device_virtual_stream_free(virStream);
+}
+
+BOOST_AUTO_TEST_CASE(open_twice, *boost::unit_test::timeout(60))
+{
+    // Opening a stream again replaced the core stream of the first open,
+    // which was leaked.
+    nabto::test::TestStreamDevice td;
+    nabto::test::TestStream ts(&td);
+    td.streamListen([&](NabtoDeviceError ec, NabtoDeviceStream* stream) {
+        if (ec == NABTO_DEVICE_EC_OK) {
+            ts.acceptStream(stream);
+        }
+    });
+    td.makeConnection();
+    NabtoDeviceVirtualStream* virStream = td.virtualStreamOpen();
+    ts.futureWait(NABTO_DEVICE_EC_OK);
+
+    NabtoDeviceFuture* fut = nabto_device_future_new(td.device_);
+    nabto_device_virtual_stream_open(virStream, fut, td.streamPort_);
+    BOOST_TEST(nabto_device_future_wait(fut) == NABTO_DEVICE_EC_INVALID_STATE);
+    nabto_device_future_free(fut);
+
+    ts.doRead();
+    nabto_device_virtual_stream_abort(virStream);
+    ts.futureWait(NABTO_DEVICE_EC_ABORTED);
 }
 
 BOOST_AUTO_TEST_SUITE_END()

@@ -236,6 +236,10 @@ extern "C" {
      * Future status:
      *  - NABTO_DEVICE_EC_OK if opening went ok.
      *  - NABTO_DEVICE_EC_STOPPED if the stream could not be opened, e.g. not accepted or the connection was closed.
+     *  - NABTO_DEVICE_EC_OUT_OF_MEMORY if the stream could not be created, e.g. the stream limit is reached.
+     *  - NABTO_DEVICE_EC_INVALID_STATE if the stream is open or being opened.
+     *
+     * If opening fails, the stream can be opened again.
      *
      * @param stream [in]  The stream to connect.
      * @param future [in]  The future.
@@ -257,6 +261,8 @@ extern "C" {
      *  - NABTO_DEVICE_EC_EOF  if only some data was read and the stream is eof.
      *  - NABTO_DEVICE_EC_ABORTED if the stream is aborted.
      *  - NABTO_DEVICE_EC_OPERATION_IN_PROGRESS if stream is already being read
+     *  - NABTO_DEVICE_EC_INVALID_STATE if the stream is not open: it has not been
+     *    opened, opening it failed, or the open future has not resolved yet.
      *
      * @param stream [in]         The virtual stream to read bytes from.
      * @param future [in]         Future to resolve with the result of the operation.
@@ -282,6 +288,8 @@ extern "C" {
      *  - NABTO_DEVICE_EC_EOF if stream is eof.
      *  - NABTO_DEVICE_EC_ABORTED if the stream is aborted.
      *  - NABTO_DEVICE_EC_OPERATION_IN_PROGRESS if stream is already being read
+     *  - NABTO_DEVICE_EC_INVALID_STATE if the stream is not open: it has not been
+     *    opened, opening it failed, or the open future has not resolved yet.
      *
      * @param stream [in]         The virtual stream to read bytes from.
      * @param future [in]         Future to resolve with the result of the operation.
@@ -299,11 +307,15 @@ extern "C" {
     /**
      * Write bytes to a virtual stream.
      *
+     * Future status:
+     *  - NABTO_DEVICE_EC_OK on success
+     *  - NABTO_DEVICE_EC_INVALID_STATE if the stream is not open: it has not been
+     *    opened, opening it failed, or the open future has not resolved yet.
+     *
      * @param stream [in]        The stream to write data to.
      * @param future [in]        Future to resolve with the result of the operation.
      * @param buffer [in]        The input buffer with data to write to the stream.
      * @param bufferLength [in]  Length of the input data.
-     * @retval NABTO_DEVICE_EC_OK on success
      */
     NABTO_DEVICE_DECL_PREFIX void NABTO_DEVICE_API
         nabto_device_virtual_stream_write(NabtoDeviceVirtualStream* stream,
@@ -318,9 +330,13 @@ extern "C" {
      *
      * When the future resolves, all data written has been read by the other peer.
      *
+     * Future status:
+     *  - NABTO_DEVICE_EC_OK on success.
+     *  - NABTO_DEVICE_EC_INVALID_STATE if the stream is not open: it has not been
+     *    opened, opening it failed, or the open future has not resolved yet.
+     *
      * @param stream [in]  The stream to close.
      * @param future [in]  Future to resolve when closed.
-     * @retval NABTO_DEVICE_EC_OK on success.
      */
     NABTO_DEVICE_DECL_PREFIX void NABTO_DEVICE_API
         nabto_device_virtual_stream_close(NabtoDeviceVirtualStream* stream, NabtoDeviceFuture* future);
