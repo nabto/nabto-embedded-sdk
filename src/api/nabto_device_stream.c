@@ -31,6 +31,9 @@ static void deinit_events(struct nabto_device_stream* str);
  */
 static np_error_code init_stream_listener(struct nabto_device_context* dev, struct nabto_device_listener* listener, uint32_t type, uint32_t* actualType)
 {
+    if (nabto_device_listener_is_active(listener)) {
+        return NABTO_EC_INVALID_STATE;
+    }
     struct nabto_device_stream_listener_context* listenerContext = np_calloc(1, sizeof(struct nabto_device_stream_listener_context));
     if (listenerContext == NULL) {
         return NABTO_EC_OUT_OF_MEMORY;

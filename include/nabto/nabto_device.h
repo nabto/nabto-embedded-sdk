@@ -1968,7 +1968,9 @@ nabto_device_future_error_code(NabtoDeviceFuture* future);
  * Create a new listener. After creation, a listener should be initialized for a
  * purpose (e.g. as a stream listener through
  * nabto_device_stream_init_listener()). Once initialized, a listener can only
- * be used for the purpose for which it was initialized.
+ * be used for the purpose for which it was initialized. Initializing a
+ * listener which is already initialized, and has not been stopped, fails with
+ * NABTO_DEVICE_EC_INVALID_STATE.
  *
  * @param device [in]  The device instance
  * @return The created listener, NULL on allocation errors

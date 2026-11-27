@@ -107,7 +107,9 @@ nabto_device_password_authentication_request_init_listener(NabtoDevice* device, 
 
     nabto_device_threads_mutex_lock(dev->eventMutex);
 
-    if (dev->core.spake2.passwordRequestHandler != NULL) {
+    if (nabto_device_listener_is_active(listener)) {
+        ec = NABTO_EC_INVALID_STATE;
+    } else if (dev->core.spake2.passwordRequestHandler != NULL) {
         ec = NABTO_EC_IN_USE;
     } else {
         ec = nabto_device_listener_init(dev, listener, NABTO_DEVICE_LISTENER_TYPE_PASSWORD_REQUESTS, &nabto_device_password_authentication_listener_resolve_event, listener);

@@ -37,6 +37,11 @@ np_error_code nabto_device_listener_init(struct nabto_device_context* dev,
                                          nabto_device_listener_resolve_event cb,
                                          void* listenerData)
 {
+    // Initializing an active listener again would leave its registration
+    // with the module pointing at the listener after it is freed.
+    if (nabto_device_listener_is_active(listener)) {
+        return NABTO_EC_INVALID_STATE;
+    }
     listener->dev = dev;
     listener->cb = cb;
     listener->listenerData = listenerData;
@@ -46,6 +51,11 @@ np_error_code nabto_device_listener_init(struct nabto_device_context* dev,
     listener->type = type;
     listener->isInitialized = true;
     return NABTO_EC_OK;
+}
+
+bool nabto_device_listener_is_active(struct nabto_device_listener* listener)
+{
+    return listener->isInitialized && listener->cb != NULL;
 }
 
 np_error_code nabto_device_listener_add_event(struct nabto_device_listener* listener, struct nn_llist_node* eventListNode, void* data)

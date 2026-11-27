@@ -66,7 +66,9 @@ nabto_device_authorization_request_init_listener(NabtoDevice* device, NabtoDevic
     np_error_code ec = NABTO_EC_OK;
     nabto_device_threads_mutex_lock(dev->eventMutex);
 
-    if (dev->authorization.listener != NULL) {
+    if (nabto_device_listener_is_active(listener)) {
+        ec = NABTO_EC_INVALID_STATE;
+    } else if (dev->authorization.listener != NULL) {
         ec = NABTO_EC_IN_USE;
     } else {
         ec = nabto_device_listener_init(dev, listener, NABTO_DEVICE_LISTENER_TYPE_AUTHORIZATION, &nabto_device_authorization_listener_callback, &dev->authorization);
